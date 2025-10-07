@@ -29,7 +29,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     const emailResponse = await resend.emails.send({
       from: "Cars & Claims <onboarding@resend.dev>",
-      to: ["info@nohasslefaisle.com"],
+      to: ["info@nohasslefaisal.com"],
       subject: "New Injury Claim Inquiry",
       html: `
         <h2>New Injury Claim Inquiry</h2>
