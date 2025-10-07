@@ -9,40 +9,40 @@ All colors MUST be HSL.
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 222 47% 11%;
+    --foreground: 0 0% 5%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 0 0% 5%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover-foreground: 0 0% 5%;
 
-    --primary: 217 91% 35%;
+    --primary: 142 76% 36%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 214 32% 91%;
-    --secondary-foreground: 222 47% 11%;
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 0 0% 5%;
 
-    --muted: 214 32% 91%;
-    --muted-foreground: 215 16% 47%;
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 45%;
 
-    --accent: 217 91% 60%;
+    --accent: 142 71% 45%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 217 91% 35%;
+    --border: 0 0% 90%;
+    --input: 0 0% 90%;
+    --ring: 142 76% 36%;
 
     --radius: 0.75rem;
     
-    /* Custom tokens */
-    --gradient-hero: linear-gradient(135deg, hsl(217 91% 35%) 0%, hsl(234 89% 52%) 100%);
-    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(214 32% 98%) 100%);
-    --shadow-lg: 0 20px 25px -5px hsl(217 91% 35% / 0.1), 0 10px 10px -5px hsl(217 91% 35% / 0.04);
-    --shadow-xl: 0 25px 50px -12px hsl(217 91% 35% / 0.25);
+    /* Custom tokens - Green and Black theme */
+    --gradient-hero: linear-gradient(135deg, hsl(142 76% 36%) 0%, hsl(142 71% 45%) 100%);
+    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(0 0% 98%) 100%);
+    --shadow-lg: 0 20px 25px -5px hsl(142 76% 36% / 0.1), 0 10px 10px -5px hsl(142 76% 36% / 0.04);
+    --shadow-xl: 0 25px 50px -12px hsl(142 76% 36% / 0.25);
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
     --sidebar-background: 0 0% 98%;
@@ -63,36 +63,36 @@ All colors MUST be HSL.
   }
 
   .dark {
-    --background: 222 47% 11%;
-    --foreground: 210 40% 98%;
+    --background: 0 0% 5%;
+    --foreground: 0 0% 98%;
 
-    --card: 217 32% 18%;
-    --card-foreground: 210 40% 98%;
+    --card: 0 0% 10%;
+    --card-foreground: 0 0% 98%;
 
-    --popover: 222 47% 11%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 0 0% 5%;
+    --popover-foreground: 0 0% 98%;
 
-    --primary: 217 91% 60%;
+    --primary: 142 71% 45%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 217 32% 18%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 0 0% 15%;
+    --secondary-foreground: 0 0% 98%;
 
-    --muted: 217 32% 18%;
-    --muted-foreground: 215 20% 65%;
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 65%;
 
-    --accent: 217 91% 60%;
+    --accent: 142 71% 45%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 63% 31%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 0 0% 98%;
 
-    --border: 217 32% 18%;
-    --input: 217 32% 18%;
-    --ring: 217 91% 60%;
+    --border: 0 0% 15%;
+    --input: 0 0% 15%;
+    --ring: 142 71% 45%;
     
-    --gradient-hero: linear-gradient(135deg, hsl(217 91% 40%) 0%, hsl(234 89% 60%) 100%);
-    --gradient-card: linear-gradient(180deg, hsl(217 32% 18%) 0%, hsl(217 32% 15%) 100%);
+    --gradient-hero: linear-gradient(135deg, hsl(142 71% 45%) 0%, hsl(142 76% 36%) 100%);
+    --gradient-card: linear-gradient(180deg, hsl(0 0% 10%) 0%, hsl(0 0% 8%) 100%);
     --shadow-lg: 0 20px 25px -5px hsl(0 0% 0% / 0.3), 0 10px 10px -5px hsl(0 0% 0% / 0.2);
     --shadow-xl: 0 25px 50px -12px hsl(0 0% 0% / 0.5);
     --sidebar-background: 240 5.9% 10%;

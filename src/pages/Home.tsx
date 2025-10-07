@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Car, Scale, DollarSign, FileText, Clock, Shield } from "lucide-react";
+import { Car, Scale, DollarSign, FileText, Clock, Shield, Wrench } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Navbar } from "@/components/Navbar";
 import heroImage from "@/assets/hero-cars.jpg";
@@ -22,11 +22,15 @@ const Home = () => {
         <div className="container relative z-10 px-4">
           <div className="max-w-2xl">
             <h1 className="text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              Quality Cars. <br />Fair Financing. <br />Legal Support.
+              Quality Cars. <br />
+              Expert Repairs. <br />
+              Legal Support.
             </h1>
-            <p className="text-xl text-muted-foreground mb-8 max-w-xl">
-              Foreign and domestic used cars with flexible buy-here-pay-here options. 
-              Plus comprehensive no-fault injury claim services.
+            <p className="text-xl text-muted-foreground mb-2">
+              <span className="font-semibold text-foreground">Cars & Claims</span> - Your trusted partner for vehicle sales, financing, and injury claims.
+            </p>
+            <p className="text-lg text-muted-foreground mb-8">
+              <span className="font-semibold text-foreground">Quality Foreign and Domestic Auto's</span> - Professional car repairs and maintenance services.
             </p>
             <div className="flex flex-wrap gap-4">
               <Link to="/inventory">
@@ -35,10 +39,10 @@ const Home = () => {
                   View Inventory
                 </Button>
               </Link>
-              <Link to="/claims">
+              <Link to="/repairs">
                 <Button size="lg" variant="outline" className="text-lg px-8">
-                  <Scale className="mr-2 h-5 w-5" />
-                  File a Claim
+                  <Wrench className="mr-2 h-5 w-5" />
+                  Car Repairs
                 </Button>
               </Link>
             </div>
@@ -54,7 +58,7 @@ const Home = () => {
             <p className="text-xl text-muted-foreground">Everything you need in one place</p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
             <Card className="hover:shadow-lg transition-all duration-300">
               <CardHeader>
                 <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
@@ -86,7 +90,35 @@ const Home = () => {
             <Card className="hover:shadow-lg transition-all duration-300">
               <CardHeader>
                 <div className="w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center mb-4">
-                  <Scale className="h-6 w-6 text-accent" />
+                  <Wrench className="h-6 w-6 text-accent" />
+                </div>
+                <CardTitle className="text-2xl">Car Repairs</CardTitle>
+                <CardDescription className="text-base">
+                  Professional auto repair and maintenance services
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-3">
+                  <li className="flex items-center gap-2">
+                    <Wrench className="h-4 w-4 text-accent" />
+                    <span>Expert mechanics</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-accent" />
+                    <span>Fast turnaround times</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Shield className="h-4 w-4 text-accent" />
+                    <span>Quality parts & service</span>
+                  </li>
+                </ul>
+              </CardContent>
+            </Card>
+
+            <Card className="hover:shadow-lg transition-all duration-300">
+              <CardHeader>
+                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
+                  <Scale className="h-6 w-6 text-primary" />
                 </div>
                 <CardTitle className="text-2xl">Injury Claims</CardTitle>
                 <CardDescription className="text-base">
@@ -96,15 +128,15 @@ const Home = () => {
               <CardContent>
                 <ul className="space-y-3">
                   <li className="flex items-center gap-2">
-                    <Shield className="h-4 w-4 text-accent" />
+                    <Shield className="h-4 w-4 text-primary" />
                     <span>Expert claim processing</span>
                   </li>
                   <li className="flex items-center gap-2">
-                    <FileText className="h-4 w-4 text-accent" />
+                    <FileText className="h-4 w-4 text-primary" />
                     <span>Documentation support</span>
                   </li>
                   <li className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-accent" />
+                    <Clock className="h-4 w-4 text-primary" />
                     <span>Fast claim resolution</span>
                   </li>
                 </ul>
@@ -141,7 +173,8 @@ const Home = () => {
       <footer className="border-t py-12 bg-muted/30">
         <div className="container px-4">
           <div className="text-center text-muted-foreground">
-            <p>&copy; 2025 Cars and Claims. All rights reserved.</p>
+            <p className="font-semibold text-foreground mb-1">Cars & Claims | Quality Foreign and Domestic Auto's</p>
+            <p>&copy; 2025 All rights reserved.</p>
           </div>
         </div>
       </footer>

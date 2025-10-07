@@ -55,7 +55,7 @@ const Inventory = () => {
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-2">Vehicle Inventory</h1>
           <p className="text-muted-foreground text-lg">
-            Browse our selection of quality foreign and domestic vehicles
+            Browse our selection of quality foreign and domestic vehicles from Quality Foreign and Domestic Auto's
           </p>
         </div>
 
