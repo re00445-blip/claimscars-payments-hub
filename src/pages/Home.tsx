@@ -168,7 +168,8 @@ const Home = () => {
       <footer className="border-t py-12 bg-muted/30">
         <div className="container px-4">
           <div className="text-center text-muted-foreground">
-            <p className="font-semibold text-foreground mb-1">Cars & Claims | Quality Foreign and Domestic Auto's</p>
+            <p className="font-semibold text-foreground mb-1">Cars & Claims | Quality Foreign and Domestic auto's</p>
+            <p className="text-sm">Professional and hassle free car sale process</p>
             <p>&copy; 2025 All rights reserved.</p>
           </div>
         </div>
