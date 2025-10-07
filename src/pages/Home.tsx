@@ -22,15 +22,10 @@ const Home = () => {
         <div className="container relative z-10 px-4">
           <div className="max-w-2xl">
             <h1 className="text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              Quality Cars. <br />
-              Expert Repairs. <br />
-              Legal Support.
+              Cars & Claims
             </h1>
-            <p className="text-xl text-muted-foreground mb-2">
-              <span className="font-semibold text-foreground">Cars & Claims</span> - Your trusted partner for vehicle sales, financing, and injury claims.
-            </p>
-            <p className="text-lg text-muted-foreground mb-8">
-              <span className="font-semibold text-foreground">Quality Foreign and Domestic Auto's</span> - Professional car repairs and maintenance services.
+            <p className="text-xl text-muted-foreground mb-8">
+              Your trusted marketing partner for vehicle sales, financing and non-fault injury and property damage claims
             </p>
             <div className="flex flex-wrap gap-4">
               <Link to="/inventory">
