@@ -10,7 +10,7 @@ export const Navbar = () => {
         <div className="flex h-16 items-center justify-between">
           <Link to="/" className="flex flex-col items-start">
             <div className="flex items-center gap-3">
-              <img src={logo} alt="Cars and Claims" className="h-10 w-auto" />
+              <img src={logo} alt="Cars and Claims" className="h-14 w-auto" />
             </div>
             <div className="text-xs text-muted-foreground mt-0.5">
               Quality Foreign and Domestic Auto's
