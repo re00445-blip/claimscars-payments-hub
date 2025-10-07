@@ -1,8 +1,69 @@
 import { Navbar } from "@/components/Navbar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Scale, FileText, Clock, Shield } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+const claimFormSchema = z.object({
+  name: z.string().min(2, "Name must be at least 2 characters"),
+  address: z.string().min(5, "Please enter a valid address"),
+  accidentDate: z.string().min(1, "Please select the accident date"),
+  injuryArea: z.string().min(2, "Please describe the area of injury"),
+  atFault: z.string().min(1, "Please indicate if you were at fault"),
+  contactNumber: z.string().min(10, "Please enter a valid phone number"),
+});
 
 const Claims = () => {
+  const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  const form = useForm<z.infer<typeof claimFormSchema>>({
+    resolver: zodResolver(claimFormSchema),
+    defaultValues: {
+      name: "",
+      address: "",
+      accidentDate: "",
+      injuryArea: "",
+      atFault: "",
+      contactNumber: "",
+    },
+  });
+
+  const onSubmit = async (values: z.infer<typeof claimFormSchema>) => {
+    setIsSubmitting(true);
+    try {
+      const { error } = await supabase.functions.invoke("send-injury-claim", {
+        body: values,
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Claim Submitted",
+        description: "We've received your claim information and will contact you soon!",
+      });
+      
+      form.reset();
+    } catch (error) {
+      console.error("Error submitting claim:", error);
+      toast({
+        title: "Submission Failed",
+        description: "There was an error submitting your claim. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -85,23 +146,101 @@ const Claims = () => {
           </Card>
         </div>
 
-        <Card className="bg-gradient-to-br from-primary to-accent text-primary-foreground">
+        <Card>
           <CardHeader>
-            <CardTitle className="text-2xl">Need Help with a Claim?</CardTitle>
-            <CardDescription className="text-primary-foreground/90">
-              Contact us to discuss your no-fault injury claim
+            <CardTitle className="text-2xl">Submit an Injury Claim</CardTitle>
+            <CardDescription>
+              Fill out the form below and our team will contact you
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-primary-foreground/90 mb-4">
-              Our team is ready to assist you with your claim. Please call us or visit our office to get started.
-            </p>
-            <div className="space-y-2">
-              <p className="font-semibold">Contact Information:</p>
-              <p>Phone: [Your Phone Number]</p>
-              <p>Email: [Your Email]</p>
-              <p>Office Hours: [Your Hours]</p>
-            </div>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Name *</Label>
+                  <Input
+                    id="name"
+                    {...form.register("name")}
+                    placeholder="John Doe"
+                  />
+                  {form.formState.errors.name && (
+                    <p className="text-sm text-destructive">{form.formState.errors.name.message}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="contactNumber">Best Contact Number *</Label>
+                  <Input
+                    id="contactNumber"
+                    {...form.register("contactNumber")}
+                    placeholder="(555) 123-4567"
+                  />
+                  {form.formState.errors.contactNumber && (
+                    <p className="text-sm text-destructive">{form.formState.errors.contactNumber.message}</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="address">Address *</Label>
+                <Input
+                  id="address"
+                  {...form.register("address")}
+                  placeholder="123 Main St, City, State ZIP"
+                />
+                {form.formState.errors.address && (
+                  <p className="text-sm text-destructive">{form.formState.errors.address.message}</p>
+                )}
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="accidentDate">Accident Date *</Label>
+                  <Input
+                    id="accidentDate"
+                    type="date"
+                    {...form.register("accidentDate")}
+                  />
+                  {form.formState.errors.accidentDate && (
+                    <p className="text-sm text-destructive">{form.formState.errors.accidentDate.message}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="atFault">Were You At Fault? *</Label>
+                  <Select onValueChange={(value) => form.setValue("atFault", value)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="yes">Yes</SelectItem>
+                      <SelectItem value="no">No</SelectItem>
+                      <SelectItem value="partial">Partially</SelectItem>
+                      <SelectItem value="unknown">Unknown</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {form.formState.errors.atFault && (
+                    <p className="text-sm text-destructive">{form.formState.errors.atFault.message}</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="injuryArea">Area of Bodily Injury *</Label>
+                <Input
+                  id="injuryArea"
+                  {...form.register("injuryArea")}
+                  placeholder="e.g., Lower back, Neck, etc."
+                />
+                {form.formState.errors.injuryArea && (
+                  <p className="text-sm text-destructive">{form.formState.errors.injuryArea.message}</p>
+                )}
+              </div>
+
+              <Button type="submit" size="lg" disabled={isSubmitting} className="w-full md:w-auto">
+                {isSubmitting ? "Submitting..." : "Submit Claim"}
+              </Button>
+            </form>
           </CardContent>
         </Card>
       </div>

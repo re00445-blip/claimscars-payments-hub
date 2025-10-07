@@ -1,9 +1,71 @@
 import { Navbar } from "@/components/Navbar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { Wrench, Clock, Shield, CheckCircle, Settings, Gauge } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
+
+const repairFormSchema = z.object({
+  name: z.string().min(2, "Name must be at least 2 characters"),
+  phone: z.string().min(10, "Please enter a valid phone number"),
+  address: z.string().min(5, "Please enter a valid address"),
+  year: z.string().min(4, "Please enter a valid year"),
+  make: z.string().min(2, "Please enter the vehicle make"),
+  model: z.string().min(2, "Please enter the vehicle model"),
+  description: z.string().min(10, "Please provide more details about the issue"),
+});
 
 const Repairs = () => {
+  const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  const form = useForm<z.infer<typeof repairFormSchema>>({
+    resolver: zodResolver(repairFormSchema),
+    defaultValues: {
+      name: "",
+      phone: "",
+      address: "",
+      year: "",
+      make: "",
+      model: "",
+      description: "",
+    },
+  });
+
+  const onSubmit = async (values: z.infer<typeof repairFormSchema>) => {
+    setIsSubmitting(true);
+    try {
+      const { error } = await supabase.functions.invoke("send-repair-inquiry", {
+        body: values,
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Inquiry Submitted",
+        description: "We've received your repair inquiry and will contact you soon!",
+      });
+      
+      form.reset();
+    } catch (error) {
+      console.error("Error submitting repair inquiry:", error);
+      toast({
+        title: "Submission Failed",
+        description: "There was an error submitting your inquiry. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -155,32 +217,111 @@ const Repairs = () => {
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-primary to-accent text-primary-foreground">
+        <Card>
           <CardHeader>
             <CardTitle className="text-2xl flex items-center gap-2">
               <Gauge className="h-6 w-6" />
-              Schedule Your Service Today
+              Request a Repair Quote
             </CardTitle>
-            <CardDescription className="text-primary-foreground/90">
-              Contact us to schedule an appointment or get a quote
+            <CardDescription>
+              Fill out the form below and we'll get back to you shortly
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-primary-foreground/90 mb-4">
-              Our team is ready to get your vehicle back on the road. Call us or visit our shop for expert automotive care.
-            </p>
-            <div className="space-y-2">
-              <p className="font-semibold">Contact Information:</p>
-              <p>Phone: [Your Phone Number]</p>
-              <p>Email: [Your Email]</p>
-              <p>Address: [Your Address]</p>
-              <p>Hours: [Your Hours]</p>
-            </div>
-            <div className="mt-6">
-              <Button variant="secondary" size="lg">
-                Schedule Appointment
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Name *</Label>
+                  <Input
+                    id="name"
+                    {...form.register("name")}
+                    placeholder="John Doe"
+                  />
+                  {form.formState.errors.name && (
+                    <p className="text-sm text-destructive">{form.formState.errors.name.message}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Phone Number *</Label>
+                  <Input
+                    id="phone"
+                    {...form.register("phone")}
+                    placeholder="(555) 123-4567"
+                  />
+                  {form.formState.errors.phone && (
+                    <p className="text-sm text-destructive">{form.formState.errors.phone.message}</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="address">Address *</Label>
+                <Input
+                  id="address"
+                  {...form.register("address")}
+                  placeholder="123 Main St, City, State ZIP"
+                />
+                {form.formState.errors.address && (
+                  <p className="text-sm text-destructive">{form.formState.errors.address.message}</p>
+                )}
+              </div>
+
+              <div className="grid md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="year">Year *</Label>
+                  <Input
+                    id="year"
+                    {...form.register("year")}
+                    placeholder="2020"
+                  />
+                  {form.formState.errors.year && (
+                    <p className="text-sm text-destructive">{form.formState.errors.year.message}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="make">Make *</Label>
+                  <Input
+                    id="make"
+                    {...form.register("make")}
+                    placeholder="Toyota"
+                  />
+                  {form.formState.errors.make && (
+                    <p className="text-sm text-destructive">{form.formState.errors.make.message}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="model">Model *</Label>
+                  <Input
+                    id="model"
+                    {...form.register("model")}
+                    placeholder="Camry"
+                  />
+                  {form.formState.errors.model && (
+                    <p className="text-sm text-destructive">{form.formState.errors.model.message}</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="description">Issue Description *</Label>
+                <Textarea
+                  id="description"
+                  {...form.register("description")}
+                  placeholder="Please describe the issue you're experiencing with your vehicle..."
+                  className="min-h-[120px]"
+                />
+                {form.formState.errors.description && (
+                  <p className="text-sm text-destructive">{form.formState.errors.description.message}</p>
+                )}
+              </div>
+
+              <Button type="submit" size="lg" disabled={isSubmitting} className="w-full md:w-auto">
+                {isSubmitting ? "Submitting..." : "Submit Inquiry"}
               </Button>
-            </div>
+            </form>
           </CardContent>
         </Card>
       </div>
