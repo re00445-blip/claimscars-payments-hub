@@ -27,8 +27,11 @@ const Home = () => {
             <p className="text-xl text-muted-foreground mb-2">
               Your trusted marketing partner for vehicle sales, financing and non-fault injury and property damage claims
             </p>
-            <p className="text-lg text-muted-foreground mb-8">
+            <p className="text-lg text-muted-foreground mb-2">
               <span className="font-semibold text-foreground">Quality Foreign and Domestic auto's</span> - Professional and hassle free car sale process
+            </p>
+            <p className="text-lg text-muted-foreground mb-8">
+              <span className="font-semibold text-foreground">Injury Claims</span> - We handle non-fault injury claims for car accidents, slip and fall and catastrophic death cases
             </p>
             <div className="flex flex-wrap gap-4">
               <Link to="/inventory">
