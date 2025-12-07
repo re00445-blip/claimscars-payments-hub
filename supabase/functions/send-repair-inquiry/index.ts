@@ -16,6 +16,7 @@ interface RepairInquiryRequest {
   make: string;
   model: string;
   description: string;
+  attachments?: string[];
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -24,9 +25,21 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { name, phone, address, year, make, model, description }: RepairInquiryRequest = await req.json();
+    const { name, phone, address, year, make, model, description, attachments }: RepairInquiryRequest = await req.json();
 
     console.log("Processing repair inquiry for:", name);
+
+    const attachmentsHtml = attachments && attachments.length > 0
+      ? `
+        <h3>Attached Photos/Videos</h3>
+        <ul>
+          ${attachments.map((url, index) => {
+            const isVideo = url.includes('.mp4') || url.includes('.mov') || url.includes('.webm');
+            return `<li><a href="${url}" target="_blank">${isVideo ? 'Video' : 'Photo'} ${index + 1}</a></li>`;
+          }).join('')}
+        </ul>
+      `
+      : '';
 
     const emailResponse = await resend.emails.send({
       from: "Quality Foreign and Domestic Auto's <onboarding@resend.dev>",
@@ -48,6 +61,7 @@ const handler = async (req: Request): Promise<Response> => {
         </ul>
         <p><strong>Issue Description:</strong></p>
         <p>${description}</p>
+        ${attachmentsHtml}
       `,
     });
 

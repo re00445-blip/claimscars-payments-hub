@@ -11,6 +11,7 @@ import * as z from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
+import { FileUpload } from "@/components/FileUpload";
 
 const repairFormSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -25,6 +26,7 @@ const repairFormSchema = z.object({
 const Repairs = () => {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
   
   const form = useForm<z.infer<typeof repairFormSchema>>({
     resolver: zodResolver(repairFormSchema),
@@ -43,7 +45,10 @@ const Repairs = () => {
     setIsSubmitting(true);
     try {
       const { error } = await supabase.functions.invoke("send-repair-inquiry", {
-        body: values,
+        body: {
+          ...values,
+          attachments: uploadedFiles,
+        },
       });
 
       if (error) throw error;
@@ -54,6 +59,7 @@ const Repairs = () => {
       });
       
       form.reset();
+      setUploadedFiles([]);
     } catch (error) {
       console.error("Error submitting repair inquiry:", error);
       toast({
@@ -316,6 +322,15 @@ const Repairs = () => {
                 {form.formState.errors.description && (
                   <p className="text-sm text-destructive">{form.formState.errors.description.message}</p>
                 )}
+              </div>
+
+              <div className="space-y-2">
+                <Label>Photos/Videos of Issue (Optional)</Label>
+                <FileUpload
+                  folder="repairs"
+                  onFilesChange={setUploadedFiles}
+                  maxFiles={5}
+                />
               </div>
 
               <Button type="submit" size="lg" disabled={isSubmitting} className="w-full md:w-auto">
