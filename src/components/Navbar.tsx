@@ -7,10 +7,10 @@ export const Navbar = () => {
   return (
     <nav className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="w-full px-4">
-        <div className="flex h-16 items-center justify-between relative">
-          <Link to="/" className="absolute inset-0 flex flex-col items-center justify-center">
-            <img src={logo} alt="Cars and Claims" className="h-14 w-full object-contain" />
-            <div className="text-xs text-muted-foreground mt-0.5">
+        <div className="flex h-16 items-center justify-between">
+          <Link to="/" className="flex flex-col items-center justify-center md:absolute md:inset-0">
+            <img src={logo} alt="Cars and Claims" className="h-10 md:h-14 w-auto object-contain" />
+            <div className="hidden md:block text-xs text-muted-foreground mt-0.5">
               Quality Foreign and Domestic Auto's
             </div>
           </Link>
@@ -30,8 +30,8 @@ export const Navbar = () => {
             </Link>
           </div>
 
-          <div className="flex items-center gap-3 relative z-10">
-            <Link to="/auth">
+          <div className="flex items-center gap-2 md:gap-3 relative z-10 ml-auto">
+            <Link to="/auth" className="hidden md:block">
               <Button variant="ghost" size="sm">
                 <User className="h-4 w-4 mr-2" />
                 Login
