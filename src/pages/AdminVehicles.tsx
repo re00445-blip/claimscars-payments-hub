@@ -321,6 +321,19 @@ const AdminVehicles = () => {
     });
   };
 
+  const cropImage = (index: number, croppedImageUrl: string) => {
+    setFormData(prev => ({
+      ...prev,
+      images: prev.images.map((img, i) => i === index ? croppedImageUrl : img),
+    }));
+    // Reset rotation after crop since the crop already includes the rotation
+    setImageRotations(prev => {
+      const newRotations = [...prev];
+      newRotations[index] = 0;
+      return newRotations;
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
@@ -583,6 +596,7 @@ const AdminVehicles = () => {
                       rotations={imageRotations}
                       onRemove={removeImage}
                       onRotate={rotateImage}
+                      onCrop={cropImage}
                     />
                     <div className="flex items-center gap-2">
                       <Input
