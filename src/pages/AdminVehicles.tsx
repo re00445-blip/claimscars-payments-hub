@@ -342,64 +342,171 @@ const AdminVehicles = () => {
     setImageRotations(newRotations);
   };
 
+  // Function to apply rotation to an image and return a new data URL
+  const applyRotationToImage = (imageSrc: string, rotation: number): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      if (rotation === 0) {
+        resolve(imageSrc);
+        return;
+      }
+
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        
+        if (!ctx) {
+          reject(new Error("Could not get canvas context"));
+          return;
+        }
+
+        // Normalize rotation to 0, 90, 180, 270
+        const normalizedRotation = ((rotation % 360) + 360) % 360;
+        
+        // Swap dimensions for 90 and 270 degree rotations
+        if (normalizedRotation === 90 || normalizedRotation === 270) {
+          canvas.width = img.height;
+          canvas.height = img.width;
+        } else {
+          canvas.width = img.width;
+          canvas.height = img.height;
+        }
+
+        ctx.translate(canvas.width / 2, canvas.height / 2);
+        ctx.rotate((normalizedRotation * Math.PI) / 180);
+        ctx.drawImage(img, -img.width / 2, -img.height / 2);
+
+        resolve(canvas.toDataURL("image/jpeg", 0.9));
+      };
+      
+      img.onerror = () => reject(new Error("Failed to load image"));
+      img.src = imageSrc;
+    });
+  };
+
+  // Function to upload a data URL image to storage
+  const uploadDataUrlImage = async (dataUrl: string, index: number): Promise<string> => {
+    // Convert data URL to blob
+    const response = await fetch(dataUrl);
+    const blob = await response.blob();
+    
+    const fileName = `${Date.now()}-rotated-${index}.jpg`;
+    const filePath = `vehicles/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("vehicle-images")
+      .upload(filePath, blob);
+
+    if (uploadError) {
+      throw uploadError;
+    }
+
+    const { data: urlData } = supabase.storage
+      .from("vehicle-images")
+      .getPublicUrl(filePath);
+
+    return urlData.publicUrl;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
 
-    const vehicleData = {
-      make: formData.make,
-      model: formData.model,
-      year: formData.year,
-      price: formData.price,
-      mileage: formData.mileage || null,
-      color: formData.color || null,
-      vin: formData.vin,
-      description: formData.description || null,
-      images: formData.images.length > 0 ? formData.images : null,
-      status: formData.status,
-    };
-
-    if (editingVehicle) {
-      const { error } = await supabase
-        .from("vehicles")
-        .update(vehicleData)
-        .eq("id", editingVehicle.id);
-
-      if (error) {
-        toast({
-          title: "Error",
-          description: "Failed to update vehicle",
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Success",
-          description: "Vehicle updated successfully",
-        });
-        fetchVehicles();
-        setIsDialogOpen(false);
-        resetForm();
+    try {
+      // Apply rotations to images that need it
+      const processedImages: string[] = [];
+      
+      for (let i = 0; i < formData.images.length; i++) {
+        const image = formData.images[i];
+        const rotation = imageRotations[i] || 0;
+        
+        if (rotation !== 0) {
+          // Apply rotation and get new data URL
+          const rotatedDataUrl = await applyRotationToImage(image, rotation);
+          
+          // If the original was a URL (not a data URL), upload the rotated version
+          if (!image.startsWith("data:")) {
+            const newUrl = await uploadDataUrlImage(rotatedDataUrl, i);
+            processedImages.push(newUrl);
+          } else {
+            // If it was already a data URL (from cropping), upload it
+            const newUrl = await uploadDataUrlImage(rotatedDataUrl, i);
+            processedImages.push(newUrl);
+          }
+        } else if (image.startsWith("data:")) {
+          // Image is a data URL from cropping, upload it
+          const newUrl = await uploadDataUrlImage(image, i);
+          processedImages.push(newUrl);
+        } else {
+          // No rotation needed, keep original URL
+          processedImages.push(image);
+        }
       }
-    } else {
-      const { error } = await supabase
-        .from("vehicles")
-        .insert(vehicleData);
 
-      if (error) {
-        toast({
-          title: "Error",
-          description: "Failed to add vehicle",
-          variant: "destructive",
-        });
+      const vehicleData = {
+        make: formData.make,
+        model: formData.model,
+        year: formData.year,
+        price: formData.price,
+        mileage: formData.mileage || null,
+        color: formData.color || null,
+        vin: formData.vin,
+        description: formData.description || null,
+        images: processedImages.length > 0 ? processedImages : null,
+        status: formData.status,
+      };
+
+      if (editingVehicle) {
+        const { error } = await supabase
+          .from("vehicles")
+          .update(vehicleData)
+          .eq("id", editingVehicle.id);
+
+        if (error) {
+          toast({
+            title: "Error",
+            description: "Failed to update vehicle",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Success",
+            description: "Vehicle updated successfully",
+          });
+          fetchVehicles();
+          setIsDialogOpen(false);
+          resetForm();
+        }
       } else {
-        toast({
-          title: "Success",
-          description: "Vehicle added successfully",
-        });
-        fetchVehicles();
-        setIsDialogOpen(false);
-        resetForm();
+        const { error } = await supabase
+          .from("vehicles")
+          .insert(vehicleData);
+
+        if (error) {
+          toast({
+            title: "Error",
+            description: "Failed to add vehicle",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Success",
+            description: "Vehicle added successfully",
+          });
+          fetchVehicles();
+          setIsDialogOpen(false);
+          resetForm();
+        }
       }
+    } catch (error) {
+      console.error("Error saving vehicle:", error);
+      toast({
+        title: "Error",
+        description: "Failed to process images. Please try again.",
+        variant: "destructive",
+      });
     }
 
     setSaving(false);
