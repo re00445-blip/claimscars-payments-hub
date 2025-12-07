@@ -81,13 +81,21 @@ const Inventory = () => {
                     <Badge className="absolute top-4 left-4 z-10 bg-primary text-primary-foreground">
                       {vehicle.images?.length || 0} Photos
                     </Badge>
-                    <Button 
-                      className="absolute bottom-4 right-4 z-10" 
-                      onClick={() => window.location.href = 'tel:+14705196717'}
-                    >
-                      <Phone className="h-4 w-4 mr-2" />
-                      Contact Us
-                    </Button>
+                    <div className="absolute bottom-4 right-4 z-10 flex flex-col gap-2">
+                      <Button 
+                        onClick={() => window.location.href = 'tel:+14705196717'}
+                      >
+                        <Phone className="h-4 w-4 mr-2" />
+                        Contact Us
+                      </Button>
+                      <Button 
+                        variant="secondary"
+                        onClick={() => window.location.href = '/payments'}
+                      >
+                        <DollarSign className="h-4 w-4 mr-2" />
+                        Buy Now
+                      </Button>
+                    </div>
                   </div>
 
                   {/* Vehicle Details Section */}
