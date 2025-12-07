@@ -128,14 +128,18 @@ const Dashboard = () => {
               <CardTitle>Admin Actions</CardTitle>
               <CardDescription>Manage vehicles, accounts, and payments</CardDescription>
             </CardHeader>
-            <CardContent className="flex gap-4">
+            <CardContent className="flex flex-wrap gap-4">
               <Button onClick={() => navigate("/admin/vehicles")}>
                 <Car className="mr-2 h-4 w-4" />
                 Manage Vehicles
               </Button>
-              <Button variant="outline" onClick={() => navigate("/admin/accounts")}>
+              <Button variant="outline" onClick={() => navigate("/admin/payments")}>
                 <DollarSign className="mr-2 h-4 w-4" />
-                Manage Accounts
+                Record Payments
+              </Button>
+              <Button variant="outline" onClick={() => navigate("/admin/reports")}>
+                <FileText className="mr-2 h-4 w-4" />
+                View Reports
               </Button>
             </CardContent>
           </Card>
