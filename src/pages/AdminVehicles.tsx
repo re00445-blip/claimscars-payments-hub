@@ -334,6 +334,14 @@ const AdminVehicles = () => {
     });
   };
 
+  const reorderImages = (newImages: string[], newRotations: number[]) => {
+    setFormData(prev => ({
+      ...prev,
+      images: newImages,
+    }));
+    setImageRotations(newRotations);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
@@ -597,6 +605,7 @@ const AdminVehicles = () => {
                       onRemove={removeImage}
                       onRotate={rotateImage}
                       onCrop={cropImage}
+                      onReorder={reorderImages}
                     />
                     <div className="flex items-center gap-2">
                       <Input
