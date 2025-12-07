@@ -36,13 +36,13 @@ export const VehicleImageGallery = ({ images, vehicleName }: VehicleImageGallery
           {images.map((image, index) => (
             <CarouselItem key={index}>
               <div
-                className="aspect-video bg-muted cursor-pointer overflow-hidden"
+                className="aspect-video bg-muted cursor-pointer overflow-hidden flex items-center justify-center"
                 onClick={() => setSelectedImageIndex(index)}
               >
                 <img
                   src={image}
                   alt={`${vehicleName} - Photo ${index + 1}`}
-                  className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                  className="max-w-full max-h-full object-contain rotate-90 hover:scale-105 transition-transform duration-300"
                 />
               </div>
             </CarouselItem>
@@ -67,7 +67,7 @@ export const VehicleImageGallery = ({ images, vehicleName }: VehicleImageGallery
                         <img
                           src={image}
                           alt={`${vehicleName} - Photo ${index + 1}`}
-                          className="max-w-full max-h-[80vh] object-contain"
+                          className="max-w-full max-h-[80vh] object-contain rotate-90"
                         />
                       </div>
                     </CarouselItem>
