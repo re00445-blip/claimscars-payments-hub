@@ -132,6 +132,23 @@ export function PurchaseIntakeDialog({ open, onOpenChange, vehicle }: PurchaseIn
       
       if (error) throw error;
       
+      // Send email notification to admin
+      const vehicleInfo = `${vehicle.year} ${vehicle.make} ${vehicle.model}`;
+      await supabase.functions.invoke("send-purchase-application", {
+        body: {
+          vehicleInfo,
+          vehiclePrice: vehicle.price,
+          fullName,
+          email,
+          phone,
+          address,
+          downPayment: parseFloat(downPayment) || 0,
+          termMonths: parseInt(termMonths) || 36,
+          estimatedMonthlyPayment: paymentCalc?.monthlyPayment || 0,
+          notes,
+        },
+      });
+      
       setStep("success");
       toast.success("Application submitted successfully!");
     } catch (error: any) {
