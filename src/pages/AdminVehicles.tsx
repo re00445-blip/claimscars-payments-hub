@@ -36,8 +36,9 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Plus, Pencil, Trash2, Upload, X, ArrowLeft, BarChart3 } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2, Upload, ArrowLeft, BarChart3 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { ImageEditor } from "@/components/admin/ImageEditor";
 
 interface Vehicle {
   id: string;
@@ -80,6 +81,7 @@ const AdminVehicles = () => {
     images: [] as string[],
     status: "active",
   });
+  const [imageRotations, setImageRotations] = useState<number[]>([]);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -169,6 +171,7 @@ const AdminVehicles = () => {
       images: [],
       status: "active",
     });
+    setImageRotations([]);
     setEditingVehicle(null);
   };
 
@@ -186,6 +189,7 @@ const AdminVehicles = () => {
       images: vehicle.images || [],
       status: vehicle.status || "active",
     });
+    setImageRotations(new Array(vehicle.images?.length || 0).fill(0));
     setIsDialogOpen(true);
   };
 
@@ -249,6 +253,7 @@ const AdminVehicles = () => {
       ...prev,
       images: [...prev.images, ...newImages],
     }));
+    setImageRotations(prev => [...prev, ...new Array(newImages.length).fill(0)]);
 
     setUploading(false);
     if (newImages.length > 0) {
@@ -304,6 +309,16 @@ const AdminVehicles = () => {
       ...prev,
       images: prev.images.filter((_, i) => i !== index),
     }));
+    setImageRotations(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const rotateImage = (index: number, direction: "cw" | "ccw") => {
+    setImageRotations(prev => {
+      const newRotations = [...prev];
+      const delta = direction === "cw" ? 90 : -90;
+      newRotations[index] = ((newRotations[index] || 0) + delta) % 360;
+      return newRotations;
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -561,26 +576,14 @@ const AdminVehicles = () => {
                     />
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <Label>Images</Label>
-                    <div className="flex flex-wrap gap-2 mb-2">
-                      {formData.images.map((img, index) => (
-                        <div key={index} className="relative group">
-                          <img
-                            src={img}
-                            alt={`Vehicle ${index + 1}`}
-                            className="w-20 h-20 object-cover rounded-md"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => removeImage(index)}
-                            className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
+                    <ImageEditor
+                      images={formData.images}
+                      rotations={imageRotations}
+                      onRemove={removeImage}
+                      onRotate={rotateImage}
+                    />
                     <div className="flex items-center gap-2">
                       <Input
                         type="file"
@@ -593,7 +596,7 @@ const AdminVehicles = () => {
                       {uploading && <Loader2 className="h-4 w-4 animate-spin" />}
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      Images are automatically compressed to optimize loading speed
+                      Images are automatically compressed. Hover over images to rotate or remove them.
                     </p>
                   </div>
 
