@@ -83,7 +83,7 @@ const Inventory = () => {
                     </Badge>
                     <Button 
                       className="absolute bottom-4 right-4 z-10" 
-                      onClick={() => window.location.href = 'tel:+1234567890'}
+                      onClick={() => window.location.href = 'tel:+14705196717'}
                     >
                       <Phone className="h-4 w-4 mr-2" />
                       Contact Us
