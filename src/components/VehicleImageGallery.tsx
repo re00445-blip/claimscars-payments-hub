@@ -42,7 +42,7 @@ export const VehicleImageGallery = ({ images, vehicleName }: VehicleImageGallery
           {images.map((image, index) => (
             <CarouselItem key={index}>
               <div
-                className="aspect-video bg-muted cursor-pointer overflow-hidden flex items-center justify-center"
+                className="aspect-[4/3] bg-muted cursor-pointer overflow-hidden flex items-center justify-center"
                 onClick={() => setSelectedImageIndex(index)}
               >
                 {failedImages.has(index) ? (
