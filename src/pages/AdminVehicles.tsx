@@ -193,32 +193,36 @@ const AdminVehicles = () => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    console.log("Starting upload for", files.length, "files");
     setUploading(true);
     const newImages: string[] = [];
+    const unsupportedFormats = ['heic', 'heif'];
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
-      console.log("Processing file:", file.name, file.type, file.size);
+      const fileExt = file.name.split(".").pop()?.toLowerCase() || '';
+      
+      // Check for unsupported formats like HEIC
+      if (unsupportedFormats.includes(fileExt)) {
+        toast({
+          title: "Unsupported Format",
+          description: `${file.name} is a HEIC file. Please convert to JPG or PNG before uploading.`,
+          variant: "destructive",
+        });
+        continue;
+      }
       
       try {
         // Compress image before upload
         const compressedFile = await compressImage(file);
-        console.log("Compressed file size:", compressedFile.size);
         
-        const fileExt = file.name.split(".").pop();
         const fileName = `${Date.now()}-${i}.${fileExt}`;
         const filePath = `vehicles/${fileName}`;
 
-        console.log("Uploading to path:", filePath);
-        const { data: uploadData, error: uploadError } = await supabase.storage
+        const { error: uploadError } = await supabase.storage
           .from("vehicle-images")
           .upload(filePath, compressedFile);
 
-        console.log("Upload result:", { uploadData, uploadError });
-
         if (uploadError) {
-          console.error("Upload error details:", uploadError);
           toast({
             title: "Upload Error",
             description: `Failed to upload ${file.name}: ${uploadError.message}`,
@@ -231,13 +235,11 @@ const AdminVehicles = () => {
           .from("vehicle-images")
           .getPublicUrl(filePath);
 
-        console.log("Public URL:", urlData.publicUrl);
         newImages.push(urlData.publicUrl);
       } catch (err) {
-        console.error("Exception during upload:", err);
         toast({
           title: "Upload Error",
-          description: `Exception while uploading ${file.name}`,
+          description: `Failed to process ${file.name}. Try a different format.`,
           variant: "destructive",
         });
       }
@@ -252,7 +254,7 @@ const AdminVehicles = () => {
     if (newImages.length > 0) {
       toast({
         title: "Success",
-        description: `${newImages.length} image(s) uploaded and compressed`,
+        description: `${newImages.length} image(s) uploaded`,
       });
     }
   };
