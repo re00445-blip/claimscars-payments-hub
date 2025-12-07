@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/Navbar";
 import { Loader2, Car, DollarSign, Calendar, Phone } from "lucide-react";
 import { VehicleImageGallery } from "@/components/VehicleImageGallery";
+import { PurchaseIntakeDialog } from "@/components/PurchaseIntakeDialog";
 
 interface Vehicle {
   id: string;
@@ -23,6 +24,8 @@ interface Vehicle {
 const Inventory = () => {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
+  const [intakeDialogOpen, setIntakeDialogOpen] = useState(false);
 
   useEffect(() => {
     fetchVehicles();
@@ -39,6 +42,11 @@ const Inventory = () => {
       setVehicles(data);
     }
     setLoading(false);
+  };
+
+  const handleBuyNow = (vehicle: Vehicle) => {
+    setSelectedVehicle(vehicle);
+    setIntakeDialogOpen(true);
   };
 
   if (loading) {
@@ -90,7 +98,7 @@ const Inventory = () => {
                       </Button>
                       <Button 
                         variant="secondary"
-                        onClick={() => window.location.href = '/payments'}
+                        onClick={() => handleBuyNow(vehicle)}
                       >
                         <DollarSign className="h-4 w-4 mr-2" />
                         Buy Now
@@ -156,6 +164,12 @@ const Inventory = () => {
           </div>
         )}
       </div>
+
+      <PurchaseIntakeDialog
+        open={intakeDialogOpen}
+        onOpenChange={setIntakeDialogOpen}
+        vehicle={selectedVehicle}
+      />
     </div>
   );
 };
