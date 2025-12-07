@@ -1,22 +1,130 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { RotateCw, RotateCcw, X, ZoomIn } from "lucide-react";
+import { RotateCw, RotateCcw, X, ZoomIn, Crop } from "lucide-react";
 import {
   Dialog,
   DialogContent,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
+import Cropper from "react-easy-crop";
+import { Slider } from "@/components/ui/slider";
 
 interface ImageEditorProps {
   images: string[];
   rotations: number[];
   onRemove: (index: number) => void;
   onRotate: (index: number, direction: "cw" | "ccw") => void;
+  onCrop: (index: number, croppedImageUrl: string) => void;
 }
 
-export const ImageEditor = ({ images, rotations, onRemove, onRotate }: ImageEditorProps) => {
+interface CropArea {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+export const ImageEditor = ({ images, rotations, onRemove, onRotate, onCrop }: ImageEditorProps) => {
   const [previewIndex, setPreviewIndex] = useState<number | null>(null);
+  const [cropIndex, setCropIndex] = useState<number | null>(null);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<CropArea | null>(null);
+
+  const onCropComplete = useCallback((_: CropArea, croppedAreaPixels: CropArea) => {
+    setCroppedAreaPixels(croppedAreaPixels);
+  }, []);
+
+  const createCroppedImage = async (imageSrc: string, pixelCrop: CropArea, rotation: number): Promise<string> => {
+    const image = new Image();
+    image.crossOrigin = "anonymous";
+    
+    return new Promise((resolve, reject) => {
+      image.onload = () => {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        
+        if (!ctx) {
+          reject(new Error("Could not get canvas context"));
+          return;
+        }
+
+        // Calculate the size after rotation
+        const rotRad = (rotation * Math.PI) / 180;
+        const sin = Math.abs(Math.sin(rotRad));
+        const cos = Math.abs(Math.cos(rotRad));
+        
+        const rotatedWidth = image.width * cos + image.height * sin;
+        const rotatedHeight = image.width * sin + image.height * cos;
+
+        // Set canvas size to the cropped area
+        canvas.width = pixelCrop.width;
+        canvas.height = pixelCrop.height;
+
+        // Create a temporary canvas for rotation
+        const tempCanvas = document.createElement("canvas");
+        const tempCtx = tempCanvas.getContext("2d");
+        
+        if (!tempCtx) {
+          reject(new Error("Could not get temp canvas context"));
+          return;
+        }
+
+        tempCanvas.width = rotatedWidth;
+        tempCanvas.height = rotatedHeight;
+
+        // Rotate the image
+        tempCtx.translate(rotatedWidth / 2, rotatedHeight / 2);
+        tempCtx.rotate(rotRad);
+        tempCtx.translate(-image.width / 2, -image.height / 2);
+        tempCtx.drawImage(image, 0, 0);
+
+        // Draw the cropped portion
+        ctx.drawImage(
+          tempCanvas,
+          pixelCrop.x,
+          pixelCrop.y,
+          pixelCrop.width,
+          pixelCrop.height,
+          0,
+          0,
+          pixelCrop.width,
+          pixelCrop.height
+        );
+
+        resolve(canvas.toDataURL("image/jpeg", 0.9));
+      };
+      
+      image.onerror = () => reject(new Error("Failed to load image"));
+      image.src = imageSrc;
+    });
+  };
+
+  const handleCropSave = async () => {
+    if (cropIndex === null || !croppedAreaPixels) return;
+    
+    try {
+      const croppedImage = await createCroppedImage(
+        images[cropIndex],
+        croppedAreaPixels,
+        rotations[cropIndex] || 0
+      );
+      onCrop(cropIndex, croppedImage);
+      setCropIndex(null);
+      setCrop({ x: 0, y: 0 });
+      setZoom(1);
+    } catch (error) {
+      console.error("Error cropping image:", error);
+    }
+  };
+
+  const openCropDialog = (index: number) => {
+    setCropIndex(index);
+    setCrop({ x: 0, y: 0 });
+    setZoom(1);
+  };
 
   if (images.length === 0) {
     return (
@@ -44,13 +152,14 @@ export const ImageEditor = ({ images, rotations, onRemove, onRotate }: ImageEdit
             {/* Overlay controls */}
             <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
               {/* Rotation buttons */}
-              <div className="flex gap-2">
+              <div className="flex gap-1">
                 <Button
                   type="button"
                   size="sm"
                   variant="secondary"
                   onClick={() => onRotate(index, "ccw")}
                   title="Rotate left"
+                  className="h-8 w-8 p-0"
                 >
                   <RotateCcw className="h-4 w-4" />
                 </Button>
@@ -60,19 +169,31 @@ export const ImageEditor = ({ images, rotations, onRemove, onRotate }: ImageEdit
                   variant="secondary"
                   onClick={() => onRotate(index, "cw")}
                   title="Rotate right"
+                  className="h-8 w-8 p-0"
                 >
                   <RotateCw className="h-4 w-4" />
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => openCropDialog(index)}
+                  title="Crop"
+                  className="h-8 w-8 p-0"
+                >
+                  <Crop className="h-4 w-4" />
                 </Button>
               </div>
               
               {/* Preview and delete buttons */}
-              <div className="flex gap-2">
+              <div className="flex gap-1">
                 <Button
                   type="button"
                   size="sm"
                   variant="secondary"
                   onClick={() => setPreviewIndex(index)}
                   title="Preview"
+                  className="h-8 w-8 p-0"
                 >
                   <ZoomIn className="h-4 w-4" />
                 </Button>
@@ -82,6 +203,7 @@ export const ImageEditor = ({ images, rotations, onRemove, onRotate }: ImageEdit
                   variant="destructive"
                   onClick={() => onRemove(index)}
                   title="Remove"
+                  className="h-8 w-8 p-0"
                 >
                   <X className="h-4 w-4" />
                 </Button>
@@ -129,7 +251,63 @@ export const ImageEditor = ({ images, rotations, onRemove, onRotate }: ImageEdit
                   <RotateCw className="h-4 w-4 mr-1" />
                   Rotate Right
                 </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => {
+                    openCropDialog(previewIndex);
+                    setPreviewIndex(null);
+                  }}
+                >
+                  <Crop className="h-4 w-4 mr-1" />
+                  Crop
+                </Button>
               </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Crop Dialog */}
+      <Dialog open={cropIndex !== null} onOpenChange={() => setCropIndex(null)}>
+        <DialogContent className="max-w-3xl p-4">
+          <DialogTitle>Crop Image</DialogTitle>
+          {cropIndex !== null && (
+            <div className="flex flex-col gap-4">
+              <div className="relative h-[400px] bg-muted rounded-lg overflow-hidden">
+                <Cropper
+                  image={images[cropIndex]}
+                  crop={crop}
+                  zoom={zoom}
+                  rotation={rotations[cropIndex] || 0}
+                  aspect={4 / 3}
+                  onCropChange={setCrop}
+                  onCropComplete={onCropComplete}
+                  onZoomChange={setZoom}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Zoom</label>
+                <Slider
+                  value={[zoom]}
+                  onValueChange={(values) => setZoom(values[0])}
+                  min={1}
+                  max={3}
+                  step={0.1}
+                  className="w-full"
+                />
+              </div>
+              
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setCropIndex(null)}>
+                  Cancel
+                </Button>
+                <Button type="button" onClick={handleCropSave}>
+                  Apply Crop
+                </Button>
+              </DialogFooter>
             </div>
           )}
         </DialogContent>
