@@ -9,11 +9,11 @@ import Dashboard from "./pages/Dashboard";
 import Inventory from "./pages/Inventory";
 import Repairs from "./pages/Repairs";
 import Claims from "./pages/Claims";
+import PaymentPortal from "./pages/PaymentPortal";
 import AdminVehicles from "./pages/AdminVehicles";
 import AdminReports from "./pages/AdminReports";
 import AdminPayments from "./pages/AdminPayments";
 import NotFound from "./pages/NotFound";
-
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -29,6 +29,7 @@ const App = () => (
           <Route path="/inventory" element={<Inventory />} />
           <Route path="/repairs" element={<Repairs />} />
           <Route path="/claims" element={<Claims />} />
+          <Route path="/payments" element={<PaymentPortal />} />
           <Route path="/admin/vehicles" element={<AdminVehicles />} />
           <Route path="/admin/reports" element={<AdminReports />} />
           <Route path="/admin/payments" element={<AdminPayments />} />

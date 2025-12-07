@@ -34,6 +34,12 @@ const Home = () => {
               <span className="font-semibold text-foreground">Injury Claims</span> - We handle non-fault injury claims for car accidents, slip and fall and catastrophic death cases
             </p>
             <div className="flex flex-wrap gap-4">
+              <Link to="/payments">
+                <Button size="lg" className="text-lg px-8 bg-accent hover:bg-accent/90">
+                  <DollarSign className="mr-2 h-5 w-5" />
+                  BHPH
+                </Button>
+              </Link>
               <Link to="/inventory">
                 <Button size="lg" className="text-lg px-8">
                   <Car className="mr-2 h-5 w-5" />
