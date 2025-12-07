@@ -15,6 +15,7 @@ interface InjuryClaimRequest {
   injuryArea: string;
   atFault: string;
   contactNumber: string;
+  attachments?: string[];
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -23,9 +24,21 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { name, address, accidentDate, injuryArea, atFault, contactNumber }: InjuryClaimRequest = await req.json();
+    const { name, address, accidentDate, injuryArea, atFault, contactNumber, attachments }: InjuryClaimRequest = await req.json();
 
     console.log("Processing injury claim for:", name);
+
+    const attachmentsHtml = attachments && attachments.length > 0
+      ? `
+        <h3>Attached Photos/Videos</h3>
+        <ul>
+          ${attachments.map((url, index) => {
+            const isVideo = url.includes('.mp4') || url.includes('.mov') || url.includes('.webm');
+            return `<li><a href="${url}" target="_blank">${isVideo ? 'Video' : 'Photo'} ${index + 1}</a></li>`;
+          }).join('')}
+        </ul>
+      `
+      : '';
 
     const emailResponse = await resend.emails.send({
       from: "Cars & Claims <onboarding@resend.dev>",
@@ -45,6 +58,7 @@ const handler = async (req: Request): Promise<Response> => {
           <li><strong>Area of Bodily Injury:</strong> ${injuryArea}</li>
           <li><strong>Were They At Fault:</strong> ${atFault}</li>
         </ul>
+        ${attachmentsHtml}
       `,
     });
 

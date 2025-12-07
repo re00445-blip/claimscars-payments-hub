@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { FileUpload } from "@/components/FileUpload";
 
 const claimFormSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -24,6 +25,7 @@ const claimFormSchema = z.object({
 const Claims = () => {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
   
   const form = useForm<z.infer<typeof claimFormSchema>>({
     resolver: zodResolver(claimFormSchema),
@@ -41,7 +43,10 @@ const Claims = () => {
     setIsSubmitting(true);
     try {
       const { error } = await supabase.functions.invoke("send-injury-claim", {
-        body: values,
+        body: {
+          ...values,
+          attachments: uploadedFiles,
+        },
       });
 
       if (error) throw error;
@@ -52,6 +57,7 @@ const Claims = () => {
       });
       
       form.reset();
+      setUploadedFiles([]);
     } catch (error) {
       console.error("Error submitting claim:", error);
       toast({
@@ -235,6 +241,15 @@ const Claims = () => {
                 {form.formState.errors.injuryArea && (
                   <p className="text-sm text-destructive">{form.formState.errors.injuryArea.message}</p>
                 )}
+              </div>
+
+              <div className="space-y-2">
+                <Label>Photos/Videos of Injury or Accident (Optional)</Label>
+                <FileUpload
+                  folder="claims"
+                  onFilesChange={setUploadedFiles}
+                  maxFiles={5}
+                />
               </div>
 
               <Button type="submit" size="lg" disabled={isSubmitting} className="w-full md:w-auto">
