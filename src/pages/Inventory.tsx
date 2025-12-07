@@ -3,7 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Navbar } from "@/components/Navbar";
-import { Loader2 } from "lucide-react";
+import { Loader2, Car, DollarSign, Calendar } from "lucide-react";
+import { VehicleImageGallery } from "@/components/VehicleImageGallery";
 
 interface Vehicle {
   id: string;
@@ -66,33 +67,74 @@ const Inventory = () => {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid gap-8">
             {vehicles.map((vehicle) => (
-              <Card key={vehicle.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-                {vehicle.images && vehicle.images.length > 0 && (
-                  <div className="aspect-video bg-muted" />
-                )}
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <CardTitle className="text-xl">
-                      {vehicle.year} {vehicle.make} {vehicle.model}
-                    </CardTitle>
-                    <Badge variant="secondary">{vehicle.color}</Badge>
+              <Card key={vehicle.id} className="overflow-hidden hover:shadow-xl transition-shadow">
+                <div className="grid lg:grid-cols-2 gap-0">
+                  {/* Image Gallery Section */}
+                  <div className="relative">
+                    <VehicleImageGallery 
+                      images={vehicle.images || []} 
+                      vehicleName={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
+                    />
+                    <Badge className="absolute top-4 left-4 z-10 bg-primary text-primary-foreground">
+                      {vehicle.images?.length || 0} Photos
+                    </Badge>
                   </div>
-                  <CardDescription>
-                    {vehicle.mileage?.toLocaleString()} miles
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-                    {vehicle.description}
-                  </p>
-                  <div className="flex items-center justify-between">
-                    <span className="text-2xl font-bold text-primary">
-                      ${vehicle.price.toLocaleString()}
-                    </span>
+
+                  {/* Vehicle Details Section */}
+                  <div className="p-6 flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-start justify-between mb-4">
+                        <div>
+                          <h2 className="text-3xl font-bold text-foreground">
+                            {vehicle.year} {vehicle.make} {vehicle.model}
+                          </h2>
+                          <div className="flex items-center gap-2 mt-2">
+                            <Badge variant="outline" className="text-sm">
+                              {vehicle.color}
+                            </Badge>
+                            <Badge variant="secondary" className="text-sm">
+                              {vehicle.mileage?.toLocaleString()} miles
+                            </Badge>
+                          </div>
+                        </div>
+                      </div>
+
+                      <p className="text-muted-foreground mb-6 text-lg leading-relaxed">
+                        {vehicle.description}
+                      </p>
+                    </div>
+
+                    {/* Pricing Section */}
+                    <div className="space-y-4 border-t pt-6">
+                      <div className="flex items-center gap-3">
+                        <DollarSign className="h-8 w-8 text-primary" />
+                        <div>
+                          <p className="text-sm text-muted-foreground">Out the Door Price</p>
+                          <p className="text-4xl font-bold text-primary">
+                            ${vehicle.price.toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div className="bg-muted/50 rounded-lg p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Calendar className="h-5 w-5 text-primary" />
+                          <span className="font-semibold">Financing Available</span>
+                        </div>
+                        <p className="text-muted-foreground">
+                          Buy Here Pay Here financing with in-house options. Contact us for details on down payment and monthly terms.
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Car className="h-5 w-5" />
+                        <span>Quality Foreign and Domestic Auto's</span>
+                      </div>
+                    </div>
                   </div>
-                </CardContent>
+                </div>
               </Card>
             ))}
           </div>
