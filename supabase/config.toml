@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.send-payment-reminders]
 verify_jwt = false
+
+[functions.send-purchase-application]
+verify_jwt = false
