@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/Navbar";
-import { Loader2, Car, DollarSign, Calendar } from "lucide-react";
+import { Loader2, Car, DollarSign, Calendar, Phone } from "lucide-react";
 import { VehicleImageGallery } from "@/components/VehicleImageGallery";
 
 interface Vehicle {
@@ -80,6 +81,13 @@ const Inventory = () => {
                     <Badge className="absolute top-4 left-4 z-10 bg-primary text-primary-foreground">
                       {vehicle.images?.length || 0} Photos
                     </Badge>
+                    <Button 
+                      className="absolute bottom-4 right-4 z-10" 
+                      onClick={() => window.location.href = 'tel:+1234567890'}
+                    >
+                      <Phone className="h-4 w-4 mr-2" />
+                      Contact Us
+                    </Button>
                   </div>
 
                   {/* Vehicle Details Section */}
