@@ -191,6 +191,65 @@ export type Database = {
         }
         Relationships: []
       }
+      purchase_applications: {
+        Row: {
+          address: string | null
+          created_at: string
+          desired_term_months: number
+          down_payment: number
+          email: string
+          estimated_monthly_payment: number | null
+          full_name: string
+          id: string
+          notes: string | null
+          phone: string
+          status: string
+          updated_at: string
+          user_id: string | null
+          vehicle_id: string | null
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          desired_term_months?: number
+          down_payment?: number
+          email: string
+          estimated_monthly_payment?: number | null
+          full_name: string
+          id?: string
+          notes?: string | null
+          phone: string
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+          vehicle_id?: string | null
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          desired_term_months?: number
+          down_payment?: number
+          email?: string
+          estimated_monthly_payment?: number | null
+          full_name?: string
+          id?: string
+          notes?: string | null
+          phone?: string
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+          vehicle_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_applications_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string | null
