@@ -12,6 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
+import { ImageOff } from "lucide-react";
 
 interface VehicleImageGalleryProps {
   images: string[];
@@ -20,6 +21,11 @@ interface VehicleImageGalleryProps {
 
 export const VehicleImageGallery = ({ images, vehicleName }: VehicleImageGalleryProps) => {
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
+  const [failedImages, setFailedImages] = useState<Set<number>>(new Set());
+
+  const handleImageError = (index: number) => {
+    setFailedImages(prev => new Set(prev).add(index));
+  };
 
   if (!images || images.length === 0) {
     return (
@@ -39,11 +45,19 @@ export const VehicleImageGallery = ({ images, vehicleName }: VehicleImageGallery
                 className="aspect-video bg-muted cursor-pointer overflow-hidden flex items-center justify-center"
                 onClick={() => setSelectedImageIndex(index)}
               >
-                <img
-                  src={image}
-                  alt={`${vehicleName} - Photo ${index + 1}`}
-                  className="max-w-full max-h-full object-contain rotate-90 hover:scale-105 transition-transform duration-300"
-                />
+                {failedImages.has(index) ? (
+                  <div className="flex flex-col items-center text-muted-foreground">
+                    <ImageOff className="h-12 w-12 mb-2" />
+                    <span className="text-sm">Image unavailable</span>
+                  </div>
+                ) : (
+                  <img
+                    src={image}
+                    alt={`${vehicleName} - Photo ${index + 1}`}
+                    className="max-w-full max-h-full object-contain hover:scale-105 transition-transform duration-300"
+                    onError={() => handleImageError(index)}
+                  />
+                )}
               </div>
             </CarouselItem>
           ))}
@@ -64,11 +78,19 @@ export const VehicleImageGallery = ({ images, vehicleName }: VehicleImageGallery
                   {images.map((image, index) => (
                     <CarouselItem key={index}>
                       <div className="flex items-center justify-center min-h-[60vh]">
-                        <img
-                          src={image}
-                          alt={`${vehicleName} - Photo ${index + 1}`}
-                          className="max-w-full max-h-[80vh] object-contain rotate-90"
-                        />
+                        {failedImages.has(index) ? (
+                          <div className="flex flex-col items-center text-white/60">
+                            <ImageOff className="h-16 w-16 mb-2" />
+                            <span>Image unavailable</span>
+                          </div>
+                        ) : (
+                          <img
+                            src={image}
+                            alt={`${vehicleName} - Photo ${index + 1}`}
+                            className="max-w-full max-h-[80vh] object-contain"
+                            onError={() => handleImageError(index)}
+                          />
+                        )}
                       </div>
                     </CarouselItem>
                   ))}
