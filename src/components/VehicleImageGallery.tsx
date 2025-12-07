@@ -42,7 +42,7 @@ export const VehicleImageGallery = ({ images, vehicleName }: VehicleImageGallery
           {images.map((image, index) => (
             <CarouselItem key={index}>
               <div
-                className="aspect-[4/3] bg-muted cursor-pointer overflow-hidden flex items-center justify-center"
+                className="min-h-[300px] max-h-[500px] bg-muted cursor-pointer overflow-hidden flex items-center justify-center p-4"
                 onClick={() => setSelectedImageIndex(index)}
               >
                 {failedImages.has(index) ? (
@@ -54,7 +54,7 @@ export const VehicleImageGallery = ({ images, vehicleName }: VehicleImageGallery
                   <img
                     src={image}
                     alt={`${vehicleName} - Photo ${index + 1}`}
-                    className="max-w-full max-h-full object-contain hover:scale-105 transition-transform duration-300"
+                    className="max-w-full max-h-[480px] w-auto h-auto object-contain hover:scale-105 transition-transform duration-300"
                     onError={() => handleImageError(index)}
                   />
                 )}
