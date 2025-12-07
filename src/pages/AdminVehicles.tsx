@@ -193,37 +193,54 @@ const AdminVehicles = () => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
+    console.log("Starting upload for", files.length, "files");
     setUploading(true);
     const newImages: string[] = [];
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
+      console.log("Processing file:", file.name, file.type, file.size);
       
-      // Compress image before upload
-      const compressedFile = await compressImage(file);
-      
-      const fileExt = file.name.split(".").pop();
-      const fileName = `${Date.now()}-${i}.${fileExt}`;
-      const filePath = `vehicles/${fileName}`;
+      try {
+        // Compress image before upload
+        const compressedFile = await compressImage(file);
+        console.log("Compressed file size:", compressedFile.size);
+        
+        const fileExt = file.name.split(".").pop();
+        const fileName = `${Date.now()}-${i}.${fileExt}`;
+        const filePath = `vehicles/${fileName}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from("vehicle-images")
-        .upload(filePath, compressedFile);
+        console.log("Uploading to path:", filePath);
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from("vehicle-images")
+          .upload(filePath, compressedFile);
 
-      if (uploadError) {
+        console.log("Upload result:", { uploadData, uploadError });
+
+        if (uploadError) {
+          console.error("Upload error details:", uploadError);
+          toast({
+            title: "Upload Error",
+            description: `Failed to upload ${file.name}: ${uploadError.message}`,
+            variant: "destructive",
+          });
+          continue;
+        }
+
+        const { data: urlData } = supabase.storage
+          .from("vehicle-images")
+          .getPublicUrl(filePath);
+
+        console.log("Public URL:", urlData.publicUrl);
+        newImages.push(urlData.publicUrl);
+      } catch (err) {
+        console.error("Exception during upload:", err);
         toast({
           title: "Upload Error",
-          description: `Failed to upload ${file.name}`,
+          description: `Exception while uploading ${file.name}`,
           variant: "destructive",
         });
-        continue;
       }
-
-      const { data: urlData } = supabase.storage
-        .from("vehicle-images")
-        .getPublicUrl(filePath);
-
-      newImages.push(urlData.publicUrl);
     }
 
     setFormData(prev => ({
@@ -232,10 +249,12 @@ const AdminVehicles = () => {
     }));
 
     setUploading(false);
-    toast({
-      title: "Success",
-      description: `${newImages.length} image(s) uploaded and compressed`,
-    });
+    if (newImages.length > 0) {
+      toast({
+        title: "Success",
+        description: `${newImages.length} image(s) uploaded and compressed`,
+      });
+    }
   };
 
   const compressImage = (file: File): Promise<Blob> => {
