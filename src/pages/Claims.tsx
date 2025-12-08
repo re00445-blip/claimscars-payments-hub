@@ -20,6 +20,7 @@ const claimFormSchema = z.object({
   injuryArea: z.string().min(2, "Please describe the area of injury"),
   atFault: z.string().min(1, "Please indicate if you were at fault"),
   contactNumber: z.string().min(10, "Please enter a valid phone number"),
+  referralSource: z.string().optional(),
 });
 
 const Claims = () => {
@@ -36,6 +37,7 @@ const Claims = () => {
       injuryArea: "",
       atFault: "",
       contactNumber: "",
+      referralSource: "",
     },
   });
 
@@ -249,6 +251,15 @@ const Claims = () => {
                   folder="claims"
                   onFilesChange={setUploadedFiles}
                   maxFiles={5}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="referralSource">How Did You Hear About Us? (Optional)</Label>
+                <Input
+                  id="referralSource"
+                  {...form.register("referralSource")}
+                  placeholder="e.g., Friend, Google, Social Media, etc."
                 />
               </div>
 
