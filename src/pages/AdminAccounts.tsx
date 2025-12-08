@@ -242,76 +242,57 @@ const AdminAccounts = () => {
     setSaving(true);
 
     try {
-      let userId = editingAccount?.user_id;
-      let vehicleId = editingAccount?.vehicle_id;
-
-      // For new accounts, we need to create the user and vehicle first
+      // For new accounts, use the edge function to create user properly
       if (!editingAccount) {
-        // Create user via auth signup (or find existing)
-        const { data: authData, error: authError } = await supabase.auth.signUp({
-          email: formData.customer_email,
-          password: Math.random().toString(36).slice(-12), // Generate random password
-          options: {
-            data: {
-              full_name: formData.customer_name,
+        const { data: sessionData } = await supabase.auth.getSession();
+        
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-customer-account`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${sessionData.session?.access_token}`,
             },
-          },
+            body: JSON.stringify({
+              customer_name: formData.customer_name,
+              customer_email: formData.customer_email,
+              customer_phone: formData.customer_phone,
+              customer_address: formData.customer_address,
+              vehicle_year: formData.vehicle_year,
+              vehicle_make: formData.vehicle_make,
+              vehicle_model: formData.vehicle_model,
+              vehicle_vin: formData.vehicle_vin,
+              principal_amount: formData.principal_amount,
+              current_balance: formData.current_balance,
+              interest_rate: formData.interest_rate,
+              payment_amount: formData.payment_amount,
+              next_payment_date: formData.next_payment_date,
+              late_fee_amount: formData.late_fee_amount,
+              status: formData.status,
+              payment_frequency: formData.payment_frequency,
+            }),
+          }
+        );
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result.error || "Failed to create account");
+        }
+
+        // Show credentials if generated
+        let description = "Account created successfully";
+        if (result.generatedEmail || result.generatedPassword) {
+          description = `Account created! ${result.generatedEmail ? `Email: ${result.generatedEmail}` : ""} ${result.generatedPassword ? `Password: ${result.generatedPassword}` : ""}`;
+        }
+
+        toast({
+          title: "Success",
+          description,
         });
-
-        if (authError && !authError.message.includes("already registered")) {
-          throw new Error(`Failed to create user: ${authError.message}`);
-        }
-
-        // If user already exists, find their profile
-        if (authError?.message.includes("already registered")) {
-          const { data: existingProfile } = await supabase
-            .from("profiles")
-            .select("id")
-            .eq("email", formData.customer_email)
-            .maybeSingle();
-          
-          if (existingProfile) {
-            userId = existingProfile.id;
-          } else {
-            throw new Error("User exists but profile not found");
-          }
-        } else if (authData?.user) {
-          userId = authData.user.id;
-          
-          // Update profile with additional info
-          await supabase
-            .from("profiles")
-            .update({
-              full_name: formData.customer_name,
-              phone: formData.customer_phone,
-              address: formData.customer_address,
-            })
-            .eq("id", userId);
-        }
-
-        // Create vehicle if info provided
-        if (formData.vehicle_year && formData.vehicle_make && formData.vehicle_model) {
-          const { data: vehicleData, error: vehicleError } = await supabase
-            .from("vehicles")
-            .insert({
-              year: parseInt(formData.vehicle_year),
-              make: formData.vehicle_make,
-              model: formData.vehicle_model,
-              vin: formData.vehicle_vin || `MANUAL-${Date.now()}`,
-              price: formData.principal_amount,
-              status: "sold",
-            })
-            .select()
-            .single();
-
-          if (vehicleError) {
-            console.error("Vehicle creation error:", vehicleError);
-          } else {
-            vehicleId = vehicleData.id;
-          }
-        }
       } else {
-        // For editing, update the profile
+        // For editing, update the profile and account directly
         await supabase
           .from("profiles")
           .update({
@@ -320,48 +301,33 @@ const AdminAccounts = () => {
             address: formData.customer_address,
           })
           .eq("id", editingAccount.user_id);
-      }
 
-      if (!userId) {
-        throw new Error("Could not determine user ID");
-      }
+        const accountData = {
+          principal_amount: formData.principal_amount,
+          current_balance: formData.current_balance,
+          interest_rate: formData.interest_rate,
+          payment_amount: formData.payment_amount,
+          next_payment_date: formData.next_payment_date,
+          late_fee_amount: formData.late_fee_amount,
+          status: formData.status,
+          payment_frequency: formData.payment_frequency,
+        };
 
-      const accountData = {
-        user_id: userId,
-        vehicle_id: vehicleId || null,
-        principal_amount: formData.principal_amount,
-        current_balance: formData.current_balance,
-        interest_rate: formData.interest_rate,
-        payment_amount: formData.payment_amount,
-        next_payment_date: formData.next_payment_date,
-        late_fee_amount: formData.late_fee_amount,
-        status: formData.status,
-        payment_frequency: formData.payment_frequency,
-      };
-
-      let error;
-
-      if (editingAccount) {
         const { error: updateError } = await supabase
           .from("customer_accounts")
           .update(accountData)
           .eq("id", editingAccount.id);
-        error = updateError;
-      } else {
-        const { error: insertError } = await supabase
-          .from("customer_accounts")
-          .insert(accountData);
-        error = insertError;
+
+        if (updateError) {
+          throw updateError;
+        }
+
+        toast({
+          title: "Success",
+          description: "Account updated successfully",
+        });
       }
 
-      if (error) {
-        throw error;
-      }
-
-      toast({
-        title: "Success",
-        description: `Account ${editingAccount ? "updated" : "created"} successfully`,
-      });
       fetchData();
       setIsDialogOpen(false);
       resetForm();
