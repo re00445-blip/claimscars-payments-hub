@@ -124,6 +124,23 @@ const Dashboard = () => {
 
         {isAdmin && (
           <>
+            {/* User Management */}
+            <Card className="mb-6 border-primary/50">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  User Management
+                </CardTitle>
+                <CardDescription>Manage user accounts and admin permissions</CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-wrap gap-4">
+                <Button onClick={() => navigate("/admin/users")}>
+                  <Users className="mr-2 h-4 w-4" />
+                  Manage Users
+                </Button>
+              </CardContent>
+            </Card>
+
             {/* Vehicle Management */}
             <Card className="mb-6 border-primary/50">
               <CardHeader>
