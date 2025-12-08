@@ -328,7 +328,7 @@ const PaymentPortal = () => {
 
             <TabsContent value="overview" className="space-y-6">
               {/* Account Summary */}
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <div className="grid gap-4 md:grid-cols-3">
                 <Card>
                   <CardHeader className="pb-2">
                     <CardDescription>Current Balance</CardDescription>
@@ -355,12 +355,6 @@ const PaymentPortal = () => {
                         }
                       </Badge>
                     )}
-                  </CardHeader>
-                </Card>
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardDescription>Interest Rate</CardDescription>
-                    <CardTitle className="text-3xl">{account.interest_rate}%</CardTitle>
                   </CardHeader>
                 </Card>
               </div>
