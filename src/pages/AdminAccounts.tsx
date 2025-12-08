@@ -57,36 +57,28 @@ interface CustomerAccount {
   };
 }
 
-interface Profile {
-  id: string;
-  full_name: string | null;
-  email: string;
-  phone: string | null;
-}
-
-interface Vehicle {
-  id: string;
-  year: number;
-  make: string;
-  model: string;
-  price: number;
-}
-
 const AdminAccounts = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [accounts, setAccounts] = useState<CustomerAccount[]>([]);
-  const [profiles, setProfiles] = useState<Profile[]>([]);
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState<CustomerAccount | null>(null);
   const [saving, setSaving] = useState(false);
 
   const [formData, setFormData] = useState({
-    user_id: "",
-    vehicle_id: "",
+    // Customer info (manual entry)
+    customer_name: "",
+    customer_email: "",
+    customer_phone: "",
+    customer_address: "",
+    // Vehicle info (manual entry)
+    vehicle_year: "",
+    vehicle_make: "",
+    vehicle_model: "",
+    vehicle_vin: "",
+    // Account details
     principal_amount: 0,
     current_balance: 0,
     interest_rate: 18,
@@ -136,7 +128,6 @@ const AdminAccounts = () => {
   };
 
   const fetchData = async () => {
-    // Fetch accounts
     const { data: accountsData } = await supabase
       .from("customer_accounts")
       .select("*")
@@ -166,32 +157,18 @@ const AdminAccounts = () => {
       );
       setAccounts(accountsWithDetails);
     }
-
-    // Fetch profiles for dropdown
-    const { data: profilesData } = await supabase
-      .from("profiles")
-      .select("id, full_name, email, phone")
-      .order("full_name");
-    
-    if (profilesData) {
-      setProfiles(profilesData);
-    }
-
-    // Fetch vehicles for dropdown
-    const { data: vehiclesData } = await supabase
-      .from("vehicles")
-      .select("id, year, make, model, price")
-      .order("year", { ascending: false });
-    
-    if (vehiclesData) {
-      setVehicles(vehiclesData);
-    }
   };
 
   const resetForm = () => {
     setFormData({
-      user_id: "",
-      vehicle_id: "",
+      customer_name: "",
+      customer_email: "",
+      customer_phone: "",
+      customer_address: "",
+      vehicle_year: "",
+      vehicle_make: "",
+      vehicle_model: "",
+      vehicle_vin: "",
       principal_amount: 0,
       current_balance: 0,
       interest_rate: 18,
@@ -207,8 +184,14 @@ const AdminAccounts = () => {
   const handleEdit = (account: CustomerAccount) => {
     setEditingAccount(account);
     setFormData({
-      user_id: account.user_id,
-      vehicle_id: account.vehicle_id || "",
+      customer_name: account.profile?.full_name || "",
+      customer_email: account.profile?.email || "",
+      customer_phone: account.profile?.phone || "",
+      customer_address: "",
+      vehicle_year: account.vehicle?.year?.toString() || "",
+      vehicle_make: account.vehicle?.make || "",
+      vehicle_model: account.vehicle?.model || "",
+      vehicle_vin: "",
       principal_amount: account.principal_amount,
       current_balance: account.current_balance,
       interest_rate: account.interest_rate,
@@ -221,24 +204,10 @@ const AdminAccounts = () => {
     setIsDialogOpen(true);
   };
 
-  const handleVehicleSelect = (vehicleId: string) => {
-    const vehicle = vehicles.find(v => v.id === vehicleId);
-    if (vehicle && !editingAccount) {
-      setFormData(prev => ({
-        ...prev,
-        vehicle_id: vehicleId,
-        principal_amount: vehicle.price,
-        current_balance: vehicle.price,
-      }));
-    } else {
-      setFormData(prev => ({ ...prev, vehicle_id: vehicleId }));
-    }
-  };
-
   const calculateMonthlyPayment = () => {
     const principal = formData.principal_amount;
     const rate = formData.interest_rate / 100 / 12;
-    const months = 36; // Default term
+    const months = 36;
     
     if (principal > 0 && rate > 0) {
       const payment = (principal * rate * Math.pow(1 + rate, months)) / (Math.pow(1 + rate, months) - 1);
@@ -250,41 +219,123 @@ const AdminAccounts = () => {
     e.preventDefault();
     setSaving(true);
 
-    const accountData = {
-      user_id: formData.user_id,
-      vehicle_id: formData.vehicle_id || null,
-      principal_amount: formData.principal_amount,
-      current_balance: formData.current_balance,
-      interest_rate: formData.interest_rate,
-      payment_amount: formData.payment_amount,
-      next_payment_date: formData.next_payment_date,
-      late_fee_amount: formData.late_fee_amount,
-      status: formData.status,
-      payment_frequency: formData.payment_frequency,
-    };
+    try {
+      let userId = editingAccount?.user_id;
+      let vehicleId = editingAccount?.vehicle_id;
 
-    let error;
+      // For new accounts, we need to create the user and vehicle first
+      if (!editingAccount) {
+        // Create user via auth signup (or find existing)
+        const { data: authData, error: authError } = await supabase.auth.signUp({
+          email: formData.customer_email,
+          password: Math.random().toString(36).slice(-12), // Generate random password
+          options: {
+            data: {
+              full_name: formData.customer_name,
+            },
+          },
+        });
 
-    if (editingAccount) {
-      const { error: updateError } = await supabase
-        .from("customer_accounts")
-        .update(accountData)
-        .eq("id", editingAccount.id);
-      error = updateError;
-    } else {
-      const { error: insertError } = await supabase
-        .from("customer_accounts")
-        .insert(accountData);
-      error = insertError;
-    }
+        if (authError && !authError.message.includes("already registered")) {
+          throw new Error(`Failed to create user: ${authError.message}`);
+        }
 
-    if (error) {
-      toast({
-        title: "Error",
-        description: `Failed to ${editingAccount ? "update" : "create"} account: ${error.message}`,
-        variant: "destructive",
-      });
-    } else {
+        // If user already exists, find their profile
+        if (authError?.message.includes("already registered")) {
+          const { data: existingProfile } = await supabase
+            .from("profiles")
+            .select("id")
+            .eq("email", formData.customer_email)
+            .maybeSingle();
+          
+          if (existingProfile) {
+            userId = existingProfile.id;
+          } else {
+            throw new Error("User exists but profile not found");
+          }
+        } else if (authData?.user) {
+          userId = authData.user.id;
+          
+          // Update profile with additional info
+          await supabase
+            .from("profiles")
+            .update({
+              full_name: formData.customer_name,
+              phone: formData.customer_phone,
+              address: formData.customer_address,
+            })
+            .eq("id", userId);
+        }
+
+        // Create vehicle if info provided
+        if (formData.vehicle_year && formData.vehicle_make && formData.vehicle_model) {
+          const { data: vehicleData, error: vehicleError } = await supabase
+            .from("vehicles")
+            .insert({
+              year: parseInt(formData.vehicle_year),
+              make: formData.vehicle_make,
+              model: formData.vehicle_model,
+              vin: formData.vehicle_vin || `MANUAL-${Date.now()}`,
+              price: formData.principal_amount,
+              status: "sold",
+            })
+            .select()
+            .single();
+
+          if (vehicleError) {
+            console.error("Vehicle creation error:", vehicleError);
+          } else {
+            vehicleId = vehicleData.id;
+          }
+        }
+      } else {
+        // For editing, update the profile
+        await supabase
+          .from("profiles")
+          .update({
+            full_name: formData.customer_name,
+            phone: formData.customer_phone,
+            address: formData.customer_address,
+          })
+          .eq("id", editingAccount.user_id);
+      }
+
+      if (!userId) {
+        throw new Error("Could not determine user ID");
+      }
+
+      const accountData = {
+        user_id: userId,
+        vehicle_id: vehicleId || null,
+        principal_amount: formData.principal_amount,
+        current_balance: formData.current_balance,
+        interest_rate: formData.interest_rate,
+        payment_amount: formData.payment_amount,
+        next_payment_date: formData.next_payment_date,
+        late_fee_amount: formData.late_fee_amount,
+        status: formData.status,
+        payment_frequency: formData.payment_frequency,
+      };
+
+      let error;
+
+      if (editingAccount) {
+        const { error: updateError } = await supabase
+          .from("customer_accounts")
+          .update(accountData)
+          .eq("id", editingAccount.id);
+        error = updateError;
+      } else {
+        const { error: insertError } = await supabase
+          .from("customer_accounts")
+          .insert(accountData);
+        error = insertError;
+      }
+
+      if (error) {
+        throw error;
+      }
+
       toast({
         title: "Success",
         description: `Account ${editingAccount ? "updated" : "created"} successfully`,
@@ -292,6 +343,12 @@ const AdminAccounts = () => {
       fetchData();
       setIsDialogOpen(false);
       resetForm();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || `Failed to ${editingAccount ? "update" : "create"} account`,
+        variant: "destructive",
+      });
     }
 
     setSaving(false);
@@ -371,163 +428,222 @@ const AdminAccounts = () => {
               <DialogHeader>
                 <DialogTitle>{editingAccount ? "Edit" : "Create"} BHPH Account</DialogTitle>
                 <DialogDescription>
-                  {editingAccount ? "Update account details and interest rates" : "Set up a new customer financing account"}
+                  {editingAccount ? "Update account details and interest rates" : "Enter customer and vehicle information manually"}
                 </DialogDescription>
               </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="user">Customer *</Label>
-                    <Select
-                      value={formData.user_id}
-                      onValueChange={(value) => setFormData(prev => ({ ...prev, user_id: value }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select customer" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {profiles.map((profile) => (
-                          <SelectItem key={profile.id} value={profile.id}>
-                            {profile.full_name || profile.email}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="vehicle">Vehicle</Label>
-                    <Select
-                      value={formData.vehicle_id}
-                      onValueChange={handleVehicleSelect}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select vehicle" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {vehicles.map((vehicle) => (
-                          <SelectItem key={vehicle.id} value={vehicle.id}>
-                            {vehicle.year} {vehicle.make} {vehicle.model} - {formatCurrency(vehicle.price)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="principal">Principal Amount ($) *</Label>
-                    <Input
-                      id="principal"
-                      type="number"
-                      step="0.01"
-                      value={formData.principal_amount}
-                      onChange={(e) => setFormData(prev => ({ ...prev, principal_amount: parseFloat(e.target.value) || 0 }))}
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="balance">Current Balance ($) *</Label>
-                    <Input
-                      id="balance"
-                      type="number"
-                      step="0.01"
-                      value={formData.current_balance}
-                      onChange={(e) => setFormData(prev => ({ ...prev, current_balance: parseFloat(e.target.value) || 0 }))}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="interest">Interest Rate (%) *</Label>
-                    <Input
-                      id="interest"
-                      type="number"
-                      step="0.01"
-                      value={formData.interest_rate}
-                      onChange={(e) => setFormData(prev => ({ ...prev, interest_rate: parseFloat(e.target.value) || 0 }))}
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="payment">Monthly Payment ($) *</Label>
-                    <div className="flex gap-2">
+              <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Customer Information Section */}
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-lg border-b pb-2">Customer Information</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="customer_name">Full Name *</Label>
                       <Input
-                        id="payment"
-                        type="number"
-                        step="0.01"
-                        value={formData.payment_amount}
-                        onChange={(e) => setFormData(prev => ({ ...prev, payment_amount: parseFloat(e.target.value) || 0 }))}
+                        id="customer_name"
+                        value={formData.customer_name}
+                        onChange={(e) => setFormData(prev => ({ ...prev, customer_name: e.target.value }))}
+                        placeholder="John Doe"
                         required
                       />
-                      <Button type="button" variant="outline" size="sm" onClick={calculateMonthlyPayment}>
-                        Calc
-                      </Button>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="customer_email">Email *</Label>
+                      <Input
+                        id="customer_email"
+                        type="email"
+                        value={formData.customer_email}
+                        onChange={(e) => setFormData(prev => ({ ...prev, customer_email: e.target.value }))}
+                        placeholder="john@example.com"
+                        required
+                        disabled={!!editingAccount}
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="customer_phone">Phone *</Label>
+                      <Input
+                        id="customer_phone"
+                        value={formData.customer_phone}
+                        onChange={(e) => setFormData(prev => ({ ...prev, customer_phone: e.target.value }))}
+                        placeholder="(555) 123-4567"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="customer_address">Address</Label>
+                      <Input
+                        id="customer_address"
+                        value={formData.customer_address}
+                        onChange={(e) => setFormData(prev => ({ ...prev, customer_address: e.target.value }))}
+                        placeholder="123 Main St, City, State"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Vehicle Information Section */}
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-lg border-b pb-2">Vehicle Information</h3>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="vehicle_year">Year</Label>
+                      <Input
+                        id="vehicle_year"
+                        value={formData.vehicle_year}
+                        onChange={(e) => setFormData(prev => ({ ...prev, vehicle_year: e.target.value }))}
+                        placeholder="2020"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="vehicle_make">Make</Label>
+                      <Input
+                        id="vehicle_make"
+                        value={formData.vehicle_make}
+                        onChange={(e) => setFormData(prev => ({ ...prev, vehicle_make: e.target.value }))}
+                        placeholder="Toyota"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="vehicle_model">Model</Label>
+                      <Input
+                        id="vehicle_model"
+                        value={formData.vehicle_model}
+                        onChange={(e) => setFormData(prev => ({ ...prev, vehicle_model: e.target.value }))}
+                        placeholder="Camry"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="vehicle_vin">VIN (Optional)</Label>
+                    <Input
+                      id="vehicle_vin"
+                      value={formData.vehicle_vin}
+                      onChange={(e) => setFormData(prev => ({ ...prev, vehicle_vin: e.target.value }))}
+                      placeholder="1HGBH41JXMN109186"
+                    />
+                  </div>
+                </div>
+
+                {/* Financing Details Section */}
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-lg border-b pb-2">Financing Details</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="principal">Principal Amount ($) *</Label>
+                      <Input
+                        id="principal"
+                        type="number"
+                        step="0.01"
+                        value={formData.principal_amount}
+                        onChange={(e) => {
+                          const value = parseFloat(e.target.value) || 0;
+                          setFormData(prev => ({ 
+                            ...prev, 
+                            principal_amount: value,
+                            current_balance: editingAccount ? prev.current_balance : value
+                          }));
+                        }}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="balance">Current Balance ($) *</Label>
+                      <Input
+                        id="balance"
+                        type="number"
+                        step="0.01"
+                        value={formData.current_balance}
+                        onChange={(e) => setFormData(prev => ({ ...prev, current_balance: parseFloat(e.target.value) || 0 }))}
+                        required
+                      />
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="lateFee">Late Fee ($)</Label>
-                    <Input
-                      id="lateFee"
-                      type="number"
-                      step="0.01"
-                      value={formData.late_fee_amount}
-                      onChange={(e) => setFormData(prev => ({ ...prev, late_fee_amount: parseFloat(e.target.value) || 0 }))}
-                    />
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="interest">Interest Rate (%) *</Label>
+                      <Input
+                        id="interest"
+                        type="number"
+                        step="0.01"
+                        value={formData.interest_rate}
+                        onChange={(e) => setFormData(prev => ({ ...prev, interest_rate: parseFloat(e.target.value) || 0 }))}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="payment">Monthly Payment ($) *</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          id="payment"
+                          type="number"
+                          step="0.01"
+                          value={formData.payment_amount}
+                          onChange={(e) => setFormData(prev => ({ ...prev, payment_amount: parseFloat(e.target.value) || 0 }))}
+                          required
+                        />
+                        <Button type="button" variant="outline" size="sm" onClick={calculateMonthlyPayment}>
+                          Calc
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="lateFee">Late Fee ($)</Label>
+                      <Input
+                        id="lateFee"
+                        type="number"
+                        step="0.01"
+                        value={formData.late_fee_amount}
+                        onChange={(e) => setFormData(prev => ({ ...prev, late_fee_amount: parseFloat(e.target.value) || 0 }))}
+                      />
+                    </div>
                   </div>
-                </div>
 
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="nextPayment">Next Payment Date *</Label>
-                    <Input
-                      id="nextPayment"
-                      type="date"
-                      value={formData.next_payment_date}
-                      onChange={(e) => setFormData(prev => ({ ...prev, next_payment_date: e.target.value }))}
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="frequency">Payment Frequency</Label>
-                    <Select
-                      value={formData.payment_frequency}
-                      onValueChange={(value) => setFormData(prev => ({ ...prev, payment_frequency: value }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="weekly">Weekly</SelectItem>
-                        <SelectItem value="bi-weekly">Bi-Weekly</SelectItem>
-                        <SelectItem value="monthly">Monthly</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="status">Status</Label>
-                    <Select
-                      value={formData.status}
-                      onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="active">Active</SelectItem>
-                        <SelectItem value="paid_off">Paid Off</SelectItem>
-                        <SelectItem value="delinquent">Delinquent</SelectItem>
-                        <SelectItem value="repossessed">Repossessed</SelectItem>
-                      </SelectContent>
-                    </Select>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="nextPayment">Next Payment Date *</Label>
+                      <Input
+                        id="nextPayment"
+                        type="date"
+                        value={formData.next_payment_date}
+                        onChange={(e) => setFormData(prev => ({ ...prev, next_payment_date: e.target.value }))}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="frequency">Payment Frequency</Label>
+                      <Select
+                        value={formData.payment_frequency}
+                        onValueChange={(value) => setFormData(prev => ({ ...prev, payment_frequency: value }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="weekly">Weekly</SelectItem>
+                          <SelectItem value="bi-weekly">Bi-Weekly</SelectItem>
+                          <SelectItem value="monthly">Monthly</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="status">Status</Label>
+                      <Select
+                        value={formData.status}
+                        onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="active">Active</SelectItem>
+                          <SelectItem value="paid_off">Paid Off</SelectItem>
+                          <SelectItem value="delinquent">Delinquent</SelectItem>
+                          <SelectItem value="repossessed">Repossessed</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 </div>
 
