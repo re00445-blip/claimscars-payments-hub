@@ -74,6 +74,7 @@ export type Database = {
         Row: {
           accident_date: string
           address: string | null
+          agreement_amount: number | null
           assigned_to: string | null
           at_fault: string
           attachments: string[] | null
@@ -84,12 +85,14 @@ export type Database = {
           injury_area: string
           notes: string | null
           phone: string
+          referral_source: string | null
           status: string
           updated_at: string
         }
         Insert: {
           accident_date: string
           address?: string | null
+          agreement_amount?: number | null
           assigned_to?: string | null
           at_fault: string
           attachments?: string[] | null
@@ -100,12 +103,14 @@ export type Database = {
           injury_area: string
           notes?: string | null
           phone: string
+          referral_source?: string | null
           status?: string
           updated_at?: string
         }
         Update: {
           accident_date?: string
           address?: string | null
+          agreement_amount?: number | null
           assigned_to?: string | null
           at_fault?: string
           attachments?: string[] | null
@@ -116,6 +121,7 @@ export type Database = {
           injury_area?: string
           notes?: string | null
           phone?: string
+          referral_source?: string | null
           status?: string
           updated_at?: string
         }

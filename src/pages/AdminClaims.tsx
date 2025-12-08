@@ -47,6 +47,8 @@ interface InjuryClaim {
   status: string;
   notes: string | null;
   assigned_to: string | null;
+  referral_source: string | null;
+  agreement_amount: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -82,6 +84,8 @@ const AdminClaims = () => {
     at_fault: "no",
     status: "new",
     notes: "",
+    referral_source: "",
+    agreement_amount: "",
   });
 
   useEffect(() => {
@@ -151,6 +155,8 @@ const AdminClaims = () => {
       at_fault: "no",
       status: "new",
       notes: "",
+      referral_source: "",
+      agreement_amount: "",
     });
     setEditingClaim(null);
   };
@@ -167,6 +173,8 @@ const AdminClaims = () => {
       at_fault: claim.at_fault,
       status: claim.status,
       notes: claim.notes || "",
+      referral_source: claim.referral_source || "",
+      agreement_amount: claim.agreement_amount?.toString() || "",
     });
     setIsDialogOpen(true);
   };
@@ -185,6 +193,8 @@ const AdminClaims = () => {
       at_fault: formData.at_fault,
       status: formData.status,
       notes: formData.notes || null,
+      referral_source: formData.referral_source || null,
+      agreement_amount: formData.agreement_amount ? parseFloat(formData.agreement_amount) : null,
     };
 
     let error;
@@ -424,6 +434,30 @@ const AdminClaims = () => {
                       ))}
                     </SelectContent>
                   </Select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="referral_source">Referral Source</Label>
+                    <Input
+                      id="referral_source"
+                      value={formData.referral_source}
+                      onChange={(e) => setFormData(prev => ({ ...prev, referral_source: e.target.value }))}
+                      placeholder="Enter referral name"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="agreement_amount">Agreement Amount ($)</Label>
+                    <Input
+                      id="agreement_amount"
+                      type="number"
+                      step="0.01"
+                      value={formData.agreement_amount}
+                      onChange={(e) => setFormData(prev => ({ ...prev, agreement_amount: e.target.value }))}
+                      placeholder="0.00"
+                    />
+                  </div>
                 </div>
 
                 <div className="space-y-2">
