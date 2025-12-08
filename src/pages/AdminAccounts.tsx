@@ -217,6 +217,17 @@ const AdminAccounts = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate that at least phone or email is provided
+    if (!formData.customer_phone && !formData.customer_email) {
+      toast({
+        title: "Validation Error",
+        description: "Please provide either a phone number or email address",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setSaving(true);
 
     try {
@@ -447,27 +458,25 @@ const AdminAccounts = () => {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="customer_email">Email *</Label>
+                      <Label htmlFor="customer_email">Email {!formData.customer_phone && "*"}</Label>
                       <Input
                         id="customer_email"
                         type="email"
                         value={formData.customer_email}
                         onChange={(e) => setFormData(prev => ({ ...prev, customer_email: e.target.value }))}
                         placeholder="john@example.com"
-                        required
                         disabled={!!editingAccount}
                       />
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="customer_phone">Phone *</Label>
+                      <Label htmlFor="customer_phone">Phone {!formData.customer_email && "*"}</Label>
                       <Input
                         id="customer_phone"
                         value={formData.customer_phone}
                         onChange={(e) => setFormData(prev => ({ ...prev, customer_phone: e.target.value }))}
                         placeholder="(555) 123-4567"
-                        required
                       />
                     </div>
                     <div className="space-y-2">
@@ -480,6 +489,7 @@ const AdminAccounts = () => {
                       />
                     </div>
                   </div>
+                  <p className="text-xs text-muted-foreground">* Phone or Email required (at least one)</p>
                 </div>
 
                 {/* Vehicle Information Section */}
