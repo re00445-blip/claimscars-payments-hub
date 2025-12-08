@@ -5,7 +5,7 @@ import { User, Session } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Navbar } from "@/components/Navbar";
-import { Loader2, DollarSign, Car, FileText } from "lucide-react";
+import { Loader2, DollarSign, Car, FileText, Users, ClipboardList, Settings, UserPlus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const Dashboard = () => {
@@ -123,26 +123,74 @@ const Dashboard = () => {
         </div>
 
         {isAdmin && (
-          <Card className="mb-8 border-primary/50">
-            <CardHeader>
-              <CardTitle>Admin Actions</CardTitle>
-              <CardDescription>Manage vehicles, accounts, and payments</CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-wrap gap-4">
-              <Button onClick={() => navigate("/admin/vehicles")}>
-                <Car className="mr-2 h-4 w-4" />
-                Manage Vehicles
-              </Button>
-              <Button variant="outline" onClick={() => navigate("/admin/payments")}>
-                <DollarSign className="mr-2 h-4 w-4" />
-                Record Payments
-              </Button>
-              <Button variant="outline" onClick={() => navigate("/admin/reports")}>
-                <FileText className="mr-2 h-4 w-4" />
-                View Reports
-              </Button>
-            </CardContent>
-          </Card>
+          <>
+            {/* Vehicle Management */}
+            <Card className="mb-6 border-primary/50">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Car className="h-5 w-5" />
+                  Vehicle Management
+                </CardTitle>
+                <CardDescription>Manage vehicle inventory</CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-wrap gap-4">
+                <Button onClick={() => navigate("/admin/vehicles")}>
+                  <Car className="mr-2 h-4 w-4" />
+                  Manage Vehicles
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* BHPH Account Management */}
+            <Card className="mb-6 border-accent/50">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <DollarSign className="h-5 w-5" />
+                  BHPH Account Management
+                </CardTitle>
+                <CardDescription>Add accounts, set interest rates, and manage payments</CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-wrap gap-4">
+                <Button onClick={() => navigate("/admin/accounts")}>
+                  <UserPlus className="mr-2 h-4 w-4" />
+                  Add BHPH Account
+                </Button>
+                <Button variant="outline" onClick={() => navigate("/admin/accounts")}>
+                  <Settings className="mr-2 h-4 w-4" />
+                  Edit Accounts / Interest Rates
+                </Button>
+                <Button variant="outline" onClick={() => navigate("/admin/payments")}>
+                  <DollarSign className="mr-2 h-4 w-4" />
+                  Record Payments
+                </Button>
+                <Button variant="outline" onClick={() => navigate("/admin/reports")}>
+                  <FileText className="mr-2 h-4 w-4" />
+                  Payment Reports
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Claims Portal Management */}
+            <Card className="mb-6 border-secondary/50">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <ClipboardList className="h-5 w-5" />
+                  Claims Portal
+                </CardTitle>
+                <CardDescription>Add new claim users and track claim progress</CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-wrap gap-4">
+                <Button onClick={() => navigate("/admin/claims")}>
+                  <UserPlus className="mr-2 h-4 w-4" />
+                  Add New Claim User
+                </Button>
+                <Button variant="outline" onClick={() => navigate("/admin/claims")}>
+                  <ClipboardList className="mr-2 h-4 w-4" />
+                  Track Claim Progress
+                </Button>
+              </CardContent>
+            </Card>
+          </>
         )}
 
         <Card>
