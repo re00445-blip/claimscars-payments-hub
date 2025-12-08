@@ -1,10 +1,13 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { Resend } from "https://esm.sh/resend@4.0.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -127,6 +130,33 @@ serve(async (req) => {
       if (profileError) {
         console.error("Profile upsert error:", profileError);
       }
+
+      // Send credentials via email to the customer (only if they have a real email)
+      if (customer_email && customer_email.includes('@') && !customer_email.endsWith('@customer.local')) {
+        try {
+          await resend.emails.send({
+            from: "Cars & Claims <onboarding@resend.dev>",
+            to: [customer_email],
+            subject: "Your Cars & Claims Account Credentials",
+            html: `
+              <h2>Welcome to Cars &amp; Claims!</h2>
+              <p>Hello ${customer_name},</p>
+              <p>Your account has been created. Here are your login credentials:</p>
+              <ul>
+                <li><strong>Email:</strong> ${email}</li>
+                <li><strong>Temporary Password:</strong> ${password}</li>
+              </ul>
+              <p><strong>Important:</strong> Please change your password after your first login for security purposes.</p>
+              <p>You can access your account at the payment portal to view your balance and payment history.</p>
+              <p>Thank you for choosing Cars &amp; Claims!</p>
+            `,
+          });
+          console.log("Credentials sent to customer via email");
+        } catch (emailError) {
+          console.error("Failed to send credentials email:", emailError);
+          // Don't fail the whole operation if email fails
+        }
+      }
     }
 
     // Create vehicle if info provided
@@ -172,13 +202,20 @@ serve(async (req) => {
       throw new Error(`Failed to create account: ${accountError.message}`);
     }
 
+    // Return success without exposing password in response
     return new Response(
       JSON.stringify({ 
         success: true, 
         account: accountData,
         userId,
         generatedEmail: !customer_email ? email : undefined,
-        generatedPassword: isNewUser ? password : undefined
+        // Password is sent via email, not returned in response for security
+        credentialsSent: isNewUser && customer_email && !customer_email.endsWith('@customer.local'),
+        message: isNewUser 
+          ? (customer_email && !customer_email.endsWith('@customer.local') 
+              ? "Account created. Login credentials sent to customer's email." 
+              : "Account created. Please provide credentials to customer manually.")
+          : "Account updated for existing user."
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

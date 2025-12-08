@@ -4,7 +4,7 @@ import { Resend } from "https://esm.sh/resend@4.0.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-cron-secret",
 };
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -13,6 +13,7 @@ const resendApiKey = Deno.env.get("RESEND_API_KEY");
 const twilioAccountSid = Deno.env.get("TWILIO_ACCOUNT_SID");
 const twilioAuthToken = Deno.env.get("TWILIO_AUTH_TOKEN");
 const twilioPhoneNumber = Deno.env.get("TWILIO_PHONE_NUMBER");
+const cronSecret = Deno.env.get("CRON_SECRET");
 
 const resend = new Resend(resendApiKey);
 
@@ -34,6 +35,18 @@ interface AccountWithProfile {
     make: string;
     model: string;
   } | null;
+}
+
+// Helper function to escape HTML special characters
+function escapeHtml(text: string): string {
+  const htmlEntities: Record<string, string> = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  };
+  return text.replace(/[&<>"']/g, (char) => htmlEntities[char] || char);
 }
 
 async function sendSms(to: string, message: string): Promise<boolean> {
@@ -101,6 +114,49 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    // Verify authorization - either via cron secret or JWT
+    const cronSecretHeader = req.headers.get("x-cron-secret");
+    const authHeader = req.headers.get("Authorization");
+    
+    // Check cron secret first (for scheduled jobs)
+    if (cronSecret && cronSecretHeader === cronSecret) {
+      console.log("Authorized via cron secret");
+    } else if (authHeader) {
+      // Verify JWT token for admin users
+      const supabaseAuth = createClient(supabaseUrl, supabaseServiceKey);
+      const token = authHeader.replace("Bearer ", "");
+      const { data: { user }, error: authError } = await supabaseAuth.auth.getUser(token);
+      
+      if (authError || !user) {
+        console.error("Auth error:", authError);
+        return new Response(
+          JSON.stringify({ error: "Unauthorized" }),
+          { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+      
+      // Check if user is admin
+      const { data: roleData } = await supabaseAuth
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .eq("role", "admin")
+        .maybeSingle();
+      
+      if (!roleData) {
+        return new Response(
+          JSON.stringify({ error: "Admin access required" }),
+          { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+      console.log("Authorized via admin JWT");
+    } else {
+      return new Response(
+        JSON.stringify({ error: "Authorization required" }),
+        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -171,9 +227,9 @@ const handler = async (req: Request): Promise<Response> => {
       let smsMessage = "";
 
       const vehicleInfo = account.vehicles 
-        ? `${account.vehicles.year} ${account.vehicles.make} ${account.vehicles.model}` 
+        ? `${account.vehicles.year} ${escapeHtml(account.vehicles.make)} ${escapeHtml(account.vehicles.model)}` 
         : "your vehicle";
-      const customerName = profile.full_name || "Valued Customer";
+      const customerName = escapeHtml(profile.full_name || "Valued Customer");
       const formattedBalance = new Intl.NumberFormat("en-US", {
         style: "currency",
         currency: "USD",
@@ -199,7 +255,7 @@ const handler = async (req: Request): Promise<Response> => {
           <p>This is a friendly reminder that your payment of <strong>${formattedPayment}</strong> for ${vehicleInfo} is due in <strong>7 days</strong> on ${formattedDate}.</p>
           <p><strong>Current Balance:</strong> ${formattedBalance}</p>
           <p>Thank you for your business!</p>
-          <p>- Cars & Claims</p>
+          <p>- Cars &amp; Claims</p>
         `;
         smsMessage = `Cars & Claims: Your payment of ${formattedPayment} for ${vehicleInfo} is due in 7 days on ${formattedDate}. Balance: ${formattedBalance}`;
       } else if (paymentDate.getTime() === threeDaysBefore.getTime()) {
@@ -211,7 +267,7 @@ const handler = async (req: Request): Promise<Response> => {
           <p>Your payment of <strong>${formattedPayment}</strong> for ${vehicleInfo} is due in <strong>3 days</strong> on ${formattedDate}.</p>
           <p><strong>Current Balance:</strong> ${formattedBalance}</p>
           <p>Please ensure your payment is made on time to avoid late fees.</p>
-          <p>- Cars & Claims</p>
+          <p>- Cars &amp; Claims</p>
         `;
         smsMessage = `Cars & Claims: Payment of ${formattedPayment} due in 3 days on ${formattedDate}. Balance: ${formattedBalance}. Pay on time to avoid late fees.`;
       } else if (paymentDate.getTime() === oneDayLate.getTime()) {
@@ -230,7 +286,7 @@ const handler = async (req: Request): Promise<Response> => {
           <p><strong>Current Balance:</strong> ${formattedBalance}</p>
           <p style="color: #dc2626;"><strong>A late fee of ${formattedLateFee} may be applied to your account.</strong></p>
           <p>Please make your payment as soon as possible to avoid additional fees.</p>
-          <p>- Cars & Claims</p>
+          <p>- Cars &amp; Claims</p>
         `;
         smsMessage = `OVERDUE: Cars & Claims payment of ${formattedPayment} was due ${formattedDate}. Late fee of ${formattedLateFee} may apply. Please pay ASAP.`;
       }
