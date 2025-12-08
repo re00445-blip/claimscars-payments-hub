@@ -82,6 +82,7 @@ const AdminAccounts = () => {
     principal_amount: 0,
     current_balance: 0,
     interest_rate: 18,
+    interest_rate_type: "percentage" as "percentage" | "fixed", // percentage or fixed dollar
     payment_amount: 0,
     next_payment_date: "",
     late_fee_amount: 25,
@@ -172,6 +173,7 @@ const AdminAccounts = () => {
       principal_amount: 0,
       current_balance: 0,
       interest_rate: 18,
+      interest_rate_type: "percentage",
       payment_amount: 0,
       next_payment_date: "",
       late_fee_amount: 25,
@@ -195,6 +197,7 @@ const AdminAccounts = () => {
       principal_amount: account.principal_amount,
       current_balance: account.current_balance,
       interest_rate: account.interest_rate,
+      interest_rate_type: "percentage", // Default to percentage when editing existing accounts
       payment_amount: account.payment_amount,
       next_payment_date: account.next_payment_date,
       late_fee_amount: account.late_fee_amount || 25,
@@ -206,12 +209,20 @@ const AdminAccounts = () => {
 
   const calculateMonthlyPayment = () => {
     const principal = formData.principal_amount;
-    const rate = formData.interest_rate / 100 / 12;
     const months = 36;
     
-    if (principal > 0 && rate > 0) {
-      const payment = (principal * rate * Math.pow(1 + rate, months)) / (Math.pow(1 + rate, months) - 1);
+    if (formData.interest_rate_type === "fixed") {
+      // Fixed dollar amount per month - just add to principal and divide
+      const totalInterest = formData.interest_rate * months;
+      const payment = (principal + totalInterest) / months;
       setFormData(prev => ({ ...prev, payment_amount: Math.round(payment * 100) / 100 }));
+    } else {
+      // Percentage rate calculation
+      const rate = formData.interest_rate / 100 / 12;
+      if (principal > 0 && rate > 0) {
+        const payment = (principal * rate * Math.pow(1 + rate, months)) / (Math.pow(1 + rate, months) - 1);
+        setFormData(prev => ({ ...prev, payment_amount: Math.round(payment * 100) / 100 }));
+      }
     }
   };
 
@@ -570,9 +581,26 @@ const AdminAccounts = () => {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-4 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="interest">Interest Rate (%) *</Label>
+                      <Label htmlFor="interest_type">Interest Type *</Label>
+                      <Select
+                        value={formData.interest_rate_type}
+                        onValueChange={(value: "percentage" | "fixed") => setFormData(prev => ({ ...prev, interest_rate_type: value }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="percentage">% per Year</SelectItem>
+                          <SelectItem value="fixed">$ per Month</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="interest">
+                        {formData.interest_rate_type === "percentage" ? "Interest Rate (%)" : "Interest ($/mo)"} *
+                      </Label>
                       <Input
                         id="interest"
                         type="number"
