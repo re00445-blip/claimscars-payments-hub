@@ -2,8 +2,38 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Car, Scale, User, Wrench } from "lucide-react";
 import logo from "@/assets/cars-claims-logo.png";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Navbar = () => {
+  const [userName, setUserName] = useState<string | null>(null);
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (session?.user) {
+          const name = session.user.user_metadata?.full_name || 
+                       session.user.email?.split('@')[0] || 
+                       'Account';
+          setUserName(name);
+        } else {
+          setUserName(null);
+        }
+      }
+    );
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        const name = session.user.user_metadata?.full_name || 
+                     session.user.email?.split('@')[0] || 
+                     'Account';
+        setUserName(name);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
   return (
     <nav className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="w-full px-4">
@@ -39,10 +69,10 @@ export const Navbar = () => {
 
           {/* Right side - Get Started on mobile, Login + Get Started on desktop */}
           <div className="flex items-center gap-3 z-10">
-            <Link to="/auth" className="hidden md:block">
+            <Link to={userName ? "/dashboard" : "/auth"} className="hidden md:block">
               <Button variant="ghost" size="sm">
                 <User className="h-4 w-4 mr-2" />
-                Login
+                {userName || "Login"}
               </Button>
             </Link>
             <Link to="/auth">
