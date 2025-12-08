@@ -70,6 +70,57 @@ export type Database = {
           },
         ]
       }
+      injury_claims: {
+        Row: {
+          accident_date: string
+          address: string | null
+          assigned_to: string | null
+          at_fault: string
+          attachments: string[] | null
+          created_at: string
+          email: string | null
+          full_name: string
+          id: string
+          injury_area: string
+          notes: string | null
+          phone: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          accident_date: string
+          address?: string | null
+          assigned_to?: string | null
+          at_fault: string
+          attachments?: string[] | null
+          created_at?: string
+          email?: string | null
+          full_name: string
+          id?: string
+          injury_area: string
+          notes?: string | null
+          phone: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          accident_date?: string
+          address?: string | null
+          assigned_to?: string | null
+          at_fault?: string
+          attachments?: string[] | null
+          created_at?: string
+          email?: string | null
+          full_name?: string
+          id?: string
+          injury_area?: string
+          notes?: string | null
+          phone?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       payment_reminders: {
         Row: {
           account_id: string
