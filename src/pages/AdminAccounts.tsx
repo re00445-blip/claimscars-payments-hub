@@ -66,6 +66,7 @@ const AdminAccounts = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState<CustomerAccount | null>(null);
   const [saving, setSaving] = useState(false);
+  const [interestViewType, setInterestViewType] = useState<"percentage" | "dollar">("percentage");
 
   const [formData, setFormData] = useState({
     // Customer info (manual entry)
@@ -681,7 +682,15 @@ const AdminAccounts = () => {
                       <TableHead>Customer</TableHead>
                       <TableHead>Vehicle</TableHead>
                       <TableHead>Balance</TableHead>
-                      <TableHead>Interest</TableHead>
+                      <TableHead>
+                        <button 
+                          onClick={() => setInterestViewType(prev => prev === "percentage" ? "dollar" : "percentage")}
+                          className="flex items-center gap-1 hover:text-primary transition-colors"
+                        >
+                          Interest ({interestViewType === "percentage" ? "%" : "$/mo"})
+                          <span className="text-xs text-muted-foreground">↔</span>
+                        </button>
+                      </TableHead>
                       <TableHead>Payment</TableHead>
                       <TableHead>Next Due</TableHead>
                       <TableHead>Status</TableHead>
@@ -704,7 +713,12 @@ const AdminAccounts = () => {
                           }
                         </TableCell>
                         <TableCell>{formatCurrency(account.current_balance)}</TableCell>
-                        <TableCell>{account.interest_rate}%</TableCell>
+                        <TableCell>
+                          {interestViewType === "percentage" 
+                            ? `${account.interest_rate}%`
+                            : formatCurrency(account.interest_rate)
+                          }
+                        </TableCell>
                         <TableCell>{formatCurrency(account.payment_amount)}</TableCell>
                         <TableCell>{new Date(account.next_payment_date).toLocaleDateString()}</TableCell>
                         <TableCell>
