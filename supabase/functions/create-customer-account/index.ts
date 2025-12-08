@@ -72,13 +72,17 @@ serve(async (req) => {
     const password = crypto.randomUUID().slice(0, 12);
 
     // Check if user already exists by email
-    const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
-    const existingUser = existingUsers?.users?.find(u => u.email === email);
+    const { data: existingProfile } = await supabaseAdmin
+      .from("profiles")
+      .select("id")
+      .eq("email", email)
+      .maybeSingle();
 
     let userId: string;
+    let isNewUser = false;
 
-    if (existingUser) {
-      userId = existingUser.id;
+    if (existingProfile) {
+      userId = existingProfile.id;
       // Update existing profile
       await supabaseAdmin
         .from("profiles")
@@ -104,16 +108,25 @@ serve(async (req) => {
       }
 
       userId = newUser.user.id;
+      isNewUser = true;
 
-      // Update profile with additional info
-      await supabaseAdmin
+      // Wait briefly for trigger to create profile
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Upsert profile to ensure it exists with correct data
+      const { error: profileError } = await supabaseAdmin
         .from("profiles")
-        .update({
+        .upsert({
+          id: userId,
+          email: email,
           full_name: customer_name,
           phone: customer_phone,
           address: customer_address,
-        })
-        .eq("id", userId);
+        }, { onConflict: 'id' });
+
+      if (profileError) {
+        console.error("Profile upsert error:", profileError);
+      }
     }
 
     // Create vehicle if info provided
@@ -165,7 +178,7 @@ serve(async (req) => {
         account: accountData,
         userId,
         generatedEmail: !customer_email ? email : undefined,
-        generatedPassword: !existingUser ? password : undefined
+        generatedPassword: isNewUser ? password : undefined
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
