@@ -627,7 +627,7 @@ const AdminAccounts = () => {
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="lateFee">Late Fee ($)</Label>
+                      <Label htmlFor="lateFee">Late Fee ($/day)</Label>
                       <Input
                         id="lateFee"
                         type="number"
