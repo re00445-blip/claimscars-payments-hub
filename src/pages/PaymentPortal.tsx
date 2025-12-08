@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Navbar } from "@/components/Navbar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,9 +10,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Calculator, CreditCard, History, DollarSign, Calendar, AlertCircle } from "lucide-react";
+import { Calculator, CreditCard, History, DollarSign, Calendar, AlertCircle, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 import type { User, Session } from "@supabase/supabase-js";
+import { PaymentMethodsSection } from "@/components/PaymentMethodsSection";
 
 interface CustomerAccount {
   id: string;
@@ -44,11 +45,29 @@ interface Payment {
 
 const PaymentPortal = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [account, setAccount] = useState<CustomerAccount | null>(null);
   const [payments, setPayments] = useState<Payment[]>([]);
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+
+  // Check for payment success/cancel from Stripe redirect
+  useEffect(() => {
+    const success = searchParams.get("success");
+    const canceled = searchParams.get("canceled");
+    
+    if (success === "true") {
+      setShowSuccessMessage(true);
+      toast.success("Payment initiated successfully! Your account will be updated shortly.");
+      // Clear the URL params
+      window.history.replaceState({}, "", "/payments");
+    } else if (canceled === "true") {
+      toast.info("Payment was canceled");
+      window.history.replaceState({}, "", "/payments");
+    }
+  }, [searchParams]);
   
   // Calculator state
   const [calcPrincipal, setCalcPrincipal] = useState("");
@@ -376,27 +395,36 @@ const PaymentPortal = () => {
                 </Card>
               )}
 
-              {/* Make Payment Card */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <CreditCard className="h-5 w-5" />
-                    Make a Payment
-                  </CardTitle>
-                  <CardDescription>
-                    Contact us to make a payment or visit our location
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="bg-muted/50 rounded-lg p-4 text-center">
-                    <p className="text-muted-foreground mb-2">
-                      For online payments or payment arrangements, please contact us:
-                    </p>
-                    <p className="font-semibold">Cars & Claims</p>
-                    <p className="text-sm text-muted-foreground">Visit our dealership for in-person payments</p>
-                  </div>
-                </CardContent>
-              </Card>
+              {/* Success Message */}
+              {showSuccessMessage && (
+                <Card className="border-green-500 bg-green-50 dark:bg-green-950/20">
+                  <CardContent className="py-4 flex items-center gap-3">
+                    <CheckCircle className="h-5 w-5 text-green-600" />
+                    <div>
+                      <p className="font-medium text-green-800 dark:text-green-200">Payment Initiated!</p>
+                      <p className="text-sm text-green-700 dark:text-green-300">
+                        Your payment is being processed. Your account balance will be updated shortly.
+                      </p>
+                    </div>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="ml-auto"
+                      onClick={() => setShowSuccessMessage(false)}
+                    >
+                      Dismiss
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Make Payment Section */}
+              <PaymentMethodsSection
+                accountId={account.id}
+                currentBalance={account.current_balance}
+                paymentAmount={account.payment_amount}
+                onPaymentSuccess={fetchAccountData}
+              />
             </TabsContent>
 
             <TabsContent value="history">
