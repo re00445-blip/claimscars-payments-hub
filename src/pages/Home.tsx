@@ -27,27 +27,27 @@ const Home = () => {
             <p className="text-xl text-muted-foreground mb-8">
               Your trusted marketing partner for vehicle sales, financing and non-fault injury and property damage claims
             </p>
-            <div className="flex flex-wrap gap-4">
+            <div className="flex flex-col sm:flex-row gap-3">
               <Link to="/inventory">
-                <Button size="lg" className="text-lg px-8">
+                <Button size="lg" className="text-base px-6">
                   <Car className="mr-2 h-5 w-5" />
                   View Inventory
                 </Button>
               </Link>
               <Link to="/claims">
-                <Button size="lg" variant="outline" className="text-lg px-8">
+                <Button size="lg" variant="outline" className="text-base px-6">
                   <Scale className="mr-2 h-5 w-5" />
                   Injury Claims
                 </Button>
               </Link>
               <Link to="/repairs">
-                <Button size="lg" variant="outline" className="text-lg px-8">
+                <Button size="lg" variant="outline" className="text-base px-6">
                   <Wrench className="mr-2 h-5 w-5" />
                   Car Repairs
                 </Button>
               </Link>
               <Link to="/payments">
-                <Button size="lg" className="text-lg px-8 bg-accent hover:bg-accent/90">
+                <Button size="lg" className="text-base px-6 bg-accent hover:bg-accent/90">
                   <DollarSign className="mr-2 h-5 w-5" />
                   BHPH
                 </Button>
