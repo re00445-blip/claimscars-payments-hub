@@ -221,11 +221,17 @@ const AdminPayments = () => {
     }
   };
 
+  const generateInvoiceNumber = (paymentId: string, date: string) => {
+    const dateStr = new Date(date).toISOString().split('T')[0].replace(/-/g, '');
+    return `INV-${dateStr}-${paymentId.slice(0, 6).toUpperCase()}`;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
 
     const { data: { user } } = await supabase.auth.getUser();
+    const paymentDate = new Date().toISOString();
 
     const paymentData = {
       account_id: formData.account_id,
@@ -236,7 +242,7 @@ const AdminPayments = () => {
       payment_method: formData.payment_method,
       notes: formData.notes || null,
       created_by: user?.id || null,
-      payment_date: new Date().toISOString(),
+      payment_date: paymentDate,
     };
 
     const { data: newPayment, error } = await supabase
@@ -266,12 +272,46 @@ const AdminPayments = () => {
             next_payment_date: nextPaymentDate.toISOString().split('T')[0],
           })
           .eq("id", account.id);
-      }
 
-      toast({
-        title: "Success",
-        description: "Payment recorded successfully",
-      });
+        // Send receipt email
+        const invoiceNumber = generateInvoiceNumber(newPayment.id, paymentDate);
+        try {
+          await supabase.functions.invoke('send-payment-receipt', {
+            body: {
+              paymentId: newPayment.id,
+              customerName: account.profile?.full_name || 'Customer',
+              customerEmail: account.profile?.email || '',
+              vehicleInfo: account.vehicle 
+                ? `${account.vehicle.year} ${account.vehicle.make} ${account.vehicle.model}` 
+                : 'N/A',
+              paymentDate: new Date(paymentDate).toLocaleDateString(),
+              invoiceNumber,
+              principalPaid: formData.principal_paid,
+              interestPaid: formData.interest_paid,
+              lateFeePaid: formData.late_fee_paid || 0,
+              totalAmount: formData.amount,
+              paymentMethod: formData.payment_method || 'Cash',
+              remainingBalance: Math.max(0, newBalance),
+              notes: formData.notes || undefined,
+            },
+          });
+          toast({
+            title: "Success",
+            description: "Payment recorded and receipt sent to customer",
+          });
+        } catch (emailError) {
+          console.error("Failed to send receipt email:", emailError);
+          toast({
+            title: "Success",
+            description: "Payment recorded (email notification failed)",
+          });
+        }
+      } else {
+        toast({
+          title: "Success",
+          description: "Payment recorded successfully",
+        });
+      }
       
       // Show receipt
       const paymentWithAccount = {
@@ -292,66 +332,70 @@ const AdminPayments = () => {
   const generateReceiptHTML = (payment: Payment) => {
     const account = accounts.find(a => a.id === payment.account_id);
     const date = new Date(payment.payment_date).toLocaleDateString();
+    const invoiceNumber = generateInvoiceNumber(payment.id, payment.payment_date);
     
     return `
-      <div style="font-family: Arial, sans-serif; max-width: 400px; margin: 0 auto; padding: 20px; border: 1px solid #ccc;">
-        <div style="text-align: center; margin-bottom: 20px;">
-          <h2 style="margin: 0;">Cars & Claims</h2>
-          <p style="margin: 5px 0; color: #666;">Quality Foreign and Domestic Auto's</p>
-          <p style="margin: 5px 0; font-size: 12px; color: #888;">Payment Receipt</p>
+      <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px;">
+        <div style="text-align: center; border-bottom: 2px solid #22c55e; padding-bottom: 15px; margin-bottom: 20px;">
+          <h1 style="color: #1a1a1a; margin: 0; font-size: 24px;">Quality Foreign Domestic Autos</h1>
+          <p style="color: #666; margin: 5px 0 0 0;">Professional Auto Sales & Service</p>
         </div>
         
-        <hr style="border: none; border-top: 1px dashed #ccc; margin: 15px 0;">
+        <div style="text-align: center; margin-bottom: 20px;">
+          <h2 style="color: #22c55e; margin: 0;">PAYMENT RECEIPT</h2>
+          <p style="color: #666; margin: 5px 0;">Invoice #${invoiceNumber}</p>
+          <p style="color: #666; margin: 5px 0;">Date: ${date}</p>
+        </div>
         
-        <div style="margin-bottom: 15px;">
-          <p style="margin: 5px 0;"><strong>Date:</strong> ${date}</p>
-          <p style="margin: 5px 0;"><strong>Receipt #:</strong> ${payment.id.slice(0, 8).toUpperCase()}</p>
-          <p style="margin: 5px 0;"><strong>Customer:</strong> ${account?.profile?.full_name || 'N/A'}</p>
+        <div style="margin-bottom: 20px;">
+          <h3 style="border-bottom: 1px solid #eee; padding-bottom: 5px; color: #333;">Customer Information</h3>
+          <p style="margin: 5px 0;"><strong>Name:</strong> ${account?.profile?.full_name || 'N/A'}</p>
           ${account?.vehicle ? `<p style="margin: 5px 0;"><strong>Vehicle:</strong> ${account.vehicle.year} ${account.vehicle.make} ${account.vehicle.model}</p>` : ''}
         </div>
         
-        <hr style="border: none; border-top: 1px dashed #ccc; margin: 15px 0;">
-        
-        <div style="margin-bottom: 15px;">
-          <div style="display: flex; justify-content: space-between; margin: 5px 0;">
+        <div style="margin-bottom: 20px;">
+          <h3 style="border-bottom: 1px solid #eee; padding-bottom: 5px; color: #333;">Service Details</h3>
+          <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f0f0f0;">
             <span>Principal Payment:</span>
             <span>$${payment.principal_paid.toFixed(2)}</span>
           </div>
-          <div style="display: flex; justify-content: space-between; margin: 5px 0;">
+          <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f0f0f0;">
             <span>Interest Payment:</span>
             <span>$${payment.interest_paid.toFixed(2)}</span>
           </div>
           ${payment.late_fee_paid && payment.late_fee_paid > 0 ? `
-          <div style="display: flex; justify-content: space-between; margin: 5px 0;">
+          <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f0f0f0;">
             <span>Late Fee:</span>
             <span>$${payment.late_fee_paid.toFixed(2)}</span>
           </div>
           ` : ''}
+          <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f0f0f0;">
+            <span>Payment Method:</span>
+            <span>${payment.payment_method || 'Cash'}</span>
+          </div>
         </div>
         
-        <hr style="border: none; border-top: 2px solid #000; margin: 15px 0;">
-        
-        <div style="display: flex; justify-content: space-between; font-size: 18px; font-weight: bold;">
-          <span>TOTAL PAID:</span>
-          <span>$${payment.amount.toFixed(2)}</span>
+        <div style="background: #22c55e; color: white; padding: 15px; border-radius: 8px; margin: 20px 0;">
+          <div style="display: flex; justify-content: space-between; font-size: 18px; font-weight: bold;">
+            <span>TOTAL PAID:</span>
+            <span>$${payment.amount.toFixed(2)}</span>
+          </div>
         </div>
-        
-        <hr style="border: none; border-top: 1px dashed #ccc; margin: 15px 0;">
         
         <div style="margin-bottom: 15px;">
-          <p style="margin: 5px 0;"><strong>Payment Method:</strong> ${payment.payment_method || 'Cash'}</p>
           ${account ? `<p style="margin: 5px 0;"><strong>Remaining Balance:</strong> $${(account.current_balance - payment.principal_paid).toFixed(2)}</p>` : ''}
         </div>
         
         ${payment.notes ? `
         <div style="margin-top: 15px; padding: 10px; background: #f5f5f5; border-radius: 5px;">
-          <p style="margin: 0; font-size: 12px;"><strong>Notes:</strong> ${payment.notes}</p>
+          <p style="margin: 0; font-size: 14px;"><strong>Notes:</strong> ${payment.notes}</p>
         </div>
         ` : ''}
         
-        <div style="text-align: center; margin-top: 20px; font-size: 12px; color: #888;">
-          <p>Thank you for your payment!</p>
-          <p>Questions? Contact us at qfda90@gmail.com</p>
+        <div style="text-align: center; margin-top: 25px; color: #666;">
+          <h3 style="color: #22c55e; margin-bottom: 10px;">Thank You for Your Business!</h3>
+          <p style="margin: 5px 0; font-size: 14px;">We appreciate your trust in Quality Foreign Domestic Autos.</p>
+          <p style="margin: 15px 0 5px 0; font-size: 12px;">Contact: 470-519-6717 | ramon@carsandclaims.com</p>
         </div>
       </div>
     `;
