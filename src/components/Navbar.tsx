@@ -75,8 +75,8 @@ export const Navbar = () => {
                 {userName || "Login"}
               </Button>
             </Link>
-            <Link to="/auth">
-              <Button size="sm">Get Started</Button>
+            <Link to={userName ? "/dashboard" : "/auth"}>
+              <Button size="sm">{userName ? "Dashboard" : "Get Started"}</Button>
             </Link>
           </div>
         </div>
