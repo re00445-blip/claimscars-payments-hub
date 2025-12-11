@@ -61,10 +61,10 @@ export const Navbar = () => {
 
           {/* Center - Logo */}
           <Link to="/" className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center justify-center">
-            <div className="hidden md:block text-xs text-muted-foreground mb-0.5">
+            <img src={logo} alt="Cars and Claims" className="h-10 md:h-12 w-auto object-contain scale-x-125" />
+            <div className="hidden md:block text-xs text-muted-foreground mt-0.5">
               Quality Foreign and Domestic Auto's
             </div>
-            <img src={logo} alt="Cars and Claims" className="h-10 md:h-12 w-auto object-contain scale-x-125" />
           </Link>
 
           {/* Right side - Get Started on mobile, Login + Get Started on desktop */}
