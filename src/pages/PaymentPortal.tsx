@@ -57,11 +57,40 @@ const PaymentPortal = () => {
   useEffect(() => {
     const success = searchParams.get("success");
     const canceled = searchParams.get("canceled");
+    const sessionId = searchParams.get("session_id");
     
-    if (success === "true") {
+    if (success === "true" && sessionId) {
+      // Verify the payment and record it
+      const verifyPayment = async () => {
+        try {
+          const { data, error } = await supabase.functions.invoke("verify-stripe-payment", {
+            body: { sessionId },
+          });
+          
+          if (error) {
+            console.error("Payment verification error:", error);
+            toast.error("Payment received but verification pending. Please contact us if your balance doesn't update.");
+          } else if (data?.alreadyRecorded) {
+            toast.info("This payment was already recorded.");
+          } else {
+            toast.success("Payment successful! Receipt sent to your email.");
+            // Refresh account data to show updated balance
+            fetchAccountData();
+          }
+        } catch (err) {
+          console.error("Payment verification error:", err);
+          toast.error("Payment received but verification pending.");
+        }
+        
+        setShowSuccessMessage(true);
+        // Clear the URL params
+        window.history.replaceState({}, "", "/payments");
+      };
+      
+      verifyPayment();
+    } else if (success === "true") {
       setShowSuccessMessage(true);
-      toast.success("Payment initiated successfully! Your account will be updated shortly.");
-      // Clear the URL params
+      toast.success("Payment initiated successfully!");
       window.history.replaceState({}, "", "/payments");
     } else if (canceled === "true") {
       toast.info("Payment was canceled");
