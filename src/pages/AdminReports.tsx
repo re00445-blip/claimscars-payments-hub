@@ -5,8 +5,10 @@ import { User, Session } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Navbar } from "@/components/Navbar";
-import { Loader2, ArrowLeft, Car, DollarSign, TrendingUp, Users } from "lucide-react";
+import { Loader2, ArrowLeft, Car, DollarSign, TrendingUp, Users, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 interface VehicleStats {
   total: number;
@@ -20,6 +22,17 @@ interface PaymentStats {
   totalPayments: number;
   totalAmount: number;
   thisMonth: number;
+}
+
+interface OverdueAccount {
+  id: string;
+  customerName: string;
+  customerEmail: string;
+  currentBalance: number;
+  paymentAmount: number;
+  nextPaymentDate: string;
+  daysOverdue: number;
+  vehicleInfo: string;
 }
 
 const AdminReports = () => {
@@ -41,6 +54,7 @@ const AdminReports = () => {
   });
   const [recentVehicles, setRecentVehicles] = useState<any[]>([]);
   const [recentPayments, setRecentPayments] = useState<any[]>([]);
+  const [overdueAccounts, setOverdueAccounts] = useState<OverdueAccount[]>([]);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -68,6 +82,7 @@ const AdminReports = () => {
   useEffect(() => {
     if (isAdmin) {
       fetchStats();
+      fetchOverdueAccounts();
     }
   }, [isAdmin]);
 
@@ -124,6 +139,77 @@ const AdminReports = () => {
       setPaymentStats(stats);
       setRecentPayments(payments.slice(0, 5));
     }
+  };
+
+  const fetchOverdueAccounts = async () => {
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Fetch accounts with past due dates
+    const { data: accounts, error } = await supabase
+      .from("customer_accounts")
+      .select(`
+        id,
+        user_id,
+        current_balance,
+        payment_amount,
+        next_payment_date,
+        vehicle_id,
+        status,
+        vehicles (year, make, model)
+      `)
+      .eq("status", "active")
+      .lt("next_payment_date", today);
+
+    if (error) {
+      console.error("Error fetching overdue accounts:", error);
+      return;
+    }
+
+    if (!accounts || accounts.length === 0) {
+      setOverdueAccounts([]);
+      return;
+    }
+
+    // Fetch profiles for customer names
+    const userIds = accounts.map(a => a.user_id);
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id, full_name, email")
+      .in("id", userIds);
+
+    const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+
+    const overdueList: OverdueAccount[] = accounts.map(account => {
+      const profile = profileMap.get(account.user_id);
+      const nextPaymentDate = new Date(account.next_payment_date);
+      const todayDate = new Date();
+      const daysOverdue = Math.floor((todayDate.getTime() - nextPaymentDate.getTime()) / (1000 * 60 * 60 * 24));
+      
+      const vehicle = account.vehicles as { year: number; make: string; model: string } | null;
+      const vehicleInfo = vehicle ? `${vehicle.year} ${vehicle.make} ${vehicle.model}` : "N/A";
+
+      return {
+        id: account.id,
+        customerName: profile?.full_name || "Unknown",
+        customerEmail: profile?.email || "",
+        currentBalance: account.current_balance,
+        paymentAmount: account.payment_amount,
+        nextPaymentDate: account.next_payment_date,
+        daysOverdue,
+        vehicleInfo,
+      };
+    });
+
+    // Sort by days overdue (most overdue first)
+    overdueList.sort((a, b) => b.daysOverdue - a.daysOverdue);
+    setOverdueAccounts(overdueList);
+  };
+
+  const getOverdueStatus = (days: number) => {
+    if (days >= 30) return { label: "Severely Overdue", variant: "destructive" as const };
+    if (days >= 14) return { label: "Overdue", variant: "destructive" as const };
+    if (days >= 7) return { label: "Past Due", variant: "secondary" as const };
+    return { label: "Recently Due", variant: "outline" as const };
   };
 
   if (loading) {
@@ -197,15 +283,70 @@ const AdminReports = () => {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">This Month</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium">Overdue Accounts</CardTitle>
+              <AlertTriangle className="h-4 w-4 text-destructive" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">${paymentStats.thisMonth.toLocaleString()}</div>
-              <p className="text-xs text-muted-foreground mt-1">Payments collected</p>
+              <div className="text-2xl font-bold text-destructive">{overdueAccounts.length}</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                ${overdueAccounts.reduce((sum, a) => sum + a.paymentAmount, 0).toLocaleString()} pending
+              </p>
             </CardContent>
           </Card>
         </div>
+
+        {/* Overdue Accounts Section */}
+        {overdueAccounts.length > 0 && (
+          <Card className="mb-8 border-destructive/50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-destructive">
+                <AlertTriangle className="h-5 w-5" />
+                Overdue & Unpaid Accounts
+              </CardTitle>
+              <CardDescription>
+                Accounts with past due payments requiring attention
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Customer</TableHead>
+                    <TableHead>Vehicle</TableHead>
+                    <TableHead>Payment Due</TableHead>
+                    <TableHead>Due Date</TableHead>
+                    <TableHead>Days Overdue</TableHead>
+                    <TableHead>Balance</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {overdueAccounts.map((account) => {
+                    const status = getOverdueStatus(account.daysOverdue);
+                    return (
+                      <TableRow key={account.id}>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium">{account.customerName}</div>
+                            <div className="text-xs text-muted-foreground">{account.customerEmail}</div>
+                          </div>
+                        </TableCell>
+                        <TableCell>{account.vehicleInfo}</TableCell>
+                        <TableCell className="font-medium">${account.paymentAmount.toLocaleString()}</TableCell>
+                        <TableCell>{new Date(account.nextPaymentDate).toLocaleDateString()}</TableCell>
+                        <TableCell className="text-destructive font-medium">{account.daysOverdue} days</TableCell>
+                        <TableCell>${account.currentBalance.toLocaleString()}</TableCell>
+                        <TableCell>
+                          <Badge variant={status.variant}>{status.label}</Badge>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Vehicle Status Breakdown */}
         <div className="grid md:grid-cols-2 gap-6">
