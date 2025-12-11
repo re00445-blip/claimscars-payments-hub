@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/Navbar";
+import { Footer } from "@/components/Footer";
 import { Loader2, Car, DollarSign, Calendar, Phone } from "lucide-react";
 import { VehicleImageGallery } from "@/components/VehicleImageGallery";
 import { PurchaseIntakeDialog } from "@/components/PurchaseIntakeDialog";
@@ -142,6 +143,8 @@ const Inventory = () => {
         onOpenChange={setIntakeDialogOpen}
         vehicle={selectedVehicle}
       />
+
+      <Footer />
     </div>
   );
 };
