@@ -3,7 +3,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Car, Scale, DollarSign, FileText, Clock, Shield, Wrench } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Navbar } from "@/components/Navbar";
+import { Footer } from "@/components/Footer";
 import heroImage from "@/assets/hero-cars.jpg";
+import carsClaimsLogo from "@/assets/cars-claims-logo-new.jpg";
 
 const Home = () => {
   return (
@@ -21,9 +23,11 @@ const Home = () => {
         
         <div className="container relative z-10 px-4">
           <div className="max-w-2xl">
-            <h1 className="text-5xl md:text-6xl font-bold mb-6 text-primary">
-              Cars & Claims
-            </h1>
+            <img 
+              src={carsClaimsLogo} 
+              alt="Cars & Claims Logo" 
+              className="h-32 md:h-40 w-auto mb-6"
+            />
             <p className="text-xl text-muted-foreground mb-8">
               Your trusted marketing partner for vehicle sales, financing and non-fault injury and property damage claims
             </p>
@@ -176,16 +180,7 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t py-12 bg-muted/30">
-        <div className="container px-4">
-          <div className="text-center text-muted-foreground">
-            <p className="font-semibold text-foreground mb-1">Cars & Claims | Quality Foreign and Domestic auto's</p>
-            <p className="text-sm">Professional and hassle free car sale process</p>
-            <p>&copy; 2025 All rights reserved.</p>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 };
