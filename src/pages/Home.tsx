@@ -23,11 +23,9 @@ const Home = () => {
         
         <div className="container relative z-10 px-4">
           <div className="max-w-2xl">
-            <img 
-              src={carsClaimsLogo} 
-              alt="Cars & Claims Logo" 
-              className="h-32 md:h-40 w-auto mb-6"
-            />
+            <h1 className="text-5xl md:text-6xl font-bold mb-6 text-primary">
+              Cars & Claims
+            </h1>
             <p className="text-xl text-muted-foreground mb-8">
               Your trusted marketing partner for vehicle sales, financing and non-fault injury and property damage claims
             </p>

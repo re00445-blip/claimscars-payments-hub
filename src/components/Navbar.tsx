@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Car, Scale, User, Wrench } from "lucide-react";
-import logo from "@/assets/cars-claims-logo.png";
+import logo from "@/assets/cars-claims-logo-new.jpg";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
