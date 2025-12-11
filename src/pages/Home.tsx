@@ -21,7 +21,7 @@ const Home = () => {
         
         <div className="container relative z-10 px-4">
           <div className="max-w-2xl">
-            <h1 className="text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+            <h1 className="text-5xl md:text-6xl font-bold mb-6 text-primary">
               Cars & Claims
             </h1>
             <p className="text-xl text-muted-foreground mb-8">
@@ -29,25 +29,25 @@ const Home = () => {
             </p>
             <div className="flex flex-col sm:flex-row gap-3">
               <Link to="/inventory">
-                <Button size="lg" className="text-base px-6">
+                <Button size="lg" className="text-base px-6 bg-primary hover:bg-primary/90">
                   <Car className="mr-2 h-5 w-5" />
                   View Inventory
                 </Button>
               </Link>
               <Link to="/claims">
-                <Button size="lg" variant="outline" className="text-base px-6">
+                <Button size="lg" className="text-base px-6 bg-primary hover:bg-primary/90">
                   <Scale className="mr-2 h-5 w-5" />
                   Injury Claims
                 </Button>
               </Link>
               <Link to="/repairs">
-                <Button size="lg" variant="outline" className="text-base px-6">
+                <Button size="lg" className="text-base px-6 bg-primary hover:bg-primary/90">
                   <Wrench className="mr-2 h-5 w-5" />
                   Car Repairs
                 </Button>
               </Link>
               <Link to="/payments">
-                <Button size="lg" className="text-base px-6 bg-accent hover:bg-accent/90">
+                <Button size="lg" className="text-base px-6 bg-primary hover:bg-primary/90">
                   <DollarSign className="mr-2 h-5 w-5" />
                   BHPH
                 </Button>
