@@ -17,9 +17,10 @@ import { ImageOff } from "lucide-react";
 interface VehicleImageGalleryProps {
   images: string[];
   vehicleName: string;
+  compact?: boolean;
 }
 
-export const VehicleImageGallery = ({ images, vehicleName }: VehicleImageGalleryProps) => {
+export const VehicleImageGallery = ({ images, vehicleName, compact = false }: VehicleImageGalleryProps) => {
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
   const [failedImages, setFailedImages] = useState<Set<number>>(new Set());
 
@@ -29,7 +30,7 @@ export const VehicleImageGallery = ({ images, vehicleName }: VehicleImageGallery
 
   if (!images || images.length === 0) {
     return (
-      <div className="aspect-video bg-muted flex items-center justify-center">
+      <div className={`${compact ? 'aspect-[4/3]' : 'aspect-video'} bg-muted flex items-center justify-center`}>
         <span className="text-muted-foreground">No images available</span>
       </div>
     );
@@ -42,19 +43,19 @@ export const VehicleImageGallery = ({ images, vehicleName }: VehicleImageGallery
           {images.map((image, index) => (
             <CarouselItem key={index}>
               <div
-                className="w-full bg-muted cursor-pointer overflow-hidden flex items-center justify-center"
+                className={`w-full bg-muted cursor-pointer overflow-hidden flex items-center justify-center ${compact ? 'aspect-[4/3]' : ''}`}
                 onClick={() => setSelectedImageIndex(index)}
               >
                 {failedImages.has(index) ? (
-                  <div className="flex flex-col items-center text-muted-foreground py-20">
-                    <ImageOff className="h-12 w-12 mb-2" />
+                  <div className={`flex flex-col items-center text-muted-foreground ${compact ? 'py-8' : 'py-20'}`}>
+                    <ImageOff className={compact ? "h-8 w-8 mb-1" : "h-12 w-12 mb-2"} />
                     <span className="text-sm">Image unavailable</span>
                   </div>
                 ) : (
                   <img
                     src={image}
                     alt={`${vehicleName} - Photo ${index + 1}`}
-                    className="w-full h-auto object-contain hover:scale-105 transition-transform duration-300"
+                    className={`w-full ${compact ? 'h-full object-cover' : 'h-auto object-contain'} hover:scale-105 transition-transform duration-300`}
                     onError={() => handleImageError(index)}
                   />
                 )}

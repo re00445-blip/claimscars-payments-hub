@@ -76,89 +76,61 @@ const Inventory = () => {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid gap-8">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {vehicles.map((vehicle) => (
-              <Card key={vehicle.id} className="overflow-hidden hover:shadow-xl transition-shadow">
-                <div className="grid lg:grid-cols-2 gap-0">
-                  {/* Image Gallery Section */}
-                  <div className="relative">
-                    <VehicleImageGallery 
-                      images={vehicle.images || []} 
-                      vehicleName={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
-                    />
-                    <Badge className="absolute top-4 left-4 z-10 bg-primary text-primary-foreground">
-                      {vehicle.images?.length || 0} Photos
-                    </Badge>
-                    <div className="absolute bottom-4 right-4 z-10 flex flex-col gap-2">
-                      <Button 
-                        onClick={() => window.location.href = 'tel:+14705196717'}
-                      >
-                        <Phone className="h-4 w-4 mr-2" />
-                        Contact Us
-                      </Button>
-                      <Button 
-                        variant="secondary"
-                        onClick={() => handleBuyNow(vehicle)}
-                      >
-                        <DollarSign className="h-4 w-4 mr-2" />
-                        Buy Now
-                      </Button>
-                    </div>
-                  </div>
-
-                  {/* Vehicle Details Section */}
-                  <div className="p-6 flex flex-col justify-between">
-                    <div>
-                      <div className="flex items-start justify-between mb-4">
-                        <div>
-                          <h2 className="text-3xl font-bold text-foreground">
-                            {vehicle.year} {vehicle.make} {vehicle.model}
-                          </h2>
-                          <div className="flex items-center gap-2 mt-2">
-                            <Badge variant="outline" className="text-sm">
-                              {vehicle.color}
-                            </Badge>
-                            <Badge variant="secondary" className="text-sm">
-                              {vehicle.mileage?.toLocaleString()} miles
-                            </Badge>
-                          </div>
-                        </div>
-                      </div>
-
-                      <p className="text-muted-foreground mb-6 text-lg leading-relaxed">
-                        {vehicle.description}
-                      </p>
-                    </div>
-
-                    {/* Pricing Section */}
-                    <div className="space-y-4 border-t pt-6">
-                      <div className="flex items-center gap-3">
-                        <DollarSign className="h-8 w-8 text-primary" />
-                        <div>
-                          <p className="text-sm text-muted-foreground">Out the Door Price</p>
-                          <p className="text-4xl font-bold text-primary">
-                            ${vehicle.price.toLocaleString()}
-                          </p>
-                        </div>
-                      </div>
-                      
-                      <div className="bg-muted/50 rounded-lg p-4">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Calendar className="h-5 w-5 text-primary" />
-                          <span className="font-semibold">Financing Available</span>
-                        </div>
-                        <p className="text-muted-foreground">
-                          Buy Here Pay Here financing with in-house options. Contact us for details on down payment and monthly terms.
-                        </p>
-                      </div>
-
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <Car className="h-5 w-5" />
-                        <span>Quality Foreign and Domestic Auto's</span>
-                      </div>
-                    </div>
-                  </div>
+              <Card key={vehicle.id} className="overflow-hidden hover:shadow-xl transition-shadow flex flex-col">
+                {/* Image Section */}
+                <div className="relative aspect-[4/3]">
+                  <VehicleImageGallery 
+                    images={vehicle.images || []} 
+                    vehicleName={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
+                    compact
+                  />
+                  <Badge className="absolute top-2 left-2 z-10 bg-primary text-primary-foreground text-xs">
+                    {vehicle.images?.length || 0} Photos
+                  </Badge>
                 </div>
+
+                {/* Vehicle Details Section */}
+                <CardContent className="p-4 flex flex-col flex-1">
+                  <div className="flex-1">
+                    <h2 className="text-lg font-bold text-foreground mb-1">
+                      {vehicle.year} {vehicle.make} {vehicle.model}
+                    </h2>
+                    <div className="flex items-center gap-1 mb-2 flex-wrap">
+                      <Badge variant="outline" className="text-xs">
+                        {vehicle.color}
+                      </Badge>
+                      <Badge variant="secondary" className="text-xs">
+                        {vehicle.mileage?.toLocaleString()} mi
+                      </Badge>
+                    </div>
+                    
+                    <p className="text-2xl font-bold text-primary mb-3">
+                      ${vehicle.price.toLocaleString()}
+                    </p>
+                  </div>
+
+                  <div className="flex gap-2 mt-auto">
+                    <Button 
+                      size="sm"
+                      className="flex-1"
+                      onClick={() => window.location.href = 'tel:+14705196717'}
+                    >
+                      <Phone className="h-4 w-4 mr-1" />
+                      Call
+                    </Button>
+                    <Button 
+                      size="sm"
+                      variant="secondary"
+                      className="flex-1"
+                      onClick={() => handleBuyNow(vehicle)}
+                    >
+                      <DollarSign className="h-4 w-4 mr-1" />
+                      Buy Now
+                    </Button>
+                  </div>
+                </CardContent>
               </Card>
             ))}
           </div>
