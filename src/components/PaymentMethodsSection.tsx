@@ -73,6 +73,10 @@ export const PaymentMethodsSection = ({
       toast.error("Please enter a valid payment amount");
       return;
     }
+    if (amount < 0.50) {
+      toast.error("Minimum payment amount is $0.50");
+      return;
+    }
 
     setProcessingStripe(true);
     try {
@@ -148,11 +152,11 @@ export const PaymentMethodsSection = ({
                 id="payment-amount"
                 type="number"
                 step="0.01"
-                min="1"
+                min="0.50"
                 value={customAmount}
                 onChange={(e) => setCustomAmount(e.target.value)}
                 className="pl-9"
-                placeholder="Enter amount"
+                placeholder="Enter amount (min $0.50)"
               />
             </div>
             <Button

@@ -46,6 +46,9 @@ serve(async (req) => {
     if (!amount || amount <= 0) {
       throw new Error("Invalid payment amount");
     }
+    if (amount < 0.50) {
+      throw new Error("Minimum payment amount is $0.50");
+    }
     if (!accountId) {
       throw new Error("Account ID is required");
     }
