@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Navbar } from "@/components/Navbar";
 import { Loader2, DollarSign, Car, FileText, Users, ClipboardList, Settings, UserPlus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { TransactionsReport } from "@/components/admin/TransactionsReport";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -207,6 +208,11 @@ const Dashboard = () => {
                 </Button>
               </CardContent>
             </Card>
+
+            {/* Transactions Report */}
+            <div className="mb-6">
+              <TransactionsReport />
+            </div>
           </>
         )}
 
