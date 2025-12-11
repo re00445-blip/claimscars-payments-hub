@@ -23,3 +23,15 @@ verify_jwt = false
 
 [functions.send-payment-receipt]
 verify_jwt = false
+
+[functions.create-bhph-payment]
+verify_jwt = true
+
+[functions.verify-stripe-payment]
+verify_jwt = true
+
+[functions.create-customer-account]
+verify_jwt = false
+
+[functions.send-payment-reminders]
+verify_jwt = false
