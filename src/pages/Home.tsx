@@ -24,14 +24,8 @@ const Home = () => {
             <h1 className="text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
               Cars & Claims
             </h1>
-            <p className="text-xl text-muted-foreground mb-2">
+            <p className="text-xl text-muted-foreground mb-8">
               Your trusted marketing partner for vehicle sales, financing and non-fault injury and property damage claims
-            </p>
-            <p className="text-lg text-muted-foreground mb-2">
-              <span className="font-semibold text-foreground">Quality Foreign and Domestic auto's</span> - Professional and hassle free car sale process
-            </p>
-            <p className="text-lg text-muted-foreground mb-8">
-              <span className="font-semibold text-foreground">Injury Claims</span> - We handle non-fault injury claims for car accidents, slip and fall and catastrophic death cases
             </p>
             <div className="flex flex-wrap gap-4">
               <Link to="/inventory">
@@ -40,16 +34,16 @@ const Home = () => {
                   View Inventory
                 </Button>
               </Link>
-              <Link to="/repairs">
-                <Button size="lg" variant="outline" className="text-lg px-8">
-                  <Wrench className="mr-2 h-5 w-5" />
-                  Car Repairs
-                </Button>
-              </Link>
               <Link to="/claims">
                 <Button size="lg" variant="outline" className="text-lg px-8">
                   <Scale className="mr-2 h-5 w-5" />
                   Injury Claims
+                </Button>
+              </Link>
+              <Link to="/repairs">
+                <Button size="lg" variant="outline" className="text-lg px-8">
+                  <Wrench className="mr-2 h-5 w-5" />
+                  Car Repairs
                 </Button>
               </Link>
               <Link to="/payments">
