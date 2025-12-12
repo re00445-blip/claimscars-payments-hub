@@ -8,6 +8,7 @@ import { Footer } from "@/components/Footer";
 import { Loader2, Car, DollarSign, Calendar, Phone } from "lucide-react";
 import { VehicleImageGallery } from "@/components/VehicleImageGallery";
 import { PurchaseIntakeDialog } from "@/components/PurchaseIntakeDialog";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Vehicle {
   id: string;
@@ -23,6 +24,7 @@ interface Vehicle {
 }
 
 const Inventory = () => {
+  const { t } = useLanguage();
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
@@ -64,16 +66,16 @@ const Inventory = () => {
       
       <div className="container px-4 py-8">
         <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2">Vehicle Inventory</h1>
+          <h1 className="text-4xl font-bold mb-2">{t("inventory.title")}</h1>
           <p className="text-muted-foreground text-lg">
-            Browse our selection of quality foreign and domestic vehicles from Quality Foreign and Domestic Auto's
+            {t("inventory.subtitle")}
           </p>
         </div>
 
         {vehicles.length === 0 ? (
           <Card>
             <CardContent className="py-12 text-center">
-              <p className="text-muted-foreground">No vehicles available at the moment. Check back soon!</p>
+              <p className="text-muted-foreground">{t("inventory.noVehicles")}</p>
             </CardContent>
           </Card>
         ) : (
@@ -88,7 +90,7 @@ const Inventory = () => {
                     compact
                   />
                   <Badge className="absolute top-2 left-2 z-10 bg-primary text-primary-foreground text-xs">
-                    {vehicle.images?.length || 0} Photos
+                    {vehicle.images?.length || 0} {t("inventory.photos")}
                   </Badge>
                 </div>
 
@@ -103,7 +105,7 @@ const Inventory = () => {
                         {vehicle.color}
                       </Badge>
                       <Badge variant="secondary" className="text-xs">
-                        {vehicle.mileage?.toLocaleString()} mi
+                        {vehicle.mileage?.toLocaleString()} {t("inventory.mi")}
                       </Badge>
                     </div>
                     
@@ -125,7 +127,7 @@ const Inventory = () => {
                       onClick={() => window.location.href = 'tel:+14705196717'}
                     >
                       <Phone className="h-4 w-4 mr-1" />
-                      Call
+                      {t("inventory.call")}
                     </Button>
                     <Button 
                       size="sm"
@@ -134,7 +136,7 @@ const Inventory = () => {
                       onClick={() => handleBuyNow(vehicle)}
                     >
                       <DollarSign className="h-4 w-4 mr-1" />
-                      Buy Now
+                      {t("inventory.buyNow")}
                     </Button>
                   </div>
                 </CardContent>
