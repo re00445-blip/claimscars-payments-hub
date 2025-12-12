@@ -102,7 +102,14 @@ const Dashboard = () => {
   }, [user?.id, isAdmin]);
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
+    try {
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.error("Sign out error:", error);
+    }
+    // Always navigate and clear state regardless of error
+    setUser(null);
+    setSession(null);
     navigate("/");
   };
 
