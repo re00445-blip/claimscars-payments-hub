@@ -77,7 +77,7 @@ const Inventory = () => {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {vehicles.map((vehicle) => (
               <Card key={vehicle.id} className="overflow-hidden hover:shadow-xl transition-shadow flex flex-col">
                 {/* Image Section */}
