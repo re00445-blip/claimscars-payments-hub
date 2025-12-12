@@ -85,7 +85,7 @@ export const Navbar = () => {
                 {userName || t("nav.login")}
               </Button>
             </Link>
-            <Link to={userName ? "/dashboard" : "/auth"}>
+            <Link to={userName ? "/dashboard" : "/auth"} className={userName ? "hidden md:block" : ""}>
               <Button size="sm">{userName ? t("nav.dashboard") : t("nav.getStarted")}</Button>
             </Link>
           </div>
