@@ -18,10 +18,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const Auth = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -71,14 +73,14 @@ const Auth = () => {
 
     if (error) {
       toast({
-        title: "Error",
+        title: t("auth.error"),
         description: error.message,
         variant: "destructive",
       });
     } else {
       toast({
-        title: "Success!",
-        description: "Account created successfully. You can now log in.",
+        title: t("auth.success"),
+        description: t("auth.accountCreated"),
       });
       setEmail("");
       setPassword("");
@@ -108,7 +110,7 @@ const Auth = () => {
 
     if (error) {
       toast({
-        title: "Error",
+        title: t("auth.error"),
         description: error.message,
         variant: "destructive",
       });
@@ -129,14 +131,14 @@ const Auth = () => {
 
     if (error) {
       toast({
-        title: "Error",
+        title: t("auth.error"),
         description: error.message,
         variant: "destructive",
       });
     } else {
       toast({
-        title: "Check your email",
-        description: "We've sent you a password reset link.",
+        title: t("auth.checkEmail"),
+        description: t("auth.resetLinkSent"),
       });
       setResetEmail("");
       setResetDialogOpen(false);
@@ -150,22 +152,22 @@ const Auth = () => {
       <div className="container px-4 py-16 max-w-md mx-auto">
         <Card>
           <CardHeader>
-            <CardTitle className="text-2xl">Welcome</CardTitle>
+            <CardTitle className="text-2xl">{t("auth.welcome")}</CardTitle>
             <CardDescription>
-              Sign in to manage your account or create a new one
+              {t("auth.signInDesc")}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="signin" className="w-full">
               <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="signin">Sign In</TabsTrigger>
-                <TabsTrigger value="signup">Sign Up</TabsTrigger>
+                <TabsTrigger value="signin">{t("auth.signIn")}</TabsTrigger>
+                <TabsTrigger value="signup">{t("auth.signUp")}</TabsTrigger>
               </TabsList>
               
               <TabsContent value="signin">
                 <form onSubmit={handleSignIn} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="signin-email">Email</Label>
+                    <Label htmlFor="signin-email">{t("auth.email")}</Label>
                     <Input
                       id="signin-email"
                       type="email"
@@ -176,7 +178,7 @@ const Auth = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="signin-password">Password</Label>
+                    <Label htmlFor="signin-password">{t("auth.password")}</Label>
                     <Input
                       id="signin-password"
                       type="password"
@@ -193,25 +195,25 @@ const Auth = () => {
                         onCheckedChange={(checked) => setRememberMe(checked === true)}
                       />
                       <Label htmlFor="remember-me" className="text-sm font-normal cursor-pointer">
-                        Remember me
+                        {t("auth.rememberMe")}
                       </Label>
                     </div>
                     <Dialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
                       <DialogTrigger asChild>
                         <Button variant="link" type="button" className="px-0 text-sm h-auto">
-                          Forgot password?
+                          {t("auth.forgotPassword")}
                         </Button>
                       </DialogTrigger>
                       <DialogContent>
                         <DialogHeader>
-                          <DialogTitle>Reset Password</DialogTitle>
+                          <DialogTitle>{t("auth.resetPassword")}</DialogTitle>
                           <DialogDescription>
-                            Enter your email address and we'll send you a link to reset your password.
+                            {t("auth.resetPasswordDesc")}
                           </DialogDescription>
                         </DialogHeader>
                         <form onSubmit={handleForgotPassword} className="space-y-4">
                           <div className="space-y-2">
-                            <Label htmlFor="reset-email">Email</Label>
+                            <Label htmlFor="reset-email">{t("auth.email")}</Label>
                             <Input
                               id="reset-email"
                               type="email"
@@ -223,7 +225,7 @@ const Auth = () => {
                           </div>
                           <Button type="submit" className="w-full" disabled={resetLoading}>
                             {resetLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Send Reset Link
+                            {t("auth.sendResetLink")}
                           </Button>
                         </form>
                       </DialogContent>
@@ -231,7 +233,7 @@ const Auth = () => {
                   </div>
                   <Button type="submit" className="w-full" disabled={loading}>
                     {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Sign In
+                    {t("auth.signIn")}
                   </Button>
                 </form>
               </TabsContent>
@@ -239,7 +241,7 @@ const Auth = () => {
               <TabsContent value="signup">
                 <form onSubmit={handleSignUp} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="signup-name">Full Name</Label>
+                    <Label htmlFor="signup-name">{t("auth.fullName")}</Label>
                     <Input
                       id="signup-name"
                       type="text"
@@ -250,7 +252,7 @@ const Auth = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="signup-email">Email</Label>
+                    <Label htmlFor="signup-email">{t("auth.email")}</Label>
                     <Input
                       id="signup-email"
                       type="email"
@@ -261,7 +263,7 @@ const Auth = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="signup-password">Password</Label>
+                    <Label htmlFor="signup-password">{t("auth.password")}</Label>
                     <Input
                       id="signup-password"
                       type="password"
@@ -273,7 +275,7 @@ const Auth = () => {
                   </div>
                   <Button type="submit" className="w-full" disabled={loading}>
                     {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Create Account
+                    {t("auth.createAccount")}
                   </Button>
                 </form>
               </TabsContent>
