@@ -36,7 +36,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Plus, Pencil, Trash2, Upload, ArrowLeft, BarChart3 } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2, Upload, ArrowLeft, BarChart3, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ImageEditor } from "@/components/admin/ImageEditor";
 
@@ -67,6 +67,7 @@ const AdminVehicles = () => {
   const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [generatingDescription, setGeneratingDescription] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -556,6 +557,64 @@ const AdminVehicles = () => {
     }
   };
 
+  const generateDescription = async () => {
+    if (!formData.make || !formData.model || !formData.price) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in make, model, and price first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setGeneratingDescription(true);
+
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-vehicle-description`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({
+            year: formData.year,
+            make: formData.make,
+            model: formData.model,
+            mileage: formData.mileage || undefined,
+            color: formData.color || undefined,
+            price: formData.price,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to generate description");
+      }
+
+      const data = await response.json();
+      
+      if (data.description) {
+        setFormData(prev => ({ ...prev, description: data.description }));
+        toast({
+          title: "Description Generated",
+          description: "AI-generated description has been added.",
+        });
+      }
+    } catch (error) {
+      console.error("Error generating description:", error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to generate description",
+        variant: "destructive",
+      });
+    }
+
+    setGeneratingDescription(false);
+  };
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -694,7 +753,23 @@ const AdminVehicles = () => {
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="description">Description</Label>
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="description">Description</Label>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={generateDescription}
+                        disabled={generatingDescription}
+                      >
+                        {generatingDescription ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <Sparkles className="h-4 w-4 mr-2" />
+                        )}
+                        Generate with AI
+                      </Button>
+                    </div>
                     <Textarea
                       id="description"
                       value={formData.description}

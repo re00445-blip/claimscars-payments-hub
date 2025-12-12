@@ -35,3 +35,6 @@ verify_jwt = false
 
 [functions.send-payment-reminders]
 verify_jwt = false
+
+[functions.generate-vehicle-description]
+verify_jwt = true
