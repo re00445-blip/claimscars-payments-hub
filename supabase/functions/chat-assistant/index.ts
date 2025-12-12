@@ -5,7 +5,14 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const systemPrompt = `You are a friendly, helpful assistant for Cars & Claims - a dealership and claims service company. Your job is to warmly greet visitors and guide them to the right section of the website.
+const getSystemPrompt = (language: string) => {
+  const languageInstruction = language === "es" 
+    ? "IMPORTANT: You MUST respond in Spanish (Español) for ALL responses."
+    : "IMPORTANT: You MUST respond in English for ALL responses.";
+
+  return `${languageInstruction}
+
+You are a friendly, helpful assistant for Cars & Claims - a dealership and claims service company. Your job is to warmly greet visitors and guide them to the right section of the website.
 
 About the business:
 - "Quality Foreign and Domestic Auto's" is the dealership selling used cars with "buy here pay here" financing
@@ -28,6 +35,7 @@ Guidelines:
 - If they mention car problems/repairs, direct to /repairs
 - If they're an existing customer with payments, direct to /payments
 - Always be encouraging and welcoming`;
+};
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -35,12 +43,14 @@ serve(async (req) => {
   }
 
   try {
-    const { messages } = await req.json();
+    const { messages, language = "en" } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
+
+    console.log("Chat assistant called with language:", language);
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -51,7 +61,7 @@ serve(async (req) => {
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
         messages: [
-          { role: "system", content: systemPrompt },
+          { role: "system", content: getSystemPrompt(language) },
           ...messages,
         ],
         stream: true,

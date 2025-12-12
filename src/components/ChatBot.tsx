@@ -5,21 +5,36 @@ import { Input } from "@/components/ui/input";
 import { MessageCircle, X, Send, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 type Message = { role: "user" | "assistant"; content: string };
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-assistant`;
 
+const getInitialMessage = (lang: string) => {
+  return lang === "es" 
+    ? "¡Hola! 👋 ¡Bienvenido a Cars & Claims! ¿Cómo puedo ayudarte hoy? ¿Estás buscando un carro, necesitas reparaciones, o tienes un reclamo que presentar?"
+    : "Hi there! 👋 Welcome to Cars & Claims! How can I help you today? Are you looking for a car, need repairs, or have a claim to file?";
+};
+
 export const ChatBot = () => {
+  const { language, t } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
-    { role: "assistant", content: "Hi there! 👋 Welcome to Cars & Claims! How can I help you today? Are you looking for a car, need repairs, or have a claim to file?" }
+    { role: "assistant", content: getInitialMessage("en") }
   ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Update initial message when language changes
+  useEffect(() => {
+    if (messages.length === 1 && messages[0].role === "assistant") {
+      setMessages([{ role: "assistant", content: getInitialMessage(language) }]);
+    }
+  }, [language]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -38,7 +53,7 @@ export const ChatBot = () => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
-        body: JSON.stringify({ messages: newMessages }),
+        body: JSON.stringify({ messages: newMessages, language }),
       });
 
       if (!resp.ok || !resp.body) {
@@ -135,7 +150,7 @@ export const ChatBot = () => {
           <CardHeader className="bg-primary text-primary-foreground py-3 px-4 rounded-t-lg">
             <CardTitle className="text-lg flex items-center gap-2">
               <MessageCircle className="h-5 w-5" />
-              Cars & Claims Assistant
+              {t("chat.title")}
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
@@ -170,16 +185,16 @@ export const ChatBot = () => {
             {/* Quick Actions */}
             <div className="px-4 py-2 border-t border-border bg-muted/20 flex flex-wrap gap-2">
               <Button size="sm" variant="outline" onClick={() => handleQuickLink("/inventory")} className="text-xs">
-                🚗 Inventory
+                🚗 {t("chat.inventory")}
               </Button>
               <Button size="sm" variant="outline" onClick={() => handleQuickLink("/claims")} className="text-xs">
-                📋 Claims
+                📋 {t("chat.claims")}
               </Button>
               <Button size="sm" variant="outline" onClick={() => handleQuickLink("/repairs")} className="text-xs">
-                🔧 Repairs
+                🔧 {t("chat.repairs")}
               </Button>
               <Button size="sm" variant="outline" onClick={() => handleQuickLink("/payments")} className="text-xs">
-                💳 Payments
+                💳 {t("chat.payments")}
               </Button>
             </div>
 
@@ -188,7 +203,7 @@ export const ChatBot = () => {
               <Input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Type a message..."
+                placeholder={t("chat.placeholder")}
                 disabled={isLoading}
                 className="flex-1"
               />

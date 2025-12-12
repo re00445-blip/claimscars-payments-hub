@@ -96,6 +96,14 @@ const translations: Record<Language, Record<string, string>> = {
     "purchase.continueBrowsing": "Continue Browsing",
     "purchase.goToPortal": "Go to Payment Portal",
 
+    // ChatBot
+    "chat.title": "Cars & Claims Assistant",
+    "chat.placeholder": "Type a message...",
+    "chat.inventory": "Inventory",
+    "chat.claims": "Claims",
+    "chat.repairs": "Repairs",
+    "chat.payments": "Payments",
+
     // Repairs
     "repairs.title": "Car Repair Services",
     "repairs.subtitle": "Professional auto repair and maintenance from Quality Foreign and Domestic Auto's",
@@ -331,6 +339,14 @@ const translations: Record<Language, Record<string, string>> = {
     "purchase.forMonths": "por {months} meses",
     "purchase.continueBrowsing": "Continuar Navegando",
     "purchase.goToPortal": "Ir al Portal de Pagos",
+
+    // ChatBot
+    "chat.title": "Asistente de Cars & Claims",
+    "chat.placeholder": "Escribe un mensaje...",
+    "chat.inventory": "Inventario",
+    "chat.claims": "Reclamos",
+    "chat.repairs": "Reparaciones",
+    "chat.payments": "Pagos",
 
     // Repairs
     "repairs.title": "Servicios de Reparación de Autos",
