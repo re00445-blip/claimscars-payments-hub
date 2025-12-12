@@ -4,6 +4,7 @@ import { Car, Scale, DollarSign, FileText, Clock, Shield, Wrench } from "lucide-
 import { Link } from "react-router-dom";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
+import { ChatBot } from "@/components/ChatBot";
 import heroImage from "@/assets/hero-cars.jpg";
 import carsClaimsLogo from "@/assets/cars-claims-logo-new.jpg";
 
@@ -179,6 +180,7 @@ const Home = () => {
       </section>
 
       <Footer />
+      <ChatBot />
     </div>
   );
 };
