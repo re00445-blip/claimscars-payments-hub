@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FileUpload } from "@/components/FileUpload";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const claimFormSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -25,6 +26,7 @@ const claimFormSchema = z.object({
 });
 
 const Claims = () => {
+  const { t } = useLanguage();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
@@ -55,8 +57,8 @@ const Claims = () => {
       if (error) throw error;
 
       toast({
-        title: "Claim Submitted",
-        description: "We've received your claim information and will contact you soon!",
+        title: t("claims.claimSubmitted"),
+        description: t("claims.claimSubmittedDesc"),
       });
       
       form.reset();
@@ -64,8 +66,8 @@ const Claims = () => {
     } catch (error) {
       console.error("Error submitting claim:", error);
       toast({
-        title: "Submission Failed",
-        description: "There was an error submitting your claim. Please try again.",
+        title: t("claims.submissionFailed"),
+        description: t("claims.submissionFailedDesc"),
         variant: "destructive",
       });
     } finally {
@@ -79,9 +81,9 @@ const Claims = () => {
       
       <div className="container px-4 py-8">
         <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2">No-Fault Injury Claims</h1>
+          <h1 className="text-4xl font-bold mb-2">{t("claims.title")}</h1>
           <p className="text-muted-foreground text-lg">
-            Professional assistance for your injury claim needs
+            {t("claims.subtitle")}
           </p>
         </div>
 
@@ -91,14 +93,14 @@ const Claims = () => {
               <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
                 <Scale className="h-6 w-6 text-primary" />
               </div>
-              <CardTitle>Expert Guidance</CardTitle>
+              <CardTitle>{t("claims.expertGuidance")}</CardTitle>
               <CardDescription>
-                Navigate the claims process with professional support
+                {t("claims.expertGuidanceDesc")}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground">
-                Our experienced team helps you understand your rights and navigate the no-fault claim process efficiently.
+                {t("claims.expertGuidanceText")}
               </p>
             </CardContent>
           </Card>
@@ -108,14 +110,14 @@ const Claims = () => {
               <div className="w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center mb-4">
                 <FileText className="h-6 w-6 text-accent" />
               </div>
-              <CardTitle>Documentation Support</CardTitle>
+              <CardTitle>{t("claims.docSupport")}</CardTitle>
               <CardDescription>
-                Help with all required paperwork and documentation
+                {t("claims.docSupportDesc")}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground">
-                We assist with gathering and organizing all necessary documentation to support your claim.
+                {t("claims.docSupportText")}
               </p>
             </CardContent>
           </Card>
@@ -125,14 +127,14 @@ const Claims = () => {
               <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
                 <Clock className="h-6 w-6 text-primary" />
               </div>
-              <CardTitle>Fast Processing</CardTitle>
+              <CardTitle>{t("claims.fastProcessing")}</CardTitle>
               <CardDescription>
-                Quick turnaround on claim submissions
+                {t("claims.fastProcessingDesc")}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground">
-                We work efficiently to ensure your claim is processed as quickly as possible.
+                {t("claims.fastProcessingText")}
               </p>
             </CardContent>
           </Card>
@@ -142,14 +144,14 @@ const Claims = () => {
               <div className="w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center mb-4">
                 <Shield className="h-6 w-6 text-accent" />
               </div>
-              <CardTitle>Confidential Service</CardTitle>
+              <CardTitle>{t("claims.confidential")}</CardTitle>
               <CardDescription>
-                Your information is protected and secure
+                {t("claims.confidentialDesc")}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground">
-                We maintain strict confidentiality and protect your personal information throughout the process.
+                {t("claims.confidentialText")}
               </p>
             </CardContent>
           </Card>
@@ -157,16 +159,16 @@ const Claims = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-2xl">Submit an Injury Claim</CardTitle>
+            <CardTitle className="text-2xl">{t("claims.submitClaim")}</CardTitle>
             <CardDescription>
-              Fill out the form below and our team will contact you
+              {t("claims.submitClaimDesc")}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Name *</Label>
+                  <Label htmlFor="name">{t("claims.name")} *</Label>
                   <Input
                     id="name"
                     {...form.register("name")}
@@ -178,7 +180,7 @@ const Claims = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="contactNumber">Best Contact Number *</Label>
+                  <Label htmlFor="contactNumber">{t("claims.contactNumber")} *</Label>
                   <Input
                     id="contactNumber"
                     {...form.register("contactNumber")}
@@ -191,7 +193,7 @@ const Claims = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="address">Address *</Label>
+                <Label htmlFor="address">{t("claims.address")} *</Label>
                 <Input
                   id="address"
                   {...form.register("address")}
@@ -204,7 +206,7 @@ const Claims = () => {
 
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="accidentDate">Accident Date *</Label>
+                  <Label htmlFor="accidentDate">{t("claims.accidentDate")} *</Label>
                   <Input
                     id="accidentDate"
                     type="date"
@@ -216,16 +218,16 @@ const Claims = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="atFault">Were You At Fault? *</Label>
+                  <Label htmlFor="atFault">{t("claims.atFault")} *</Label>
                   <Select onValueChange={(value) => form.setValue("atFault", value)}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select..." />
+                      <SelectValue placeholder={t("claims.select")} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="yes">Yes</SelectItem>
-                      <SelectItem value="no">No</SelectItem>
-                      <SelectItem value="partial">Partially</SelectItem>
-                      <SelectItem value="unknown">Unknown</SelectItem>
+                      <SelectItem value="yes">{t("claims.yes")}</SelectItem>
+                      <SelectItem value="no">{t("claims.no")}</SelectItem>
+                      <SelectItem value="partial">{t("claims.partial")}</SelectItem>
+                      <SelectItem value="unknown">{t("claims.unknown")}</SelectItem>
                     </SelectContent>
                   </Select>
                   {form.formState.errors.atFault && (
@@ -235,11 +237,11 @@ const Claims = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="injuryArea">Area of Bodily Injury *</Label>
+                <Label htmlFor="injuryArea">{t("claims.injuryArea")} *</Label>
                 <Input
                   id="injuryArea"
                   {...form.register("injuryArea")}
-                  placeholder="e.g., Lower back, Neck, etc."
+                  placeholder={t("claims.injuryAreaPlaceholder")}
                 />
                 {form.formState.errors.injuryArea && (
                   <p className="text-sm text-destructive">{form.formState.errors.injuryArea.message}</p>
@@ -247,7 +249,7 @@ const Claims = () => {
               </div>
 
               <div className="space-y-2">
-                <Label>Photos/Videos of Injury or Accident (Optional)</Label>
+                <Label>{t("claims.photosVideos")}</Label>
                 <FileUpload
                   folder="claims"
                   onFilesChange={setUploadedFiles}
@@ -256,16 +258,16 @@ const Claims = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="referralSource">How Did You Hear About Us? (Optional)</Label>
+                <Label htmlFor="referralSource">{t("claims.referralSource")}</Label>
                 <Input
                   id="referralSource"
                   {...form.register("referralSource")}
-                  placeholder="e.g., Friend, Google, Social Media, etc."
+                  placeholder={t("claims.referralSourcePlaceholder")}
                 />
               </div>
 
               <Button type="submit" size="lg" disabled={isSubmitting} className="w-full md:w-auto">
-                {isSubmitting ? "Submitting..." : "Submit Claim"}
+                {isSubmitting ? t("claims.submitting") : t("claims.submitClaimBtn")}
               </Button>
             </form>
           </CardContent>
