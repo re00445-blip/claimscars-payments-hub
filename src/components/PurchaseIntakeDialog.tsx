@@ -17,6 +17,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Calculator, DollarSign, Loader2, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Vehicle {
   id: string;
@@ -41,6 +42,7 @@ const applicationSchema = z.object({
 
 export function PurchaseIntakeDialog({ open, onOpenChange, vehicle }: PurchaseIntakeDialogProps) {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [step, setStep] = useState<"form" | "success">("form");
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -192,7 +194,7 @@ export function PurchaseIntakeDialog({ open, onOpenChange, vehicle }: PurchaseIn
           <>
             <DialogHeader>
               <DialogTitle className="text-2xl">
-                Purchase Application
+                {t("purchase.title")}
               </DialogTitle>
               <DialogDescription>
                 {vehicle.year} {vehicle.make} {vehicle.model} - {formatCurrency(vehicle.price)}
@@ -205,12 +207,12 @@ export function PurchaseIntakeDialog({ open, onOpenChange, vehicle }: PurchaseIn
                 <CardContent className="pt-6">
                   <div className="flex items-center gap-2 mb-4">
                     <Calculator className="h-5 w-5 text-primary" />
-                    <h3 className="font-semibold text-lg">Payment Calculator</h3>
+                    <h3 className="font-semibold text-lg">{t("purchase.paymentCalculator")}</h3>
                   </div>
                   
                   <div className="grid sm:grid-cols-2 gap-4 mb-4">
                     <div className="space-y-2">
-                      <Label htmlFor="downPayment">Down Payment ($)</Label>
+                      <Label htmlFor="downPayment">{t("purchase.downPayment")}</Label>
                       <Input
                         id="downPayment"
                         type="number"
@@ -220,7 +222,7 @@ export function PurchaseIntakeDialog({ open, onOpenChange, vehicle }: PurchaseIn
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="termMonths">Term (months)</Label>
+                      <Label htmlFor="termMonths">{t("purchase.term")}</Label>
                       <Input
                         id="termMonths"
                         type="number"
@@ -237,31 +239,31 @@ export function PurchaseIntakeDialog({ open, onOpenChange, vehicle }: PurchaseIn
                         <div className="text-xl font-bold text-primary">
                           {formatCurrency(paymentCalc.monthlyPayment)}
                         </div>
-                        <div className="text-xs text-muted-foreground">Est. Monthly</div>
+                        <div className="text-xs text-muted-foreground">{t("purchase.estMonthly")}</div>
                       </div>
                       <div className="text-center">
                         <div className="text-lg font-semibold">
                           {formatCurrency(paymentCalc.principal)}
                         </div>
-                        <div className="text-xs text-muted-foreground">Amount Financed</div>
+                        <div className="text-xs text-muted-foreground">{t("purchase.amountFinanced")}</div>
                       </div>
                       <div className="text-center">
                         <div className="text-lg font-semibold">
                           {formatCurrency(paymentCalc.totalInterest)}
                         </div>
-                        <div className="text-xs text-muted-foreground">Total Interest</div>
+                        <div className="text-xs text-muted-foreground">{t("purchase.totalInterest")}</div>
                       </div>
                       <div className="text-center">
                         <div className="text-lg font-semibold">
                           {formatCurrency(paymentCalc.totalPayment)}
                         </div>
-                        <div className="text-xs text-muted-foreground">Total Payment</div>
+                        <div className="text-xs text-muted-foreground">{t("purchase.totalPayment")}</div>
                       </div>
                     </div>
                   )}
                   
                   <p className="text-xs text-muted-foreground mt-3">
-                    * Estimated payments based on {interestRate}% APR simple interest. Actual terms may vary.
+                    {t("purchase.disclaimer").replace("{rate}", String(interestRate))}
                   </p>
                 </CardContent>
               </Card>
@@ -270,11 +272,11 @@ export function PurchaseIntakeDialog({ open, onOpenChange, vehicle }: PurchaseIn
               
               {/* Contact Information */}
               <div className="space-y-4">
-                <h3 className="font-semibold text-lg">Your Information</h3>
+                <h3 className="font-semibold text-lg">{t("purchase.yourInfo")}</h3>
                 
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="fullName">Full Name *</Label>
+                    <Label htmlFor="fullName">{t("purchase.fullName")}</Label>
                     <Input
                       id="fullName"
                       placeholder="John Doe"
@@ -287,7 +289,7 @@ export function PurchaseIntakeDialog({ open, onOpenChange, vehicle }: PurchaseIn
                     )}
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="email">Email *</Label>
+                    <Label htmlFor="email">{t("purchase.email")}</Label>
                     <Input
                       id="email"
                       type="email"
@@ -303,7 +305,7 @@ export function PurchaseIntakeDialog({ open, onOpenChange, vehicle }: PurchaseIn
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="phone">Phone Number *</Label>
+                  <Label htmlFor="phone">{t("purchase.phone")}</Label>
                   <Input
                     id="phone"
                     type="tel"
@@ -318,7 +320,7 @@ export function PurchaseIntakeDialog({ open, onOpenChange, vehicle }: PurchaseIn
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="address">Address *</Label>
+                  <Label htmlFor="address">{t("purchase.address")}</Label>
                   <Textarea
                     id="address"
                     placeholder="123 Main St, City, State ZIP"
@@ -332,10 +334,10 @@ export function PurchaseIntakeDialog({ open, onOpenChange, vehicle }: PurchaseIn
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="notes">Additional Notes (Optional)</Label>
+                  <Label htmlFor="notes">{t("purchase.notes")}</Label>
                   <Textarea
                     id="notes"
-                    placeholder="Any additional information..."
+                    placeholder={t("purchase.notesPlaceholder")}
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                   />
@@ -345,18 +347,18 @@ export function PurchaseIntakeDialog({ open, onOpenChange, vehicle }: PurchaseIn
             
             <div className="flex gap-3 pt-4">
               <Button variant="outline" onClick={() => onOpenChange(false)} className="flex-1">
-                Cancel
+                {t("purchase.cancel")}
               </Button>
               <Button onClick={handleSubmit} disabled={loading} className="flex-1">
                 {loading ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Submitting...
+                    {t("purchase.submitting")}
                   </>
                 ) : (
                   <>
                     <DollarSign className="h-4 w-4 mr-2" />
-                    Submit Application
+                    {t("purchase.submit")}
                   </>
                 )}
               </Button>
@@ -368,22 +370,21 @@ export function PurchaseIntakeDialog({ open, onOpenChange, vehicle }: PurchaseIn
               <CheckCircle className="h-16 w-16 text-primary" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold mb-2">Application Submitted!</h2>
+              <h2 className="text-2xl font-bold mb-2">{t("purchase.successTitle")}</h2>
               <p className="text-muted-foreground">
-                Thank you for your interest in the {vehicle.year} {vehicle.make} {vehicle.model}.
-                Our team will review your application and contact you shortly.
+                {t("purchase.successMessage").replace("{vehicle}", `${vehicle.year} ${vehicle.make} ${vehicle.model}`)}
               </p>
             </div>
             
             {paymentCalc && (
               <Card className="bg-muted/50 max-w-sm mx-auto">
                 <CardContent className="pt-6">
-                  <p className="text-sm text-muted-foreground mb-2">Your Estimated Payment</p>
+                  <p className="text-sm text-muted-foreground mb-2">{t("purchase.estPayment")}</p>
                   <p className="text-3xl font-bold text-primary">
-                    {formatCurrency(paymentCalc.monthlyPayment)}/mo
+                    {formatCurrency(paymentCalc.monthlyPayment)}{t("purchase.perMonth")}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    for {termMonths} months
+                    {t("purchase.forMonths").replace("{months}", termMonths)}
                   </p>
                 </CardContent>
               </Card>
@@ -391,10 +392,10 @@ export function PurchaseIntakeDialog({ open, onOpenChange, vehicle }: PurchaseIn
             
             <div className="flex gap-3 justify-center pt-4">
               <Button variant="outline" onClick={() => onOpenChange(false)}>
-                Continue Browsing
+                {t("purchase.continueBrowsing")}
               </Button>
               <Button onClick={handleGoToPortal}>
-                Go to Payment Portal
+                {t("purchase.goToPortal")}
               </Button>
             </div>
           </div>
