@@ -82,10 +82,10 @@ export const PaymentMethodsSection = ({
 
     setProcessingStripe(true);
     try {
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError || !session) {
+      // Force refresh the session to ensure it's valid on the server
+      const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+      if (refreshError || !refreshData.session) {
         toast.error("Your session has expired. Please sign in again.");
-        // Refresh the page to trigger re-authentication
         window.location.href = "/auth";
         return;
       }
