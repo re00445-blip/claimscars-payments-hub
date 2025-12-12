@@ -5,7 +5,7 @@ import { User, Session } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Navbar } from "@/components/Navbar";
-import { Loader2, DollarSign, Car, FileText, Users, ClipboardList, Settings, UserPlus } from "lucide-react";
+import { Loader2, DollarSign, Car, FileText, Users, ClipboardList, Settings, UserPlus, Sparkles, CreditCard } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { TransactionsReport } from "@/components/admin/TransactionsReport";
 
@@ -16,6 +16,9 @@ const Dashboard = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [quote, setQuote] = useState<string>("");
+  const [quoteLoading, setQuoteLoading] = useState(true);
+  const [customerAccount, setCustomerAccount] = useState<any>(null);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -58,6 +61,44 @@ const Dashboard = () => {
     setIsAdmin(!!data);
   };
 
+  const fetchCustomerAccount = async (userId: string) => {
+    const { data } = await supabase
+      .from("customer_accounts")
+      .select("*, vehicles(*)")
+      .eq("user_id", userId)
+      .eq("status", "active")
+      .maybeSingle();
+    
+    setCustomerAccount(data);
+  };
+
+  const fetchQuote = async () => {
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-quote`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      const data = await response.json();
+      setQuote(data.quote);
+    } catch (error) {
+      setQuote("Every payment brings you closer to your dreams.");
+    } finally {
+      setQuoteLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (user?.id && !isAdmin) {
+      fetchCustomerAccount(user.id);
+    }
+    fetchQuote();
+  }, [user?.id, isAdmin]);
+
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     navigate("/");
@@ -88,40 +129,127 @@ const Dashboard = () => {
           </Button>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-6 mb-8">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Account Balance</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">$0.00</div>
-              <p className="text-xs text-muted-foreground mt-1">No active accounts</p>
-            </CardContent>
-          </Card>
+        {/* Inspirational Quote Card */}
+        <Card className="mb-8 bg-gradient-to-r from-primary to-accent text-primary-foreground">
+          <CardContent className="py-6">
+            <div className="flex items-start gap-4">
+              <Sparkles className="h-8 w-8 flex-shrink-0 mt-1" />
+              <div>
+                <p className="text-sm font-medium mb-2 opacity-90">Quote of the Day</p>
+                {quoteLoading ? (
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span className="text-lg italic">Loading inspiration...</span>
+                  </div>
+                ) : (
+                  <p className="text-xl italic font-medium">"{quote}"</p>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Vehicles</CardTitle>
-              <Car className="h-4 w-4 text-muted-foreground" />
+        {/* Customer BHPH Account Section - only show for non-admins with accounts */}
+        {!isAdmin && customerAccount && (
+          <Card className="mb-8 border-2 border-primary bg-gradient-to-br from-primary/5 to-accent/5">
+            <CardHeader className="pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center">
+                  <DollarSign className="h-6 w-6 text-primary-foreground" />
+                </div>
+                <div>
+                  <CardTitle className="text-2xl text-primary">Your BHPH Account</CardTitle>
+                  <CardDescription>Buy Here Pay Here Financing</CardDescription>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">0</div>
-              <p className="text-xs text-muted-foreground mt-1">Active vehicles</p>
-            </CardContent>
-          </Card>
+              <div className="grid md:grid-cols-3 gap-6 mb-6">
+                <div className="bg-background rounded-lg p-4 border">
+                  <p className="text-sm text-muted-foreground mb-1">Current Balance</p>
+                  <p className="text-3xl font-bold text-primary">
+                    ${customerAccount.current_balance?.toLocaleString('en-US', { minimumFractionDigits: 2 }) || '0.00'}
+                  </p>
+                </div>
+                <div className="bg-background rounded-lg p-4 border">
+                  <p className="text-sm text-muted-foreground mb-1">Monthly Payment</p>
+                  <p className="text-3xl font-bold">
+                    ${customerAccount.payment_amount?.toLocaleString('en-US', { minimumFractionDigits: 2 }) || '0.00'}
+                  </p>
+                </div>
+                <div className="bg-background rounded-lg p-4 border">
+                  <p className="text-sm text-muted-foreground mb-1">Next Payment Due</p>
+                  <p className="text-2xl font-bold">
+                    {customerAccount.next_payment_date 
+                      ? new Date(customerAccount.next_payment_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                      : 'N/A'}
+                  </p>
+                </div>
+              </div>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Payments</CardTitle>
-              <FileText className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">0</div>
-              <p className="text-xs text-muted-foreground mt-1">Total payments</p>
+              {customerAccount.vehicles && (
+                <div className="bg-muted/50 rounded-lg p-4 mb-6">
+                  <div className="flex items-center gap-3">
+                    <Car className="h-5 w-5 text-primary" />
+                    <div>
+                      <p className="text-sm text-muted-foreground">Your Vehicle</p>
+                      <p className="font-semibold">
+                        {customerAccount.vehicles.year} {customerAccount.vehicles.make} {customerAccount.vehicles.model}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <Button 
+                size="lg" 
+                className="w-full bg-primary hover:bg-primary/90 text-lg py-6"
+                onClick={() => navigate("/payments")}
+              >
+                <CreditCard className="mr-2 h-5 w-5" />
+                Make a Payment
+              </Button>
             </CardContent>
           </Card>
-        </div>
+        )}
+
+        {/* Summary Cards for users without BHPH accounts */}
+        {!isAdmin && !customerAccount && (
+          <div className="grid md:grid-cols-3 gap-6 mb-8">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Account Balance</CardTitle>
+                <DollarSign className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">$0.00</div>
+                <p className="text-xs text-muted-foreground mt-1">No active accounts</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Vehicles</CardTitle>
+                <Car className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">0</div>
+                <p className="text-xs text-muted-foreground mt-1">Active vehicles</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Payments</CardTitle>
+                <FileText className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">0</div>
+                <p className="text-xs text-muted-foreground mt-1">Total payments</p>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         {isAdmin && (
           <>
