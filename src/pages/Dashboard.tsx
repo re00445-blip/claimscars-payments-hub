@@ -8,10 +8,12 @@ import { Navbar } from "@/components/Navbar";
 import { Loader2, DollarSign, Car, FileText, Users, ClipboardList, Settings, UserPlus, Sparkles, CreditCard } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { TransactionsReport } from "@/components/admin/TransactionsReport";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
@@ -119,13 +121,13 @@ const Dashboard = () => {
       <div className="container px-4 py-8">
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold">Dashboard</h1>
+            <h1 className="text-3xl font-bold">{t("dashboard.title")}</h1>
             <p className="text-muted-foreground mt-1">
-              Welcome back, {user?.user_metadata?.full_name || user?.email}
+              {t("dashboard.welcomeBack")} {user?.user_metadata?.full_name || user?.email}
             </p>
           </div>
           <Button variant="outline" onClick={handleSignOut}>
-            Sign Out
+            {t("dashboard.signOut")}
           </Button>
         </div>
 
@@ -135,11 +137,11 @@ const Dashboard = () => {
             <div className="flex items-start gap-4">
               <Sparkles className="h-8 w-8 flex-shrink-0 mt-1" />
               <div>
-                <p className="text-sm font-medium mb-2 opacity-90">Quote of the Day</p>
+                <p className="text-sm font-medium mb-2 opacity-90">{t("dashboard.quoteOfDay")}</p>
                 {quoteLoading ? (
                   <div className="flex items-center gap-2">
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    <span className="text-lg italic">Loading inspiration...</span>
+                    <span className="text-lg italic">{t("dashboard.loadingInspiration")}</span>
                   </div>
                 ) : (
                   <p className="text-xl italic font-medium">"{quote}"</p>
@@ -158,27 +160,27 @@ const Dashboard = () => {
                   <DollarSign className="h-6 w-6 text-primary-foreground" />
                 </div>
                 <div>
-                  <CardTitle className="text-2xl text-primary">Your BHPH Account</CardTitle>
-                  <CardDescription>Buy Here Pay Here Financing</CardDescription>
+                  <CardTitle className="text-2xl text-primary">{t("dashboard.yourBhphAccount")}</CardTitle>
+                  <CardDescription>{t("dashboard.bhphFinancing")}</CardDescription>
                 </div>
               </div>
             </CardHeader>
             <CardContent>
               <div className="grid md:grid-cols-3 gap-6 mb-6">
                 <div className="bg-background rounded-lg p-4 border">
-                  <p className="text-sm text-muted-foreground mb-1">Current Balance</p>
+                  <p className="text-sm text-muted-foreground mb-1">{t("dashboard.currentBalance")}</p>
                   <p className="text-3xl font-bold text-primary">
                     ${customerAccount.current_balance?.toLocaleString('en-US', { minimumFractionDigits: 2 }) || '0.00'}
                   </p>
                 </div>
                 <div className="bg-background rounded-lg p-4 border">
-                  <p className="text-sm text-muted-foreground mb-1">Monthly Payment</p>
+                  <p className="text-sm text-muted-foreground mb-1">{t("dashboard.monthlyPayment")}</p>
                   <p className="text-3xl font-bold">
                     ${customerAccount.payment_amount?.toLocaleString('en-US', { minimumFractionDigits: 2 }) || '0.00'}
                   </p>
                 </div>
                 <div className="bg-background rounded-lg p-4 border">
-                  <p className="text-sm text-muted-foreground mb-1">Next Payment Due</p>
+                  <p className="text-sm text-muted-foreground mb-1">{t("dashboard.nextPaymentDue")}</p>
                   <p className="text-2xl font-bold">
                     {customerAccount.next_payment_date 
                       ? new Date(customerAccount.next_payment_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
@@ -192,7 +194,7 @@ const Dashboard = () => {
                   <div className="flex items-center gap-3">
                     <Car className="h-5 w-5 text-primary" />
                     <div>
-                      <p className="text-sm text-muted-foreground">Your Vehicle</p>
+                      <p className="text-sm text-muted-foreground">{t("dashboard.yourVehicle")}</p>
                       <p className="font-semibold">
                         {customerAccount.vehicles.year} {customerAccount.vehicles.make} {customerAccount.vehicles.model}
                       </p>
@@ -207,7 +209,7 @@ const Dashboard = () => {
                 onClick={() => navigate("/payments")}
               >
                 <CreditCard className="mr-2 h-5 w-5" />
-                Make a Payment
+                {t("dashboard.makePayment")}
               </Button>
             </CardContent>
           </Card>
@@ -218,34 +220,34 @@ const Dashboard = () => {
           <div className="grid md:grid-cols-3 gap-6 mb-8">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Account Balance</CardTitle>
+                <CardTitle className="text-sm font-medium">{t("dashboard.accountBalance")}</CardTitle>
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">$0.00</div>
-                <p className="text-xs text-muted-foreground mt-1">No active accounts</p>
+                <p className="text-xs text-muted-foreground mt-1">{t("dashboard.noActiveAccounts")}</p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Vehicles</CardTitle>
+                <CardTitle className="text-sm font-medium">{t("dashboard.vehicles")}</CardTitle>
                 <Car className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">0</div>
-                <p className="text-xs text-muted-foreground mt-1">Active vehicles</p>
+                <p className="text-xs text-muted-foreground mt-1">{t("dashboard.activeVehicles")}</p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Payments</CardTitle>
+                <CardTitle className="text-sm font-medium">{t("dashboard.payments")}</CardTitle>
                 <FileText className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">0</div>
-                <p className="text-xs text-muted-foreground mt-1">Total payments</p>
+                <p className="text-xs text-muted-foreground mt-1">{t("dashboard.totalPayments")}</p>
               </CardContent>
             </Card>
           </div>
@@ -258,14 +260,14 @@ const Dashboard = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Users className="h-5 w-5" />
-                  User Management
+                  {t("dashboard.userManagement")}
                 </CardTitle>
-                <CardDescription>Manage user accounts and admin permissions</CardDescription>
+                <CardDescription>{t("dashboard.userManagementDesc")}</CardDescription>
               </CardHeader>
               <CardContent className="flex flex-wrap gap-4">
                 <Button onClick={() => navigate("/admin/users")}>
                   <Users className="mr-2 h-4 w-4" />
-                  Manage Users
+                  {t("dashboard.manageUsers")}
                 </Button>
               </CardContent>
             </Card>
@@ -275,14 +277,14 @@ const Dashboard = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Car className="h-5 w-5" />
-                  Vehicle Management
+                  {t("dashboard.vehicleManagement")}
                 </CardTitle>
-                <CardDescription>Manage vehicle inventory</CardDescription>
+                <CardDescription>{t("dashboard.vehicleManagementDesc")}</CardDescription>
               </CardHeader>
               <CardContent className="flex flex-wrap gap-4">
                 <Button onClick={() => navigate("/admin/vehicles")}>
                   <Car className="mr-2 h-4 w-4" />
-                  Manage Vehicles
+                  {t("dashboard.manageVehicles")}
                 </Button>
               </CardContent>
             </Card>
@@ -292,26 +294,26 @@ const Dashboard = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <DollarSign className="h-5 w-5" />
-                  BHPH Account Management
+                  {t("dashboard.bhphAccountManagement")}
                 </CardTitle>
-                <CardDescription>Add accounts, set interest rates, and manage payments</CardDescription>
+                <CardDescription>{t("dashboard.bhphAccountManagementDesc")}</CardDescription>
               </CardHeader>
               <CardContent className="flex flex-wrap gap-4">
                 <Button onClick={() => navigate("/admin/accounts")}>
                   <UserPlus className="mr-2 h-4 w-4" />
-                  Add BHPH Account
+                  {t("dashboard.addBhphAccount")}
                 </Button>
                 <Button variant="outline" onClick={() => navigate("/admin/accounts")}>
                   <Settings className="mr-2 h-4 w-4" />
-                  Edit Accounts / Interest Rates
+                  {t("dashboard.editAccounts")}
                 </Button>
                 <Button variant="outline" onClick={() => navigate("/admin/payments")}>
                   <DollarSign className="mr-2 h-4 w-4" />
-                  Record Payments
+                  {t("dashboard.recordPayments")}
                 </Button>
                 <Button variant="outline" onClick={() => navigate("/admin/reports")}>
                   <FileText className="mr-2 h-4 w-4" />
-                  Payment Reports
+                  {t("dashboard.paymentReports")}
                 </Button>
               </CardContent>
             </Card>
@@ -321,18 +323,18 @@ const Dashboard = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <ClipboardList className="h-5 w-5" />
-                  Claims Portal
+                  {t("dashboard.claimsPortal")}
                 </CardTitle>
-                <CardDescription>Add new claim users and track claim progress</CardDescription>
+                <CardDescription>{t("dashboard.claimsPortalDesc")}</CardDescription>
               </CardHeader>
               <CardContent className="flex flex-wrap gap-4">
                 <Button onClick={() => navigate("/admin/claims")}>
                   <UserPlus className="mr-2 h-4 w-4" />
-                  Add New Claim User
+                  {t("dashboard.addNewClaimUser")}
                 </Button>
                 <Button variant="outline" onClick={() => navigate("/admin/claims")}>
                   <ClipboardList className="mr-2 h-4 w-4" />
-                  Track Claim Progress
+                  {t("dashboard.trackClaimProgress")}
                 </Button>
               </CardContent>
             </Card>
@@ -346,11 +348,11 @@ const Dashboard = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle>Recent Activity</CardTitle>
-            <CardDescription>Your recent transactions and updates</CardDescription>
+            <CardTitle>{t("dashboard.recentActivity")}</CardTitle>
+            <CardDescription>{t("dashboard.recentActivityDesc")}</CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-muted-foreground text-center py-8">No recent activity</p>
+            <p className="text-muted-foreground text-center py-8">{t("dashboard.noRecentActivity")}</p>
           </CardContent>
         </Card>
       </div>
