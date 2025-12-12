@@ -82,9 +82,11 @@ export const PaymentMethodsSection = ({
 
     setProcessingStripe(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        toast.error("Please sign in to make a payment");
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session) {
+        toast.error("Your session has expired. Please sign in again.");
+        // Refresh the page to trigger re-authentication
+        window.location.href = "/auth";
         return;
       }
 
@@ -96,7 +98,15 @@ export const PaymentMethodsSection = ({
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        // Check if it's a session expired error
+        if (error.message?.includes("session") || error.message?.includes("expired") || error.message?.includes("sign in")) {
+          toast.error("Your session has expired. Please sign in again.");
+          window.location.href = "/auth";
+          return;
+        }
+        throw error;
+      }
 
       if (data?.url) {
         window.open(data.url, "_blank");
