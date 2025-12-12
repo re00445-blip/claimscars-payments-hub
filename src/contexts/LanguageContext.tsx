@@ -66,6 +66,7 @@ const translations: Record<Language, Record<string, string>> = {
     "inventory.call": "Call",
     "inventory.buyNow": "Buy Now",
     "inventory.mi": "mi",
+    "inventory.translating": "Translating...",
 
     // Repairs
     "repairs.title": "Car Repair Services",
@@ -273,6 +274,7 @@ const translations: Record<Language, Record<string, string>> = {
     "inventory.call": "Llamar",
     "inventory.buyNow": "Comprar",
     "inventory.mi": "mi",
+    "inventory.translating": "Traduciendo...",
 
     // Repairs
     "repairs.title": "Servicios de Reparación de Autos",

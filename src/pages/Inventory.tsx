@@ -24,15 +24,44 @@ interface Vehicle {
 }
 
 const Inventory = () => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   const [intakeDialogOpen, setIntakeDialogOpen] = useState(false);
+  const [translatedDescriptions, setTranslatedDescriptions] = useState<Record<string, string>>({});
+  const [translating, setTranslating] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     fetchVehicles();
   }, []);
+
+  // Translate descriptions when language changes to Spanish
+  useEffect(() => {
+    if (language === "es") {
+      vehicles.forEach((vehicle) => {
+        if (vehicle.description && !translatedDescriptions[vehicle.id] && !translating[vehicle.id]) {
+          translateDescription(vehicle.id, vehicle.description);
+        }
+      });
+    }
+  }, [language, vehicles]);
+
+  const translateDescription = async (vehicleId: string, description: string) => {
+    setTranslating((prev) => ({ ...prev, [vehicleId]: true }));
+    try {
+      const { data, error } = await supabase.functions.invoke("translate-text", {
+        body: { text: description, targetLanguage: "Spanish" },
+      });
+      if (!error && data?.translatedText) {
+        setTranslatedDescriptions((prev) => ({ ...prev, [vehicleId]: data.translatedText }));
+      }
+    } catch (err) {
+      console.error("Translation error:", err);
+    } finally {
+      setTranslating((prev) => ({ ...prev, [vehicleId]: false }));
+    }
+  };
 
   const fetchVehicles = async () => {
     const { data, error } = await supabase
@@ -111,7 +140,14 @@ const Inventory = () => {
                     
                     {vehicle.description && (
                       <p className="text-sm text-muted-foreground mb-3 line-clamp-3">
-                        {vehicle.description}
+                        {translating[vehicle.id] ? (
+                          <span className="flex items-center gap-1">
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                            {t("inventory.translating")}
+                          </span>
+                        ) : language === "es" && translatedDescriptions[vehicle.id] 
+                          ? translatedDescriptions[vehicle.id] 
+                          : vehicle.description}
                       </p>
                     )}
                     
