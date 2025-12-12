@@ -95,7 +95,7 @@ const handler = async (req: Request): Promise<Response> => {
     };
 
     const emailResponse = await resend.emails.send({
-      from: "Cars & Claims <onboarding@resend.dev>",
+      from: "Cars & Claims <noreply@carsandclaims.com>",
       to: ["re00445@gmail.com"],
       subject: `New Purchase Application - ${escapeHtml(data.vehicleInfo)}`,
       html: `

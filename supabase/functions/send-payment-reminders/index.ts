@@ -94,7 +94,7 @@ async function sendEmail(to: string, subject: string, html: string): Promise<boo
 
   try {
     const response = await resend.emails.send({
-      from: "Cars & Claims <onboarding@resend.dev>",
+      from: "Cars & Claims <noreply@carsandclaims.com>",
       to: [to],
       subject,
       html,

@@ -234,7 +234,7 @@ serve(async (req) => {
     if (customerEmail) {
       try {
         const customerResponse = await resend.emails.send({
-          from: "Quality Foreign Domestic Autos <onboarding@resend.dev>",
+          from: "Quality Foreign Domestic Autos <noreply@carsandclaims.com>",
           to: [customerEmail],
           subject: `Payment Receipt - Invoice #${invoiceNumber}`,
           html: receiptHTML,
@@ -248,7 +248,7 @@ serve(async (req) => {
     // Send to admin
     try {
       const adminResponse = await resend.emails.send({
-        from: "Quality Foreign Domestic Autos <onboarding@resend.dev>",
+        from: "Quality Foreign Domestic Autos <noreply@carsandclaims.com>",
         to: ["ramon@carsandclaims.com"],
         subject: `Payment Received - ${customerName} - Invoice #${invoiceNumber} - $${amount.toFixed(2)}`,
         html: receiptHTML,

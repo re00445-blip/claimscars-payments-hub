@@ -128,7 +128,7 @@ const handler = async (req: Request): Promise<Response> => {
     // Send to customer
     if (data.customerEmail) {
       const customerResponse = await resend.emails.send({
-        from: "Quality Foreign Domestic Autos <onboarding@resend.dev>",
+        from: "Quality Foreign Domestic Autos <noreply@carsandclaims.com>",
         to: [data.customerEmail],
         subject: `Payment Receipt - Invoice #${data.invoiceNumber}`,
         html: receiptHTML,
@@ -138,7 +138,7 @@ const handler = async (req: Request): Promise<Response> => {
     
     // Send copy to admin
     const adminResponse = await resend.emails.send({
-      from: "Quality Foreign Domestic Autos <onboarding@resend.dev>",
+      from: "Quality Foreign Domestic Autos <noreply@carsandclaims.com>",
       to: ["ramon@carsandclaims.com"],
       subject: `Payment Received - ${data.customerName} - Invoice #${data.invoiceNumber}`,
       html: receiptHTML,
