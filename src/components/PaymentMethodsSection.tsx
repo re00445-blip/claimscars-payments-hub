@@ -99,18 +99,31 @@ export const PaymentMethodsSection = ({
       });
 
       if (error) {
-        // Check if it's a session expired error
-        if (error.message?.includes("session") || error.message?.includes("expired") || error.message?.includes("sign in")) {
+        console.error("Edge function error:", error);
+        const errorMsg = error.message || "";
+        if (errorMsg.includes("session") || errorMsg.includes("expired") || errorMsg.includes("sign in")) {
           toast.error("Your session has expired. Please sign in again.");
           window.location.href = "/auth";
           return;
         }
-        throw error;
+        throw new Error(errorMsg || "Payment failed");
+      }
+
+      if (data?.error) {
+        const errorMsg = data.error || "";
+        if (errorMsg.includes("session") || errorMsg.includes("expired") || errorMsg.includes("sign in")) {
+          toast.error("Your session has expired. Please sign in again.");
+          window.location.href = "/auth";
+          return;
+        }
+        throw new Error(errorMsg);
       }
 
       if (data?.url) {
         window.open(data.url, "_blank");
         toast.success("Redirecting to payment page...");
+      } else {
+        throw new Error("No checkout URL received");
       }
     } catch (error: any) {
       console.error("Payment error:", error);
