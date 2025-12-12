@@ -15,6 +15,7 @@ import { Calculator, CreditCard, History, DollarSign, Calendar, AlertCircle, Che
 import { toast } from "sonner";
 import type { User, Session } from "@supabase/supabase-js";
 import { PaymentMethodsSection } from "@/components/PaymentMethodsSection";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface CustomerAccount {
   id: string;
@@ -45,6 +46,7 @@ interface Payment {
 }
 
 const PaymentPortal = () => {
+  const { t, language } = useLanguage();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [user, setUser] = useState<User | null>(null);
@@ -229,7 +231,7 @@ const PaymentPortal = () => {
       <div className="min-h-screen bg-background">
         <Navbar />
         <div className="container py-12 flex items-center justify-center">
-          <div className="animate-pulse text-muted-foreground">Loading...</div>
+          <div className="animate-pulse text-muted-foreground">{t("portal.loading")}</div>
         </div>
       </div>
     );
@@ -242,37 +244,36 @@ const PaymentPortal = () => {
         <div className="container py-12">
           <Card className="max-w-md mx-auto">
             <CardHeader className="text-center">
-              <CardTitle className="text-2xl">BHPH Payment Portal</CardTitle>
+              <CardTitle className="text-2xl">{t("portal.title")}</CardTitle>
               <CardDescription>
-                Sign in to view your account, make payments, and see your payment history.
+                {t("portal.signInDesc")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <Button className="w-full" onClick={() => navigate("/auth")}>
-                Sign In to Continue
+                {t("portal.signIn")}
               </Button>
               <Separator />
               <div className="text-center text-sm text-muted-foreground">
-                Or use our payment calculator below
+                {t("portal.useCalculator")}
               </div>
             </CardContent>
           </Card>
 
-          {/* Payment Calculator for non-logged in users */}
           <Card className="max-w-2xl mx-auto mt-8">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Calculator className="h-5 w-5" />
-                Payment Calculator
+                {t("portal.paymentCalculator")}
               </CardTitle>
               <CardDescription>
-                Calculate your monthly payments with simple interest
+                {t("portal.calcDescAlt")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid md:grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="principal">Vehicle Price ($)</Label>
+                  <Label htmlFor="principal">{t("portal.vehiclePrice")}</Label>
                   <Input
                     id="principal"
                     type="number"
@@ -282,7 +283,7 @@ const PaymentPortal = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="rate">Interest Rate (%)</Label>
+                  <Label htmlFor="rate">{t("portal.interestRate")}</Label>
                   <Input
                     id="rate"
                     type="number"
@@ -292,7 +293,7 @@ const PaymentPortal = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="term">Term (months)</Label>
+                  <Label htmlFor="term">{t("portal.termMonths")}</Label>
                   <Input
                     id="term"
                     type="number"
@@ -303,7 +304,7 @@ const PaymentPortal = () => {
                 </div>
               </div>
               <Button onClick={calculateSimpleInterest} className="w-full">
-                Calculate Payment
+                {t("portal.calculatePayment")}
               </Button>
               {calcResult && (
                 <div className="grid md:grid-cols-3 gap-4 p-4 bg-muted rounded-lg">
@@ -311,19 +312,19 @@ const PaymentPortal = () => {
                     <div className="text-2xl font-bold text-primary">
                       {formatCurrency(calcResult.monthlyPayment)}
                     </div>
-                    <div className="text-sm text-muted-foreground">Monthly Payment</div>
+                    <div className="text-sm text-muted-foreground">{t("portal.monthlyPayment")}</div>
                   </div>
                   <div className="text-center">
                     <div className="text-2xl font-bold">
                       {formatCurrency(calcResult.totalInterest)}
                     </div>
-                    <div className="text-sm text-muted-foreground">Total Interest</div>
+                    <div className="text-sm text-muted-foreground">{t("portal.totalInterest")}</div>
                   </div>
                   <div className="text-center">
                     <div className="text-2xl font-bold">
                       {formatCurrency(calcResult.totalPayment)}
                     </div>
-                    <div className="text-sm text-muted-foreground">Total Payment</div>
+                    <div className="text-sm text-muted-foreground">{t("portal.totalPayment")}</div>
                   </div>
                 </div>
               )}
@@ -341,20 +342,20 @@ const PaymentPortal = () => {
       <Navbar />
       <div className="container py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold">BHPH Payment Portal</h1>
-          <p className="text-muted-foreground">Manage your account and make payments</p>
+          <h1 className="text-3xl font-bold">{t("portal.title")}</h1>
+          <p className="text-muted-foreground">{t("portal.subtitle")}</p>
         </div>
 
         {!account ? (
           <Card>
             <CardContent className="py-12 text-center">
               <AlertCircle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No Active Account</h3>
+              <h3 className="text-lg font-semibold mb-2">{t("portal.noActiveAccount")}</h3>
               <p className="text-muted-foreground">
-                You don't have an active BHPH account. Visit our dealership to get started!
+                {t("portal.noActiveAccountDesc")}
               </p>
               <Button className="mt-4" onClick={() => navigate("/inventory")}>
-                View Inventory
+                {t("portal.viewInventory")}
               </Button>
             </CardContent>
           </Card>
@@ -363,15 +364,15 @@ const PaymentPortal = () => {
             <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:inline-grid">
               <TabsTrigger value="overview" className="gap-2">
                 <DollarSign className="h-4 w-4" />
-                Overview
+                {t("portal.overview")}
               </TabsTrigger>
               <TabsTrigger value="history" className="gap-2">
                 <History className="h-4 w-4" />
-                History
+                {t("portal.history")}
               </TabsTrigger>
               <TabsTrigger value="calculator" className="gap-2">
                 <Calculator className="h-4 w-4" />
-                Calculator
+                {t("portal.calculator")}
               </TabsTrigger>
             </TabsList>
 
@@ -380,27 +381,27 @@ const PaymentPortal = () => {
               <div className="grid gap-4 md:grid-cols-3">
                 <Card>
                   <CardHeader className="pb-2">
-                    <CardDescription>Current Balance</CardDescription>
+                    <CardDescription>{t("portal.currentBalance")}</CardDescription>
                     <CardTitle className="text-3xl">{formatCurrency(account.current_balance)}</CardTitle>
                   </CardHeader>
                 </Card>
                 <Card>
                   <CardHeader className="pb-2">
-                    <CardDescription>Monthly Payment</CardDescription>
+                    <CardDescription>{t("portal.monthlyPayment")}</CardDescription>
                     <CardTitle className="text-3xl">{formatCurrency(account.payment_amount)}</CardTitle>
                   </CardHeader>
                 </Card>
                 <Card>
                   <CardHeader className="pb-2">
-                    <CardDescription>Next Payment Due</CardDescription>
+                    <CardDescription>{t("portal.nextPaymentDue")}</CardDescription>
                     <CardTitle className="text-xl">{formatDate(account.next_payment_date)}</CardTitle>
                     {paymentStatus && (
                       <Badge variant={paymentStatus.variant} className="mt-1">
                         {paymentStatus.status === "overdue" 
-                          ? `${paymentStatus.days} days overdue`
+                          ? t("portal.daysOverdue").replace("{days}", String(paymentStatus.days))
                           : paymentStatus.status === "due-soon"
-                          ? `Due in ${paymentStatus.days} days`
-                          : `${paymentStatus.days} days until due`
+                          ? t("portal.dueInDays").replace("{days}", String(paymentStatus.days))
+                          : t("portal.daysUntilDue").replace("{days}", String(paymentStatus.days))
                         }
                       </Badge>
                     )}
@@ -412,14 +413,14 @@ const PaymentPortal = () => {
               {account.vehicles && (
                 <Card>
                   <CardHeader>
-                    <CardTitle>Vehicle</CardTitle>
+                    <CardTitle>{t("portal.vehicle")}</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="text-lg font-semibold">
                       {account.vehicles.year} {account.vehicles.make} {account.vehicles.model}
                     </div>
                     <div className="text-sm text-muted-foreground mt-1">
-                      Original Amount: {formatCurrency(account.principal_amount)}
+                      {t("portal.originalAmount")}: {formatCurrency(account.principal_amount)}
                     </div>
                   </CardContent>
                 </Card>
@@ -431,9 +432,9 @@ const PaymentPortal = () => {
                   <CardContent className="py-4 flex items-center gap-3">
                     <CheckCircle className="h-5 w-5 text-green-600" />
                     <div>
-                      <p className="font-medium text-green-800 dark:text-green-200">Payment Initiated!</p>
+                      <p className="font-medium text-green-800 dark:text-green-200">{t("portal.paymentInitiated")}</p>
                       <p className="text-sm text-green-700 dark:text-green-300">
-                        Your payment is being processed. Your account balance will be updated shortly.
+                        {t("portal.paymentProcessing")}
                       </p>
                     </div>
                     <Button 
@@ -442,7 +443,7 @@ const PaymentPortal = () => {
                       className="ml-auto"
                       onClick={() => setShowSuccessMessage(false)}
                     >
-                      Dismiss
+                      {t("portal.dismiss")}
                     </Button>
                   </CardContent>
                 </Card>
@@ -460,24 +461,24 @@ const PaymentPortal = () => {
             <TabsContent value="history">
               <Card>
                 <CardHeader>
-                  <CardTitle>Payment History</CardTitle>
-                  <CardDescription>View all your past payments</CardDescription>
+                  <CardTitle>{t("portal.paymentHistory")}</CardTitle>
+                  <CardDescription>{t("portal.viewPastPayments")}</CardDescription>
                 </CardHeader>
                 <CardContent>
                   {payments.length === 0 ? (
                     <div className="text-center py-8 text-muted-foreground">
-                      No payment history yet
+                      {t("portal.noPaymentHistory")}
                     </div>
                   ) : (
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Date</TableHead>
-                          <TableHead>Amount</TableHead>
-                          <TableHead>Principal</TableHead>
-                          <TableHead>Interest</TableHead>
-                          <TableHead>Late Fee</TableHead>
-                          <TableHead>Method</TableHead>
+                          <TableHead>{t("portal.date")}</TableHead>
+                          <TableHead>{t("portal.amount")}</TableHead>
+                          <TableHead>{t("portal.principal")}</TableHead>
+                          <TableHead>{t("portal.interest")}</TableHead>
+                          <TableHead>{t("portal.lateFee")}</TableHead>
+                          <TableHead>{t("portal.method")}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -512,16 +513,16 @@ const PaymentPortal = () => {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Calculator className="h-5 w-5" />
-                    Payment Calculator
+                    {t("portal.paymentCalculator")}
                   </CardTitle>
                   <CardDescription>
-                    Calculate payments with simple interest
+                    {t("portal.calcDesc")}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="grid md:grid-cols-3 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="calc-principal">Vehicle Price ($)</Label>
+                      <Label htmlFor="calc-principal">{t("portal.vehiclePrice")}</Label>
                       <Input
                         id="calc-principal"
                         type="number"
@@ -531,7 +532,7 @@ const PaymentPortal = () => {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="calc-rate">Interest Rate (%)</Label>
+                      <Label htmlFor="calc-rate">{t("portal.interestRate")}</Label>
                       <Input
                         id="calc-rate"
                         type="number"
@@ -541,7 +542,7 @@ const PaymentPortal = () => {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="calc-term">Term (months)</Label>
+                      <Label htmlFor="calc-term">{t("portal.termMonths")}</Label>
                       <Input
                         id="calc-term"
                         type="number"
@@ -552,7 +553,7 @@ const PaymentPortal = () => {
                     </div>
                   </div>
                   <Button onClick={calculateSimpleInterest} className="w-full">
-                    Calculate Payment
+                    {t("portal.calculatePayment")}
                   </Button>
                   {calcResult && (
                     <div className="grid md:grid-cols-3 gap-4 p-4 bg-muted rounded-lg">
@@ -560,19 +561,19 @@ const PaymentPortal = () => {
                         <div className="text-2xl font-bold text-primary">
                           {formatCurrency(calcResult.monthlyPayment)}
                         </div>
-                        <div className="text-sm text-muted-foreground">Monthly Payment</div>
+                        <div className="text-sm text-muted-foreground">{t("portal.monthlyPayment")}</div>
                       </div>
                       <div className="text-center">
                         <div className="text-2xl font-bold">
                           {formatCurrency(calcResult.totalInterest)}
                         </div>
-                        <div className="text-sm text-muted-foreground">Total Interest</div>
+                        <div className="text-sm text-muted-foreground">{t("portal.totalInterest")}</div>
                       </div>
                       <div className="text-center">
                         <div className="text-2xl font-bold">
                           {formatCurrency(calcResult.totalPayment)}
                         </div>
-                        <div className="text-sm text-muted-foreground">Total Payment</div>
+                        <div className="text-sm text-muted-foreground">{t("portal.totalPayment")}</div>
                       </div>
                     </div>
                   )}
