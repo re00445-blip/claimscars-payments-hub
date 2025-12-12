@@ -107,6 +107,12 @@ const Inventory = () => {
                       </Badge>
                     </div>
                     
+                    {vehicle.description && (
+                      <p className="text-sm text-muted-foreground mb-3 line-clamp-3">
+                        {vehicle.description}
+                      </p>
+                    )}
+                    
                     <p className="text-2xl font-bold text-primary mb-3">
                       ${vehicle.price.toLocaleString()}
                     </p>
