@@ -1,7 +1,10 @@
 import { Phone } from "lucide-react";
 import carsClaimsLogo from "@/assets/cars-claims-logo-new.jpg";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const Footer = () => {
+  const { t } = useLanguage();
+
   return (
     <footer className="border-t py-12 bg-muted/30">
       <div className="container px-4">
@@ -14,11 +17,11 @@ const Footer = () => {
           <div className="flex items-center gap-2 text-primary font-semibold text-lg">
             <Phone className="h-5 w-5" />
             <a href="tel:470-519-6717" className="hover:underline">
-              Contact Us: 470-519-6717
+              {t("footer.contactUs")}: 470-519-6717
             </a>
           </div>
           <div className="text-center text-muted-foreground">
-            <p className="font-semibold text-foreground mb-1">Cars & Claims | Quality Foreign and Domestic Auto's</p>
+            <p className="font-semibold text-foreground mb-1">Cars & Claims | {t("nav.tagline")}</p>
             <p className="text-sm">Professional and hassle free car sale process</p>
             <p>&copy; 2025 All rights reserved.</p>
           </div>
