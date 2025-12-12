@@ -57,6 +57,15 @@ const translations: Record<Language, Record<string, string>> = {
     // Language Toggle
     "lang.english": "EN",
     "lang.spanish": "ES",
+
+    // Inventory
+    "inventory.title": "Vehicle Inventory",
+    "inventory.subtitle": "Browse our selection of quality foreign and domestic vehicles from Quality Foreign and Domestic Auto's",
+    "inventory.noVehicles": "No vehicles available at the moment. Check back soon!",
+    "inventory.photos": "Photos",
+    "inventory.call": "Call",
+    "inventory.buyNow": "Buy Now",
+    "inventory.mi": "mi",
   },
   es: {
     // Navbar
@@ -106,6 +115,15 @@ const translations: Record<Language, Record<string, string>> = {
     // Language Toggle
     "lang.english": "EN",
     "lang.spanish": "ES",
+
+    // Inventory
+    "inventory.title": "Inventario de Vehículos",
+    "inventory.subtitle": "Explore nuestra selección de vehículos extranjeros y domésticos de calidad de Quality Foreign and Domestic Auto's",
+    "inventory.noVehicles": "No hay vehículos disponibles en este momento. ¡Vuelva pronto!",
+    "inventory.photos": "Fotos",
+    "inventory.call": "Llamar",
+    "inventory.buyNow": "Comprar",
+    "inventory.mi": "mi",
   },
 };
 
