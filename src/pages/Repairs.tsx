@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { FileUpload } from "@/components/FileUpload";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const repairFormSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -25,6 +26,7 @@ const repairFormSchema = z.object({
 });
 
 const Repairs = () => {
+  const { t } = useLanguage();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
@@ -55,8 +57,8 @@ const Repairs = () => {
       if (error) throw error;
 
       toast({
-        title: "Inquiry Submitted",
-        description: "We've received your repair inquiry and will contact you soon!",
+        title: t("repairs.inquirySubmitted"),
+        description: t("repairs.inquirySubmittedDesc"),
       });
       
       form.reset();
@@ -64,8 +66,8 @@ const Repairs = () => {
     } catch (error) {
       console.error("Error submitting repair inquiry:", error);
       toast({
-        title: "Submission Failed",
-        description: "There was an error submitting your inquiry. Please try again.",
+        title: t("repairs.submissionFailed"),
+        description: t("repairs.submissionFailedDesc"),
         variant: "destructive",
       });
     } finally {
@@ -79,9 +81,9 @@ const Repairs = () => {
       
       <div className="container px-4 py-8">
         <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2">Car Repair Services</h1>
+          <h1 className="text-4xl font-bold mb-2">{t("repairs.title")}</h1>
           <p className="text-muted-foreground text-lg">
-            Professional auto repair and maintenance from Quality Foreign and Domestic Auto's
+            {t("repairs.subtitle")}
           </p>
         </div>
 
@@ -91,14 +93,14 @@ const Repairs = () => {
               <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
                 <Wrench className="h-6 w-6 text-primary" />
               </div>
-              <CardTitle>Expert Mechanics</CardTitle>
+              <CardTitle>{t("repairs.expertMechanics")}</CardTitle>
               <CardDescription>
-                Certified technicians with years of experience
+                {t("repairs.expertMechanicsDesc")}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground">
-                Our skilled mechanics are trained to work on both foreign and domestic vehicles, ensuring quality repairs every time.
+                {t("repairs.expertMechanicsText")}
               </p>
             </CardContent>
           </Card>
@@ -108,14 +110,14 @@ const Repairs = () => {
               <div className="w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center mb-4">
                 <Clock className="h-6 w-6 text-accent" />
               </div>
-              <CardTitle>Fast Service</CardTitle>
+              <CardTitle>{t("repairs.fastService")}</CardTitle>
               <CardDescription>
-                Quick turnaround times without compromising quality
+                {t("repairs.fastServiceDesc")}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground">
-                We understand your time is valuable. Most repairs are completed within 24-48 hours.
+                {t("repairs.fastServiceText")}
               </p>
             </CardContent>
           </Card>
@@ -125,14 +127,14 @@ const Repairs = () => {
               <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
                 <Settings className="h-6 w-6 text-primary" />
               </div>
-              <CardTitle>Complete Service</CardTitle>
+              <CardTitle>{t("repairs.completeService")}</CardTitle>
               <CardDescription>
-                From oil changes to major repairs
+                {t("repairs.completeServiceDesc")}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground">
-                We handle everything from routine maintenance to complex engine repairs and diagnostics.
+                {t("repairs.completeServiceText")}
               </p>
             </CardContent>
           </Card>
@@ -142,14 +144,14 @@ const Repairs = () => {
               <div className="w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center mb-4">
                 <Shield className="h-6 w-6 text-accent" />
               </div>
-              <CardTitle>Quality Parts</CardTitle>
+              <CardTitle>{t("repairs.qualityParts")}</CardTitle>
               <CardDescription>
-                OEM and high-quality aftermarket parts
+                {t("repairs.qualityPartsDesc")}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground">
-                We use only the best parts to ensure your vehicle runs smoothly and safely.
+                {t("repairs.qualityPartsText")}
               </p>
             </CardContent>
           </Card>
@@ -157,9 +159,9 @@ const Repairs = () => {
 
         <Card className="mb-12">
           <CardHeader>
-            <CardTitle className="text-2xl">Our Services Include</CardTitle>
+            <CardTitle className="text-2xl">{t("repairs.servicesInclude")}</CardTitle>
             <CardDescription>
-              Comprehensive automotive repair and maintenance
+              {t("repairs.servicesIncludeDesc")}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -167,57 +169,57 @@ const Repairs = () => {
               <div className="flex items-start gap-3">
                 <CheckCircle className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
                 <div>
-                  <h3 className="font-semibold mb-1">Engine Diagnostics & Repair</h3>
-                  <p className="text-sm text-muted-foreground">Complete engine services and troubleshooting</p>
+                  <h3 className="font-semibold mb-1">{t("repairs.engineDiagnostics")}</h3>
+                  <p className="text-sm text-muted-foreground">{t("repairs.engineDiagnosticsDesc")}</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
                 <CheckCircle className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
                 <div>
-                  <h3 className="font-semibold mb-1">Brake Services</h3>
-                  <p className="text-sm text-muted-foreground">Brake pads, rotors, and complete brake system repair</p>
+                  <h3 className="font-semibold mb-1">{t("repairs.brakeServices")}</h3>
+                  <p className="text-sm text-muted-foreground">{t("repairs.brakeServicesDesc")}</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
                 <CheckCircle className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
                 <div>
-                  <h3 className="font-semibold mb-1">Transmission Service</h3>
-                  <p className="text-sm text-muted-foreground">Transmission repair and maintenance</p>
+                  <h3 className="font-semibold mb-1">{t("repairs.transmissionService")}</h3>
+                  <p className="text-sm text-muted-foreground">{t("repairs.transmissionServiceDesc")}</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
                 <CheckCircle className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
                 <div>
-                  <h3 className="font-semibold mb-1">Oil Changes & Tune-Ups</h3>
-                  <p className="text-sm text-muted-foreground">Regular maintenance to keep your car running smoothly</p>
+                  <h3 className="font-semibold mb-1">{t("repairs.oilChanges")}</h3>
+                  <p className="text-sm text-muted-foreground">{t("repairs.oilChangesDesc")}</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
                 <CheckCircle className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
                 <div>
-                  <h3 className="font-semibold mb-1">Suspension & Steering</h3>
-                  <p className="text-sm text-muted-foreground">Alignment, shocks, and steering system repairs</p>
+                  <h3 className="font-semibold mb-1">{t("repairs.suspension")}</h3>
+                  <p className="text-sm text-muted-foreground">{t("repairs.suspensionDesc")}</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
                 <CheckCircle className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
                 <div>
-                  <h3 className="font-semibold mb-1">Electrical Systems</h3>
-                  <p className="text-sm text-muted-foreground">Battery, alternator, and electrical diagnostics</p>
+                  <h3 className="font-semibold mb-1">{t("repairs.electrical")}</h3>
+                  <p className="text-sm text-muted-foreground">{t("repairs.electricalDesc")}</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
                 <CheckCircle className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
                 <div>
-                  <h3 className="font-semibold mb-1">AC & Heating</h3>
-                  <p className="text-sm text-muted-foreground">Climate control system repair and maintenance</p>
+                  <h3 className="font-semibold mb-1">{t("repairs.acHeating")}</h3>
+                  <p className="text-sm text-muted-foreground">{t("repairs.acHeatingDesc")}</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
                 <CheckCircle className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
                 <div>
-                  <h3 className="font-semibold mb-1">Tire Services</h3>
-                  <p className="text-sm text-muted-foreground">Tire rotation, balancing, and replacement</p>
+                  <h3 className="font-semibold mb-1">{t("repairs.tireServices")}</h3>
+                  <p className="text-sm text-muted-foreground">{t("repairs.tireServicesDesc")}</p>
                 </div>
               </div>
             </div>
@@ -228,17 +230,17 @@ const Repairs = () => {
           <CardHeader>
             <CardTitle className="text-2xl flex items-center gap-2">
               <Gauge className="h-6 w-6" />
-              Request a Repair Quote
+              {t("repairs.requestQuote")}
             </CardTitle>
             <CardDescription>
-              Fill out the form below and we'll get back to you shortly
+              {t("repairs.requestQuoteDesc")}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Name *</Label>
+                  <Label htmlFor="name">{t("repairs.name")} *</Label>
                   <Input
                     id="name"
                     {...form.register("name")}
@@ -250,7 +252,7 @@ const Repairs = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="phone">Phone Number *</Label>
+                  <Label htmlFor="phone">{t("repairs.phone")} *</Label>
                   <Input
                     id="phone"
                     {...form.register("phone")}
@@ -263,7 +265,7 @@ const Repairs = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="address">Address *</Label>
+                <Label htmlFor="address">{t("repairs.address")} *</Label>
                 <Input
                   id="address"
                   {...form.register("address")}
@@ -276,7 +278,7 @@ const Repairs = () => {
 
               <div className="grid md:grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="year">Year *</Label>
+                  <Label htmlFor="year">{t("repairs.year")} *</Label>
                   <Input
                     id="year"
                     {...form.register("year")}
@@ -288,7 +290,7 @@ const Repairs = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="make">Make *</Label>
+                  <Label htmlFor="make">{t("repairs.make")} *</Label>
                   <Input
                     id="make"
                     {...form.register("make")}
@@ -300,7 +302,7 @@ const Repairs = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="model">Model *</Label>
+                  <Label htmlFor="model">{t("repairs.model")} *</Label>
                   <Input
                     id="model"
                     {...form.register("model")}
@@ -313,11 +315,11 @@ const Repairs = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="description">Issue Description *</Label>
+                <Label htmlFor="description">{t("repairs.issueDescription")} *</Label>
                 <Textarea
                   id="description"
                   {...form.register("description")}
-                  placeholder="Please describe the issue you're experiencing with your vehicle..."
+                  placeholder={t("repairs.issueDescriptionPlaceholder")}
                   className="min-h-[120px]"
                 />
                 {form.formState.errors.description && (
@@ -326,7 +328,7 @@ const Repairs = () => {
               </div>
 
               <div className="space-y-2">
-                <Label>Photos/Videos of Issue (Optional)</Label>
+                <Label>{t("repairs.photosVideos")}</Label>
                 <FileUpload
                   folder="repairs"
                   onFilesChange={setUploadedFiles}
@@ -335,7 +337,7 @@ const Repairs = () => {
               </div>
 
               <Button type="submit" size="lg" disabled={isSubmitting} className="w-full md:w-auto">
-                {isSubmitting ? "Submitting..." : "Submit Inquiry"}
+                {isSubmitting ? t("repairs.submitting") : t("repairs.submitInquiry")}
               </Button>
             </form>
           </CardContent>
