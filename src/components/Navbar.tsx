@@ -76,6 +76,7 @@ export const Navbar = () => {
             <Link to={userName ? "/dashboard" : "/auth"} className="md:hidden">
               <Button variant="ghost" size="sm">
                 <User className="h-4 w-4" />
+                {userName && <span className="ml-1 max-w-[80px] truncate text-xs">{userName}</span>}
               </Button>
             </Link>
             <Link to={userName ? "/dashboard" : "/auth"} className="hidden md:block">
