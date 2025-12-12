@@ -30,12 +30,15 @@ serve(async (req) => {
     );
 
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("No authorization header provided");
+    if (!authHeader) throw new Error("Please sign in to make a payment");
     logStep("Authorization header found");
 
     const token = authHeader.replace("Bearer ", "");
     const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
-    if (userError) throw new Error(`Authentication error: ${userError.message}`);
+    if (userError) {
+      logStep("Auth error details", { errorMessage: userError.message });
+      throw new Error("Your session has expired. Please sign in again to make a payment.");
+    }
     
     const user = userData.user;
     if (!user?.email) throw new Error("User not authenticated or email not available");
