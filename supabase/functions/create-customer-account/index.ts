@@ -135,7 +135,7 @@ serve(async (req) => {
       if (customer_email && customer_email.includes('@') && !customer_email.endsWith('@customer.local')) {
         try {
           await resend.emails.send({
-            from: "Cars & Claims <onboarding@resend.dev>",
+            from: "Cars & Claims <noreply@carsandclaims.com>",
             to: [customer_email],
             subject: "Your Cars & Claims Account Credentials",
             html: `
