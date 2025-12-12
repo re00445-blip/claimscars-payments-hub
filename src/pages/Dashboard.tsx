@@ -107,10 +107,8 @@ const Dashboard = () => {
     } catch (error) {
       console.error("Sign out error:", error);
     }
-    // Always navigate and clear state regardless of error
-    setUser(null);
-    setSession(null);
-    navigate("/");
+    // Use hard redirect to ensure complete session clear and avoid auth listener interference
+    window.location.href = "/";
   };
 
   if (loading) {
