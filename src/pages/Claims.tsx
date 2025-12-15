@@ -10,7 +10,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FileUpload } from "@/components/FileUpload";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -28,8 +29,12 @@ const claimFormSchema = z.object({
 const Claims = () => {
   const { t } = useLanguage();
   const { toast } = useToast();
+  const [searchParams] = useSearchParams();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
+  const [affiliateId, setAffiliateId] = useState<string | null>(null);
+  
+  const referralCode = searchParams.get("ref");
   
   const form = useForm<z.infer<typeof claimFormSchema>>({
     resolver: zodResolver(claimFormSchema),
@@ -40,9 +45,28 @@ const Claims = () => {
       injuryArea: "",
       atFault: "",
       contactNumber: "",
-      referralSource: "",
+      referralSource: referralCode || "",
     },
   });
+
+  // Look up affiliate by referral code
+  useEffect(() => {
+    const lookupAffiliate = async () => {
+      if (referralCode) {
+        const { data } = await supabase
+          .from("marketing_affiliates")
+          .select("id")
+          .eq("referral_code", referralCode)
+          .eq("status", "active")
+          .maybeSingle();
+        
+        if (data) {
+          setAffiliateId(data.id);
+        }
+      }
+    };
+    lookupAffiliate();
+  }, [referralCode]);
 
   const onSubmit = async (values: z.infer<typeof claimFormSchema>) => {
     setIsSubmitting(true);
@@ -51,6 +75,7 @@ const Claims = () => {
         body: {
           ...values,
           attachments: uploadedFiles,
+          affiliateId: affiliateId,
         },
       });
 

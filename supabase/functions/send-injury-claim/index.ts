@@ -18,6 +18,7 @@ interface InjuryClaimRequest {
   contactNumber: string;
   attachments?: string[];
   referralSource?: string;
+  affiliateId?: string;
 }
 
 // Helper function to escape HTML special characters
@@ -87,9 +88,9 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const { name, address, accidentDate, injuryArea, atFault, contactNumber, attachments, referralSource } = data;
+    const { name, address, accidentDate, injuryArea, atFault, contactNumber, attachments, referralSource, affiliateId } = data;
 
-    console.log("Processing injury claim for:", escapeHtml(name));
+    console.log("Processing injury claim for:", escapeHtml(name), "Affiliate ID:", affiliateId || "none");
 
     // Sanitize and validate attachment URLs
     const sanitizedAttachments = (attachments || [])
@@ -114,6 +115,7 @@ const handler = async (req: Request): Promise<Response> => {
         phone: contactNumber,
         attachments: sanitizedAttachments,
         referral_source: referralSource || null,
+        affiliate_id: affiliateId || null,
         status: "new",
       })
       .select()
