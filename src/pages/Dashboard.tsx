@@ -120,7 +120,7 @@ const Dashboard = () => {
       .eq("user_id", userId)
       .eq("role", "admin")
       .maybeSingle();
-    
+
     setIsAdmin(!!adminData);
 
     // Check affiliate role
@@ -130,22 +130,33 @@ const Dashboard = () => {
       .eq("user_id", userId)
       .eq("role", "affiliate")
       .maybeSingle();
-    
-    if (affiliateRole) {
-      setIsAffiliate(true);
-      // Fetch affiliate data
-      const { data: affiliateData } = await supabase
-        .from("marketing_affiliates" as any)
-        .select("*")
-        .eq("email", email)
-        .eq("status", "active")
-        .maybeSingle();
-      
-      if (affiliateData) {
-        setAffiliate(affiliateData as unknown as Affiliate);
-        fetchClaims((affiliateData as any).id);
-      }
+
+    const isAff = !!affiliateRole;
+    setIsAffiliate(isAff);
+
+    if (!isAff) {
+      setAffiliate(null);
+      setClaims([]);
+      return;
     }
+
+    // Fetch affiliate data
+    const { data: affiliateData } = await supabase
+      .from("marketing_affiliates" as any)
+      .select("*")
+      .eq("email", email)
+      .eq("status", "active")
+      .maybeSingle();
+
+    if (affiliateData) {
+      setAffiliate(affiliateData as unknown as Affiliate);
+      fetchClaims((affiliateData as any).id);
+      return;
+    }
+
+    // Affiliate role is enabled but the marketing affiliate profile is missing or not accessible
+    setAffiliate(null);
+    setClaims([]);
   };
 
   const fetchClaims = async (affiliateId: string) => {
@@ -302,12 +313,14 @@ const Dashboard = () => {
   useEffect(() => {
     if (user?.id) {
       fetchProfile(user.id);
-      if (!isAdmin) {
+      if (!isAdmin && !isAffiliate) {
         fetchCustomerAccount(user.id);
+      } else {
+        setCustomerAccount(null);
       }
     }
     fetchQuote();
-  }, [user?.id, isAdmin]);
+  }, [user?.id, isAdmin, isAffiliate]);
 
   const handleSignOut = async () => {
     try {
@@ -376,7 +389,7 @@ const Dashboard = () => {
         </Card>
 
         {/* Customer BHPH Account Section - only show for non-admins with accounts */}
-        {!isAdmin && customerAccount && (
+        {!isAdmin && !isAffiliate && customerAccount && (
           <Card className="mb-8 border-2 border-primary bg-gradient-to-br from-primary/5 to-accent/5">
             <CardHeader className="pb-4">
               <div className="flex items-center gap-3">
@@ -440,6 +453,23 @@ const Dashboard = () => {
         )}
 
         {/* Affiliate Dashboard Section */}
+        {isAffiliate && !affiliate && (
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle>Affiliate Profile Pending</CardTitle>
+              <CardDescription>
+                Your affiliate role is active, but your marketing affiliate profile isn’t available yet.
+                Please contact an administrator.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">
+                If you were just switched to Affiliate, sign out and sign back in to refresh your dashboard.
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
         {isAffiliate && affiliate && (
           <>
             {/* Affiliate Stats Cards - Row 1 */}
@@ -460,12 +490,12 @@ const Dashboard = () => {
                   <div className="text-3xl font-bold">{affiliate.commission_rate}%</div>
                 </CardContent>
               </Card>
-              <Card className="bg-gradient-to-br from-green-500/10 to-green-500/5 border-green-500/20">
+              <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">Total Earnings</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold text-green-600">
+                  <div className="text-3xl font-bold text-primary">
                     ${affiliate.total_earnings.toFixed(2)}
                   </div>
                 </CardContent>
@@ -495,23 +525,23 @@ const Dashboard = () => {
                   </p>
                 </CardContent>
               </Card>
-              <Card className="border-2 border-amber-500/30">
+              <Card className="border-2 border-accent/30">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">Contracts Sent</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-4xl font-bold text-amber-600">{affiliate.contracts_sent}</div>
+                  <div className="text-4xl font-bold text-accent">{affiliate.contracts_sent}</div>
                   <p className="text-xs text-muted-foreground mt-2">
                     Linked to: <code className="bg-muted px-1 rounded">{affiliate.referral_code}</code>
                   </p>
                 </CardContent>
               </Card>
-              <Card className="border-2 border-green-500/30">
+              <Card className="border-2 border-primary/30">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">Contracts Signed</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-4xl font-bold text-green-600">{affiliate.contracts_signed}</div>
+                  <div className="text-4xl font-bold text-primary">{affiliate.contracts_signed}</div>
                   <p className="text-xs text-muted-foreground mt-2">
                     Linked to: <code className="bg-muted px-1 rounded">{affiliate.referral_code}</code>
                   </p>
@@ -641,10 +671,10 @@ const Dashboard = () => {
                   };
                   const heatLevel = getHeatLevel(claim.status);
                   const getHeatColor = (level: number) => {
-                    if (level <= 30) return "bg-blue-500";
-                    if (level <= 50) return "bg-yellow-500";
-                    if (level <= 70) return "bg-orange-500";
-                    return "bg-red-500";
+                    if (level <= 30) return "bg-primary/30";
+                    if (level <= 50) return "bg-primary/50";
+                    if (level <= 70) return "bg-primary/70";
+                    return "bg-primary";
                   };
 
                   return (
@@ -665,7 +695,7 @@ const Dashboard = () => {
                         <div className="space-y-1">
                           <div className="flex items-center justify-between text-xs">
                             <span className="flex items-center gap-1 text-muted-foreground">
-                              <Flame className="h-3 w-3 text-orange-500" />
+                              <Flame className="h-3 w-3 text-primary" />
                               Case Progress
                             </span>
                             <span className="font-medium">{heatLevel}%</span>
