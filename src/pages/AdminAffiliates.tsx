@@ -70,7 +70,7 @@ const AdminAffiliates = () => {
 
   const fetchAffiliates = async () => {
     const { data, error } = await supabase
-      .from("marketing_affiliates")
+      .from("marketing_affiliates" as any)
       .select("*")
       .order("created_at", { ascending: false });
 
@@ -79,7 +79,7 @@ const AdminAffiliates = () => {
       return;
     }
 
-    setAffiliates(data || []);
+    setAffiliates((data as unknown as Affiliate[]) || []);
   };
 
   const generateReferralCode = () => {
@@ -91,7 +91,7 @@ const AdminAffiliates = () => {
 
     if (editingAffiliate) {
       const { error } = await supabase
-        .from("marketing_affiliates")
+        .from("marketing_affiliates" as any)
         .update({
           name: formData.name,
           email: formData.email,
@@ -108,7 +108,7 @@ const AdminAffiliates = () => {
       toast({ title: "Affiliate updated successfully" });
     } else {
       const { error } = await supabase
-        .from("marketing_affiliates")
+        .from("marketing_affiliates" as any)
         .insert({
           name: formData.name,
           email: formData.email,
@@ -146,7 +146,7 @@ const AdminAffiliates = () => {
     if (!confirm("Are you sure you want to delete this affiliate?")) return;
 
     const { error } = await supabase
-      .from("marketing_affiliates")
+      .from("marketing_affiliates" as any)
       .delete()
       .eq("id", id);
 
