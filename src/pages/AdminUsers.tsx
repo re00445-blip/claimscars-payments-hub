@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Navbar } from "@/components/Navbar";
-import { Loader2, ArrowLeft, Shield, User } from "lucide-react";
+import { Loader2, ArrowLeft, Shield, User, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface UserProfile {
@@ -16,6 +16,7 @@ interface UserProfile {
   phone: string | null;
   created_at: string | null;
   isAdmin: boolean;
+  isAffiliate: boolean;
 }
 
 const AdminUsers = () => {
@@ -76,13 +77,13 @@ const AdminUsers = () => {
       return;
     }
 
-    // Get all admin roles
-    const { data: adminRoles } = await supabase
+    // Get all roles
+    const { data: userRoles } = await supabase
       .from("user_roles")
-      .select("user_id")
-      .eq("role", "admin");
+      .select("user_id, role");
 
-    const adminUserIds = new Set(adminRoles?.map(r => r.user_id) || []);
+    const adminUserIds = new Set(userRoles?.filter(r => r.role === "admin").map(r => r.user_id) || []);
+    const affiliateUserIds = new Set(userRoles?.filter(r => r.role === "affiliate").map(r => r.user_id) || []);
 
     const usersWithRoles: UserProfile[] = (profiles || []).map(profile => ({
       id: profile.id,
@@ -91,48 +92,49 @@ const AdminUsers = () => {
       phone: profile.phone,
       created_at: profile.created_at,
       isAdmin: adminUserIds.has(profile.id),
+      isAffiliate: affiliateUserIds.has(profile.id),
     }));
 
     setUsers(usersWithRoles);
     setLoading(false);
   };
 
-  const toggleAdminRole = async (userId: string, currentlyAdmin: boolean) => {
+  const toggleRole = async (userId: string, role: "admin" | "affiliate", currentlyHasRole: boolean) => {
     setTogglingUserId(userId);
 
     try {
-      if (currentlyAdmin) {
-        // Remove admin role
+      if (currentlyHasRole) {
         const { error } = await supabase
           .from("user_roles")
           .delete()
           .eq("user_id", userId)
-          .eq("role", "admin");
+          .eq("role", role);
 
         if (error) throw error;
 
         toast({
           title: "Role Updated",
-          description: "Admin privileges removed.",
+          description: `${role === "admin" ? "Admin" : "Affiliate"} privileges removed.`,
         });
       } else {
-        // Add admin role
         const { error } = await supabase
           .from("user_roles")
-          .insert({ user_id: userId, role: "admin" });
+          .insert({ user_id: userId, role });
 
         if (error) throw error;
 
         toast({
           title: "Role Updated",
-          description: "Admin privileges granted.",
+          description: `${role === "admin" ? "Admin" : "Affiliate"} privileges granted.`,
         });
       }
 
       // Update local state
-      setUsers(prev => prev.map(user => 
-        user.id === userId ? { ...user, isAdmin: !currentlyAdmin } : user
-      ));
+      setUsers(prev => prev.map(user => {
+        if (user.id !== userId) return user;
+        if (role === "admin") return { ...user, isAdmin: !currentlyHasRole };
+        return { ...user, isAffiliate: !currentlyHasRole };
+      }));
     } catch (error: any) {
       toast({
         title: "Error",
@@ -189,7 +191,8 @@ const AdminUsers = () => {
                     <TableHead>Email</TableHead>
                     <TableHead>Phone</TableHead>
                     <TableHead>Joined</TableHead>
-                    <TableHead className="text-center">Admin Access</TableHead>
+                    <TableHead className="text-center">Admin</TableHead>
+                    <TableHead className="text-center">Affiliate</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -199,6 +202,8 @@ const AdminUsers = () => {
                         <div className="flex items-center gap-2">
                           {user.isAdmin ? (
                             <Shield className="h-4 w-4 text-primary" />
+                          ) : user.isAffiliate ? (
+                            <Users className="h-4 w-4 text-blue-500" />
                           ) : (
                             <User className="h-4 w-4 text-muted-foreground" />
                           )}
@@ -216,13 +221,25 @@ const AdminUsers = () => {
                         }
                       </TableCell>
                       <TableCell className="text-center">
-                        <div className="flex items-center justify-center gap-2">
+                        <div className="flex items-center justify-center">
                           {togglingUserId === user.id ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
                           ) : (
                             <Switch
                               checked={user.isAdmin}
-                              onCheckedChange={() => toggleAdminRole(user.id, user.isAdmin)}
+                              onCheckedChange={() => toggleRole(user.id, "admin", user.isAdmin)}
+                            />
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <div className="flex items-center justify-center">
+                          {togglingUserId === user.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Switch
+                              checked={user.isAffiliate}
+                              onCheckedChange={() => toggleRole(user.id, "affiliate", user.isAffiliate)}
                             />
                           )}
                         </div>
