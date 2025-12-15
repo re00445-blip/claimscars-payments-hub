@@ -13,9 +13,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Plus, FileText, MessageSquare, LogOut, User as UserIcon, Calendar, Phone, Mail, MapPin } from "lucide-react";
+import { Loader2, Plus, FileText, MessageSquare, LogOut, User as UserIcon, Calendar, Phone, Mail, MapPin, QrCode, Copy, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { QRCodeSVG } from "qrcode.react";
 
 interface Affiliate {
   id: string;
@@ -395,6 +396,85 @@ const AffiliatePortal = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* QR Code Share Card */}
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <QrCode className="h-5 w-5" />
+              Share Your Referral Link
+            </CardTitle>
+            <CardDescription>
+              Share this QR code or link with potential clients to submit injury claims
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col md:flex-row items-center gap-6">
+              <div className="bg-white p-4 rounded-lg shadow-sm">
+                <QRCodeSVG
+                  id="affiliate-qr-code"
+                  value={`${window.location.origin}/claims?ref=${affiliate.referral_code}`}
+                  size={180}
+                  level="H"
+                  includeMargin
+                />
+              </div>
+              <div className="flex-1 space-y-4">
+                <div>
+                  <Label className="text-muted-foreground">Your Referral Link</Label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Input
+                      readOnly
+                      value={`${window.location.origin}/claims?ref=${affiliate.referral_code}`}
+                      className="font-mono text-sm"
+                    />
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => {
+                        navigator.clipboard.writeText(`${window.location.origin}/claims?ref=${affiliate.referral_code}`);
+                        toast({ title: "Link copied to clipboard!" });
+                      }}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      const svg = document.getElementById("affiliate-qr-code");
+                      if (svg) {
+                        const svgData = new XMLSerializer().serializeToString(svg);
+                        const canvas = document.createElement("canvas");
+                        const ctx = canvas.getContext("2d");
+                        const img = new Image();
+                        img.onload = () => {
+                          canvas.width = img.width;
+                          canvas.height = img.height;
+                          ctx?.drawImage(img, 0, 0);
+                          const pngFile = canvas.toDataURL("image/png");
+                          const downloadLink = document.createElement("a");
+                          downloadLink.download = `referral-qr-${affiliate.referral_code}.png`;
+                          downloadLink.href = pngFile;
+                          downloadLink.click();
+                        };
+                        img.src = "data:image/svg+xml;base64," + btoa(svgData);
+                      }
+                    }}
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Download QR Code
+                  </Button>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  When clients submit a claim through this link, it will automatically be linked to your referral code: <code className="bg-muted px-1 rounded font-bold">{affiliate.referral_code}</code>
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Cases, Contracts Sent, Contracts Signed */}
         <div className="grid md:grid-cols-3 gap-4 mb-8">
