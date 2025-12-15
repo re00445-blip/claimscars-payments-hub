@@ -13,15 +13,17 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Plus, FileText, MessageSquare, LogOut, User as UserIcon, Calendar, Phone, Mail, MapPin, QrCode, Copy, Download, Share2 } from "lucide-react";
+import { Loader2, Plus, FileText, MessageSquare, LogOut, User as UserIcon, Calendar, Phone, Mail, MapPin, QrCode, Copy, Download, Share2, CreditCard } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { QRCodeSVG } from "qrcode.react";
+import { AffiliateBusinessCard } from "@/components/AffiliateBusinessCard";
 
 interface Affiliate {
   id: string;
   name: string;
   email: string;
+  phone: string | null;
   commission_rate: number;
   referral_code: string;
   total_referrals: number;
@@ -601,6 +603,27 @@ const AffiliatePortal = () => {
                 </p>
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Personalized Business Card */}
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CreditCard className="h-5 w-5" />
+              Your Business Card
+            </CardTitle>
+            <CardDescription>
+              Customize and print your personalized business card to share with clients
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <AffiliateBusinessCard
+              affiliateName={affiliate.name}
+              referralCode={affiliate.referral_code}
+              email={affiliate.email}
+              phone={affiliate.phone || undefined}
+            />
           </CardContent>
         </Card>
 
