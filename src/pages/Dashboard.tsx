@@ -5,7 +5,7 @@ import { User, Session } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Navbar } from "@/components/Navbar";
-import { Loader2, DollarSign, Car, FileText, Users, ClipboardList, Settings, UserPlus, Sparkles, CreditCard } from "lucide-react";
+import { Loader2, DollarSign, Car, FileText, Users, ClipboardList, Settings, UserPlus, Sparkles, CreditCard, Share2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { TransactionsReport } from "@/components/admin/TransactionsReport";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -367,6 +367,23 @@ const Dashboard = () => {
                 <Button variant="outline" onClick={() => navigate("/admin/claims")}>
                   <ClipboardList className="mr-2 h-4 w-4" />
                   {t("dashboard.trackClaimProgress")}
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Marketing Affiliates */}
+            <Card className="mb-6 border-primary/50">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Share2 className="h-5 w-5" />
+                  Marketing Affiliates
+                </CardTitle>
+                <CardDescription>Manage affiliate partners and track referrals</CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-wrap gap-4">
+                <Button onClick={() => navigate("/admin/affiliates")}>
+                  <Share2 className="mr-2 h-4 w-4" />
+                  Manage Affiliates
                 </Button>
               </CardContent>
             </Card>
