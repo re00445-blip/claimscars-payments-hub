@@ -131,6 +131,20 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("Claim saved to database with ID:", claimData.id);
 
+    // If claim was referred by an affiliate, increment their total_referrals count
+    if (affiliateId) {
+      const { error: affiliateError } = await supabase.rpc('increment_affiliate_referrals', {
+        affiliate_id: affiliateId
+      });
+      
+      if (affiliateError) {
+        console.error("Error incrementing affiliate referrals:", affiliateError);
+        // Don't fail the request - claim is already saved
+      } else {
+        console.log("Affiliate referral count incremented for:", affiliateId);
+      }
+    }
+
     // Now try to send email notification (optional - don't fail if email fails)
     const attachmentsHtml = sanitizedAttachments.length > 0
       ? `
