@@ -288,6 +288,9 @@ const Claims = () => {
                   id="referralSource"
                   {...form.register("referralSource")}
                   placeholder={t("claims.referralSourcePlaceholder")}
+                  readOnly={!!referralCode}
+                  disabled={!!referralCode}
+                  className={referralCode ? "bg-muted cursor-not-allowed" : ""}
                 />
               </div>
 
