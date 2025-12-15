@@ -58,6 +58,9 @@ const Home = () => {
                 </Button>
               </Link>
             </div>
+            <Link to="/affiliate" className="text-muted-foreground/50 hover:text-muted-foreground text-sm mt-4 inline-block">
+              MA
+            </Link>
           </div>
         </div>
       </section>
