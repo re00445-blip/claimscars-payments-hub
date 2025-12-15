@@ -6,10 +6,25 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { LanguageToggle } from "@/components/LanguageToggle";
+import { UserAvatar } from "@/components/UserAvatar";
 
 export const Navbar = () => {
   const [userName, setUserName] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const { t } = useLanguage();
+
+  const fetchProfile = async (id: string) => {
+    const { data } = await supabase
+      .from("profiles")
+      .select("avatar_url")
+      .eq("id", id)
+      .single();
+    
+    if (data?.avatar_url) {
+      setAvatarUrl(data.avatar_url);
+    }
+  };
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -19,8 +34,12 @@ export const Navbar = () => {
                        session.user.email?.split('@')[0] || 
                        'Account';
           setUserName(name);
+          setUserId(session.user.id);
+          fetchProfile(session.user.id);
         } else {
           setUserName(null);
+          setUserId(null);
+          setAvatarUrl(null);
         }
       }
     );
@@ -31,6 +50,8 @@ export const Navbar = () => {
                      session.user.email?.split('@')[0] || 
                      'Account';
         setUserName(name);
+        setUserId(session.user.id);
+        fetchProfile(session.user.id);
       }
     });
 
@@ -74,14 +95,22 @@ export const Navbar = () => {
           {/* Right side - Account icon + Get Started on mobile, Login + Get Started on desktop */}
           <div className="flex items-center gap-3 z-10">
             <Link to={userName ? "/dashboard" : "/auth"} className="md:hidden">
-              <Button variant="ghost" size="sm">
-                <User className="h-4 w-4" />
+              <Button variant="ghost" size="sm" className="flex items-center gap-1">
+                {userId && avatarUrl ? (
+                  <UserAvatar userId={userId} avatarUrl={avatarUrl} fullName={userName} size="sm" />
+                ) : (
+                  <User className="h-4 w-4" />
+                )}
                 {userName && <span className="ml-1 max-w-[80px] truncate text-xs">{userName}</span>}
               </Button>
             </Link>
             <Link to={userName ? "/dashboard" : "/auth"} className="hidden md:block">
-              <Button variant="ghost" size="sm">
-                <User className="h-4 w-4 mr-2" />
+              <Button variant="ghost" size="sm" className="flex items-center gap-2">
+                {userId && avatarUrl ? (
+                  <UserAvatar userId={userId} avatarUrl={avatarUrl} fullName={userName} size="sm" />
+                ) : (
+                  <User className="h-4 w-4" />
+                )}
                 {userName || t("nav.login")}
               </Button>
             </Link>
