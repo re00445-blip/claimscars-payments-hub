@@ -389,15 +389,58 @@ const AffiliatePortal = () => {
           <Card>
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-medium">Referral Code</CardTitle>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowQrCode(!showQrCode)}
-                  className="h-6 px-2"
-                >
-                  <QrCode className="h-4 w-4" />
-                </Button>
+                <CardTitle className="text-sm font-medium">Your Referral Code</CardTitle>
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      const shareUrl = `${window.location.origin}/claims?ref=${affiliate.referral_code}`;
+                      navigator.clipboard.writeText(shareUrl);
+                      toast({ title: "Referral link copied!" });
+                    }}
+                    className="h-6 px-2"
+                    title="Copy referral link"
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={async () => {
+                      const shareUrl = `${window.location.origin}/claims?ref=${affiliate.referral_code}`;
+                      if (navigator.share) {
+                        try {
+                          await navigator.share({
+                            title: "Submit an Injury Claim",
+                            text: "Use my referral link to submit your injury claim",
+                            url: shareUrl,
+                          });
+                        } catch (err) {
+                          if ((err as Error).name !== "AbortError") {
+                            toast({ title: "Share failed", variant: "destructive" });
+                          }
+                        }
+                      } else {
+                        navigator.clipboard.writeText(shareUrl);
+                        toast({ title: "Link copied!" });
+                      }
+                    }}
+                    className="h-6 px-2"
+                    title="Share referral link"
+                  >
+                    <Share2 className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowQrCode(!showQrCode)}
+                    className="h-6 px-2"
+                    title="Toggle QR code"
+                  >
+                    <QrCode className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             </CardHeader>
             <CardContent>
