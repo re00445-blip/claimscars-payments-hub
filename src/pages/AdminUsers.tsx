@@ -101,9 +101,11 @@ const AdminUsers = () => {
 
   const toggleRole = async (userId: string, role: "admin" | "affiliate", currentlyHasRole: boolean) => {
     setTogglingUserId(userId);
+    const user = users.find(u => u.id === userId);
 
     try {
       if (currentlyHasRole) {
+        // Remove role
         const { error } = await supabase
           .from("user_roles")
           .delete()
@@ -112,16 +114,46 @@ const AdminUsers = () => {
 
         if (error) throw error;
 
+        // If removing affiliate role, also remove from marketing_affiliates
+        if (role === "affiliate" && user) {
+          await supabase
+            .from("marketing_affiliates")
+            .delete()
+            .eq("email", user.email);
+        }
+
         toast({
           title: "Role Updated",
           description: `${role === "admin" ? "Admin" : "Affiliate"} privileges removed.`,
         });
       } else {
+        // Add role
         const { error } = await supabase
           .from("user_roles")
           .insert({ user_id: userId, role });
 
         if (error) throw error;
+
+        // If adding affiliate role, also create marketing_affiliates record
+        if (role === "affiliate" && user) {
+          const referralCode = `REF-${user.email.split("@")[0].toUpperCase().slice(0, 6)}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+          
+          const { error: affiliateError } = await supabase
+            .from("marketing_affiliates")
+            .insert({
+              name: user.full_name || user.email.split("@")[0],
+              email: user.email,
+              phone: user.phone,
+              referral_code: referralCode,
+              commission_rate: 10, // Default 10%
+              status: "active",
+            });
+
+          if (affiliateError) {
+            console.error("Error creating affiliate record:", affiliateError);
+            // Don't throw - role was already assigned
+          }
+        }
 
         toast({
           title: "Role Updated",
@@ -130,10 +162,10 @@ const AdminUsers = () => {
       }
 
       // Update local state
-      setUsers(prev => prev.map(user => {
-        if (user.id !== userId) return user;
-        if (role === "admin") return { ...user, isAdmin: !currentlyHasRole };
-        return { ...user, isAffiliate: !currentlyHasRole };
+      setUsers(prev => prev.map(u => {
+        if (u.id !== userId) return u;
+        if (role === "admin") return { ...u, isAdmin: !currentlyHasRole };
+        return { ...u, isAffiliate: !currentlyHasRole };
       }));
     } catch (error: any) {
       toast({
