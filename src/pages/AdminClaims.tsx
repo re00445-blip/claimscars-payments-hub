@@ -570,6 +570,7 @@ const AdminClaims = () => {
                       <TableHead>Phone</TableHead>
                       <TableHead>Accident Date</TableHead>
                       <TableHead>Injury</TableHead>
+                      <TableHead>Referral Code</TableHead>
                       <TableHead>At Fault</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Created</TableHead>
@@ -583,6 +584,7 @@ const AdminClaims = () => {
                         <TableCell>{claim.phone}</TableCell>
                         <TableCell>{new Date(claim.accident_date).toLocaleDateString()}</TableCell>
                         <TableCell>{claim.injury_area}</TableCell>
+                        <TableCell>{claim.referral_source || "—"}</TableCell>
                         <TableCell className="capitalize">{claim.at_fault}</TableCell>
                         <TableCell>
                           <Select
