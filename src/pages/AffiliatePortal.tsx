@@ -239,6 +239,21 @@ const AffiliatePortal = () => {
     fetchClaimNotes(claimId);
   };
 
+  const handleUpdateClaim = async (claimId: string, updates: Partial<Claim>) => {
+    const { error } = await supabase
+      .from("injury_claims")
+      .update(updates)
+      .eq("id", claimId);
+
+    if (error) {
+      toast({ title: "Error updating claim", variant: "destructive" });
+      return;
+    }
+
+    toast({ title: "Client information updated" });
+    if (affiliate) fetchClaims(affiliate.id);
+  };
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -754,6 +769,7 @@ const AffiliatePortal = () => {
                     onStatusChange={handleUpdateStatus}
                     onAddNote={handleAddNoteForClaim}
                     onExpand={fetchClaimNotes}
+                    onUpdateClaim={handleUpdateClaim}
                   />
                 ))}
               </div>
