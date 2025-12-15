@@ -21,7 +21,7 @@ export const LanguageToggle = () => {
         id="language-toggle"
         checked={language === "es"}
         onCheckedChange={handleToggle}
-        className="data-[state=checked]:bg-primary"
+        className="data-[state=checked]:bg-primary data-[state=unchecked]:bg-primary"
       />
       <Label 
         htmlFor="language-toggle" 
