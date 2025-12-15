@@ -773,8 +773,8 @@ const Dashboard = () => {
           </>
         )}
 
-        {/* Summary Cards for users without BHPH accounts */}
-        {!isAdmin && !customerAccount && (
+        {/* Summary Cards for users without BHPH accounts (and not affiliates) */}
+        {!isAdmin && !isAffiliate && !customerAccount && (
           <div className="grid md:grid-cols-3 gap-6 mb-8">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
