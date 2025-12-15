@@ -127,6 +127,48 @@ export type Database = {
         }
         Relationships: []
       }
+      marketing_affiliates: {
+        Row: {
+          commission_rate: number
+          created_at: string
+          email: string
+          id: string
+          name: string
+          phone: string | null
+          referral_code: string
+          status: string
+          total_earnings: number
+          total_referrals: number
+          updated_at: string
+        }
+        Insert: {
+          commission_rate?: number
+          created_at?: string
+          email: string
+          id?: string
+          name: string
+          phone?: string | null
+          referral_code: string
+          status?: string
+          total_earnings?: number
+          total_referrals?: number
+          updated_at?: string
+        }
+        Update: {
+          commission_rate?: number
+          created_at?: string
+          email?: string
+          id?: string
+          name?: string
+          phone?: string | null
+          referral_code?: string
+          status?: string
+          total_earnings?: number
+          total_referrals?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       payment_reminders: {
         Row: {
           account_id: string
