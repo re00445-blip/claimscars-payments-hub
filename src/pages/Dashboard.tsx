@@ -5,7 +5,7 @@ import { User, Session } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Navbar } from "@/components/Navbar";
-import { Loader2, DollarSign, Car, FileText, Users, ClipboardList, Settings, UserPlus, Sparkles, CreditCard, Share2, Plus, MessageSquare, Phone, Mail } from "lucide-react";
+import { Loader2, DollarSign, Car, FileText, Users, ClipboardList, Settings, UserPlus, Sparkles, CreditCard, Share2, Plus, MessageSquare, Phone, Mail, Flame } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { TransactionsReport } from "@/components/admin/TransactionsReport";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -627,61 +627,99 @@ const Dashboard = () => {
               </Card>
             ) : (
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-                {claims.map((claim) => (
-                  <Card key={claim.id} className="hover:shadow-lg transition-shadow">
-                    <CardHeader className="pb-3">
-                      <div className="flex justify-between items-start">
-                        <CardTitle className="text-lg">{claim.full_name}</CardTitle>
-                        <Badge className={`${getStatusColor(claim.status)} border`}>
-                          {claim.status.replace("_", " ")}
-                        </Badge>
-                      </div>
-                      <CardDescription>
-                        Accident: {format(new Date(claim.accident_date), "MMM d, yyyy")}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div className="flex items-center gap-2 text-sm">
-                        <Phone className="h-4 w-4 text-muted-foreground" />
-                        <span>{claim.phone}</span>
-                      </div>
-                      {claim.email && (
-                        <div className="flex items-center gap-2 text-sm">
-                          <Mail className="h-4 w-4 text-muted-foreground" />
-                          <span className="truncate">{claim.email}</span>
+                {claims.map((claim) => {
+                  // Calculate heat level based on status
+                  const getHeatLevel = (status: string) => {
+                    switch (status) {
+                      case "new": return 20;
+                      case "in_progress": return 50;
+                      case "pending": return 70;
+                      case "resolved": return 90;
+                      case "closed": return 100;
+                      default: return 10;
+                    }
+                  };
+                  const heatLevel = getHeatLevel(claim.status);
+                  const getHeatColor = (level: number) => {
+                    if (level <= 30) return "bg-blue-500";
+                    if (level <= 50) return "bg-yellow-500";
+                    if (level <= 70) return "bg-orange-500";
+                    return "bg-red-500";
+                  };
+
+                  return (
+                    <Card key={claim.id} className="hover:shadow-lg transition-shadow">
+                      <CardHeader className="pb-3">
+                        <div className="flex justify-between items-start">
+                          <CardTitle className="text-lg">{claim.full_name}</CardTitle>
+                          <Badge className={`${getStatusColor(claim.status)} border`}>
+                            {claim.status.replace("_", " ")}
+                          </Badge>
                         </div>
-                      )}
-                      <div className="bg-muted/50 rounded-lg p-2">
-                        <p className="text-xs text-muted-foreground">Injury Area</p>
-                        <p className="font-medium">{claim.injury_area}</p>
-                      </div>
-                      <div className="flex gap-2 pt-2">
-                        <Select
-                          value={claim.status}
-                          onValueChange={(value) => handleUpdateStatus(claim.id, value)}
-                        >
-                          <SelectTrigger className="flex-1">
-                            <SelectValue placeholder="Update Status" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="new">New</SelectItem>
-                            <SelectItem value="in_progress">In Progress</SelectItem>
-                            <SelectItem value="pending">Pending</SelectItem>
-                            <SelectItem value="resolved">Resolved</SelectItem>
-                            <SelectItem value="closed">Closed</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={() => openNotesDialog(claim)}
-                        >
-                          <MessageSquare className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                        <CardDescription>
+                          Accident: {format(new Date(claim.accident_date), "MMM d, yyyy")}
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        {/* Heat Bar */}
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="flex items-center gap-1 text-muted-foreground">
+                              <Flame className="h-3 w-3 text-orange-500" />
+                              Case Progress
+                            </span>
+                            <span className="font-medium">{heatLevel}%</span>
+                          </div>
+                          <div className="h-2 bg-muted rounded-full overflow-hidden">
+                            <div 
+                              className={`h-full ${getHeatColor(heatLevel)} transition-all duration-500`}
+                              style={{ width: `${heatLevel}%` }}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 text-sm">
+                          <Phone className="h-4 w-4 text-muted-foreground" />
+                          <span>{claim.phone}</span>
+                        </div>
+                        {claim.email && (
+                          <div className="flex items-center gap-2 text-sm">
+                            <Mail className="h-4 w-4 text-muted-foreground" />
+                            <span className="truncate">{claim.email}</span>
+                          </div>
+                        )}
+                        <div className="bg-muted/50 rounded-lg p-2">
+                          <p className="text-xs text-muted-foreground">Injury Area</p>
+                          <p className="font-medium">{claim.injury_area}</p>
+                        </div>
+                        <div className="flex gap-2 pt-2">
+                          <Select
+                            value={claim.status}
+                            onValueChange={(value) => handleUpdateStatus(claim.id, value)}
+                          >
+                            <SelectTrigger className="flex-1">
+                              <SelectValue placeholder="Update Status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="new">New</SelectItem>
+                              <SelectItem value="in_progress">In Progress</SelectItem>
+                              <SelectItem value="pending">Pending</SelectItem>
+                              <SelectItem value="resolved">Resolved</SelectItem>
+                              <SelectItem value="closed">Closed</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => openNotesDialog(claim)}
+                          >
+                            <MessageSquare className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
             )}
 
