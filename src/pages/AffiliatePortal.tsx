@@ -180,7 +180,7 @@ const AffiliatePortal = () => {
       .insert({
         ...claimForm,
         affiliate_id: affiliate.id,
-        referral_source: affiliate.name,
+        referral_source: affiliate.referral_code,
       });
 
     if (error) {
