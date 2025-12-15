@@ -116,10 +116,9 @@ const AdminUsers = () => {
 
         // If removing affiliate role, also remove from marketing_affiliates
         if (role === "affiliate" && user) {
-          await supabase
-            .from("marketing_affiliates")
-            .delete()
-            .eq("email", user.email);
+          // Prefer user_id linkage, fallback to email
+          await supabase.from("marketing_affiliates").delete().eq("user_id", userId);
+          await supabase.from("marketing_affiliates").delete().eq("email", user.email);
         }
 
         toast({
@@ -137,18 +136,53 @@ const AdminUsers = () => {
         // If adding affiliate role, also create marketing_affiliates record
         if (role === "affiliate" && user) {
           const referralCode = `REF-${user.email.split("@")[0].toUpperCase().slice(0, 6)}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
-          
-          // Check if affiliate record already exists
-          const { data: existingAffiliate } = await supabase
+
+          // Find an existing affiliate profile (by user_id first, then email)
+          const { data: existingByUserId } = await supabase
             .from("marketing_affiliates")
             .select("id")
-            .eq("email", user.email)
+            .eq("user_id", userId)
             .maybeSingle();
 
-          if (!existingAffiliate) {
+          const { data: existingByEmail } = existingByUserId
+            ? { data: null }
+            : await supabase
+                .from("marketing_affiliates")
+                .select("id")
+                .eq("email", user.email)
+                .maybeSingle();
+
+          const existingAffiliate = existingByUserId || existingByEmail;
+
+          if (existingAffiliate) {
+            const { error: linkError } = await supabase
+              .from("marketing_affiliates")
+              .update({
+                user_id: userId,
+                name: user.full_name || user.email.split("@")[0],
+                phone: user.phone,
+                status: "active",
+              })
+              .eq("id", existingAffiliate.id);
+
+            if (linkError) {
+              console.error("Error linking affiliate record:", linkError);
+              toast({
+                title: "Warning",
+                description: "Affiliate role granted, but profile linking failed. Please review in Affiliates page.",
+                variant: "destructive",
+              });
+            } else {
+              toast({
+                title: "Affiliate Linked",
+                description: `Marketing affiliate profile linked for ${user.full_name || user.email}`,
+              });
+            }
+          } else {
             const { error: affiliateError } = await supabase
               .from("marketing_affiliates")
               .insert({
+                user_id: userId,
                 name: user.full_name || user.email.split("@")[0],
                 email: user.email,
                 phone: user.phone,
