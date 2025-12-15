@@ -141,8 +141,8 @@ export const UserAvatar = ({
   const avatarContent = (
     <Avatar className={`${sizeClasses[size]} border-2 border-primary/20`}>
       <AvatarImage src={avatarUrl || undefined} alt={fullName || "User"} />
-      <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-        {initials}
+      <AvatarFallback className="bg-primary/10 text-primary">
+        <User className={iconSizes[size]} />
       </AvatarFallback>
     </Avatar>
   );
@@ -169,8 +169,8 @@ export const UserAvatar = ({
           <div className="flex justify-center">
             <Avatar className="h-32 w-32 border-4 border-primary/20">
               <AvatarImage src={previewUrl || avatarUrl || undefined} />
-              <AvatarFallback className="bg-primary/10 text-primary text-3xl font-semibold">
-                {initials}
+              <AvatarFallback className="bg-primary/10 text-primary">
+                <User className="h-12 w-12" />
               </AvatarFallback>
             </Avatar>
           </div>
