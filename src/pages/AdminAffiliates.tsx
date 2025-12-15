@@ -20,6 +20,8 @@ interface Affiliate {
   referral_code: string;
   total_referrals: number;
   total_earnings: number;
+  contracts_sent: number;
+  contracts_signed: number;
   status: string;
   created_at: string;
 }
@@ -37,6 +39,8 @@ const AdminAffiliates = () => {
     email: "",
     phone: "",
     commission_rate: "10",
+    contracts_sent: "0",
+    contracts_signed: "0",
   });
 
   useEffect(() => {
@@ -97,6 +101,8 @@ const AdminAffiliates = () => {
           email: formData.email,
           phone: formData.phone || null,
           commission_rate: parseFloat(formData.commission_rate),
+          contracts_sent: parseInt(formData.contracts_sent),
+          contracts_signed: parseInt(formData.contracts_signed),
         })
         .eq("id", editingAffiliate.id);
 
@@ -115,6 +121,8 @@ const AdminAffiliates = () => {
           phone: formData.phone || null,
           commission_rate: parseFloat(formData.commission_rate),
           referral_code: generateReferralCode(),
+          contracts_sent: parseInt(formData.contracts_sent),
+          contracts_signed: parseInt(formData.contracts_signed),
         });
 
       if (error) {
@@ -127,7 +135,7 @@ const AdminAffiliates = () => {
 
     setDialogOpen(false);
     setEditingAffiliate(null);
-    setFormData({ name: "", email: "", phone: "", commission_rate: "10" });
+    setFormData({ name: "", email: "", phone: "", commission_rate: "10", contracts_sent: "0", contracts_signed: "0" });
     fetchAffiliates();
   };
 
@@ -138,6 +146,8 @@ const AdminAffiliates = () => {
       email: affiliate.email,
       phone: affiliate.phone || "",
       commission_rate: affiliate.commission_rate.toString(),
+      contracts_sent: affiliate.contracts_sent.toString(),
+      contracts_signed: affiliate.contracts_signed.toString(),
     });
     setDialogOpen(true);
   };
@@ -194,7 +204,7 @@ const AdminAffiliates = () => {
             setDialogOpen(open);
             if (!open) {
               setEditingAffiliate(null);
-              setFormData({ name: "", email: "", phone: "", commission_rate: "10" });
+              setFormData({ name: "", email: "", phone: "", commission_rate: "10", contracts_sent: "0", contracts_signed: "0" });
             }
           }}>
             <DialogTrigger asChild>
@@ -251,6 +261,30 @@ const AdminAffiliates = () => {
                     required
                   />
                 </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="contracts_sent">Contracts Sent</Label>
+                    <Input
+                      id="contracts_sent"
+                      type="number"
+                      min="0"
+                      value={formData.contracts_sent}
+                      onChange={(e) => setFormData({ ...formData, contracts_sent: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="contracts_signed">Contracts Signed</Label>
+                    <Input
+                      id="contracts_signed"
+                      type="number"
+                      min="0"
+                      value={formData.contracts_signed}
+                      onChange={(e) => setFormData({ ...formData, contracts_signed: e.target.value })}
+                      required
+                    />
+                  </div>
+                </div>
                 <Button type="submit" className="w-full">
                   {editingAffiliate ? "Update Affiliate" : "Create Affiliate"}
                 </Button>
@@ -280,7 +314,9 @@ const AdminAffiliates = () => {
                       <TableHead>Email</TableHead>
                       <TableHead>Referral Code</TableHead>
                       <TableHead>Commission</TableHead>
-                      <TableHead>Referrals</TableHead>
+                      <TableHead>Cases</TableHead>
+                      <TableHead>Contracts Sent</TableHead>
+                      <TableHead>Contracts Signed</TableHead>
                       <TableHead>Earnings</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Actions</TableHead>
@@ -298,6 +334,8 @@ const AdminAffiliates = () => {
                         </TableCell>
                         <TableCell>{affiliate.commission_rate}%</TableCell>
                         <TableCell>{affiliate.total_referrals}</TableCell>
+                        <TableCell>{affiliate.contracts_sent}</TableCell>
+                        <TableCell>{affiliate.contracts_signed}</TableCell>
                         <TableCell>${affiliate.total_earnings.toFixed(2)}</TableCell>
                         <TableCell>
                           <span className={`px-2 py-1 rounded-full text-xs ${

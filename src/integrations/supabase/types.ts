@@ -183,6 +183,8 @@ export type Database = {
       marketing_affiliates: {
         Row: {
           commission_rate: number
+          contracts_sent: number
+          contracts_signed: number
           created_at: string
           email: string
           id: string
@@ -196,6 +198,8 @@ export type Database = {
         }
         Insert: {
           commission_rate?: number
+          contracts_sent?: number
+          contracts_signed?: number
           created_at?: string
           email: string
           id?: string
@@ -209,6 +213,8 @@ export type Database = {
         }
         Update: {
           commission_rate?: number
+          contracts_sent?: number
+          contracts_signed?: number
           created_at?: string
           email?: string
           id?: string
