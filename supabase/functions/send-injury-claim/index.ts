@@ -114,7 +114,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     const emailResponse = await resend.emails.send({
       from: "Cars & Claims <noreply@carsandclaims.com>",
-      to: ["re00445@gmail.com"],
+      to: ["ramon@carsandclaims.com"],
       subject: "New Injury Claim Inquiry",
       html: `
         <h2>New Injury Claim Inquiry</h2>
