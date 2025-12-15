@@ -90,7 +90,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     const { name, address, accidentDate, injuryArea, atFault, contactNumber, attachments, referralSource, affiliateId } = data;
 
-    console.log("Processing injury claim for:", escapeHtml(name), "Affiliate ID:", affiliateId || "none");
+    console.log("Processing injury claim for:", escapeHtml(name), "Referral Source:", referralSource || "none", "Affiliate ID:", affiliateId || "none");
 
     // Sanitize and validate attachment URLs
     const sanitizedAttachments = (attachments || [])
@@ -102,6 +102,23 @@ const handler = async (req: Request): Promise<Response> => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Look up affiliate by referral code if not provided directly
+    let resolvedAffiliateId = affiliateId || null;
+    if (!resolvedAffiliateId && referralSource) {
+      // Try to find affiliate by referral_code (exact match)
+      const { data: affiliateData } = await supabase
+        .from("marketing_affiliates")
+        .select("id")
+        .eq("referral_code", referralSource)
+        .eq("status", "active")
+        .maybeSingle();
+      
+      if (affiliateData) {
+        resolvedAffiliateId = affiliateData.id;
+        console.log("Found affiliate by referral code:", resolvedAffiliateId);
+      }
+    }
 
     // Save claim to database first (this is the most important part)
     const { data: claimData, error: dbError } = await supabase
@@ -115,7 +132,7 @@ const handler = async (req: Request): Promise<Response> => {
         phone: contactNumber,
         attachments: sanitizedAttachments,
         referral_source: referralSource || null,
-        affiliate_id: affiliateId || null,
+        affiliate_id: resolvedAffiliateId,
         status: "new",
       })
       .select()
@@ -132,16 +149,16 @@ const handler = async (req: Request): Promise<Response> => {
     console.log("Claim saved to database with ID:", claimData.id);
 
     // If claim was referred by an affiliate, increment their total_referrals count
-    if (affiliateId) {
+    if (resolvedAffiliateId) {
       const { error: affiliateError } = await supabase.rpc('increment_affiliate_referrals', {
-        affiliate_id: affiliateId
+        affiliate_id: resolvedAffiliateId
       });
       
       if (affiliateError) {
         console.error("Error incrementing affiliate referrals:", affiliateError);
         // Don't fail the request - claim is already saved
       } else {
-        console.log("Affiliate referral count incremented for:", affiliateId);
+        console.log("Affiliate referral count incremented for:", resolvedAffiliateId);
       }
     }
 
