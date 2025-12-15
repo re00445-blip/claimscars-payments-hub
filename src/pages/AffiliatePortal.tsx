@@ -13,7 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Plus, FileText, MessageSquare, LogOut, User as UserIcon, Calendar, Phone, Mail, MapPin, QrCode, Copy, Download } from "lucide-react";
+import { Loader2, Plus, FileText, MessageSquare, LogOut, User as UserIcon, Calendar, Phone, Mail, MapPin, QrCode, Copy, Download, Share2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { QRCodeSVG } from "qrcode.react";
@@ -439,6 +439,33 @@ const AffiliatePortal = () => {
                 }}
               >
                 <Copy className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={async () => {
+                  const shareUrl = `${window.location.origin}/claims?ref=${affiliate.referral_code}`;
+                  if (navigator.share) {
+                    try {
+                      await navigator.share({
+                        title: "Submit an Injury Claim",
+                        text: "Use my referral link to submit your injury claim",
+                        url: shareUrl,
+                      });
+                    } catch (err) {
+                      // User cancelled or share failed
+                      if ((err as Error).name !== "AbortError") {
+                        toast({ title: "Share failed", variant: "destructive" });
+                      }
+                    }
+                  } else {
+                    // Fallback to copy
+                    navigator.clipboard.writeText(shareUrl);
+                    toast({ title: "Link copied!" });
+                  }
+                }}
+              >
+                <Share2 className="h-4 w-4" />
               </Button>
             </div>
           </CardContent>
