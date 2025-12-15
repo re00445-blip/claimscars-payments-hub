@@ -309,11 +309,12 @@ const Dashboard = () => {
 
   const handleSignOut = async () => {
     try {
-      await supabase.auth.signOut();
+      await supabase.auth.signOut({ scope: 'local' });
     } catch (error) {
       console.error("Sign out error:", error);
     }
-    // Use hard redirect to ensure complete session clear and avoid auth listener interference
+    // Clear any cached state and redirect
+    localStorage.removeItem('sb-kauqfglsnbmshlteegaf-auth-token');
     window.location.href = "/";
   };
 
