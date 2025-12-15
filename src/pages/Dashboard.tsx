@@ -267,6 +267,17 @@ const Dashboard = () => {
     }
   };
 
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case "new": return "Chase";
+      case "in_progress": return "Following Up";
+      case "pending": return "Contracts Sent";
+      case "resolved": return "Contract Signed";
+      case "closed": return "Closed";
+      default: return status.replace("_", " ");
+    }
+  };
+
   const fetchCustomerAccount = async (userId: string) => {
     const { data } = await supabase
       .from("customer_accounts")
@@ -683,7 +694,7 @@ const Dashboard = () => {
                         <div className="flex justify-between items-start">
                           <CardTitle className="text-lg">{claim.full_name}</CardTitle>
                           <Badge className={`${getStatusColor(claim.status)} border`}>
-                            {claim.status.replace("_", " ")}
+                            {getStatusLabel(claim.status)}
                           </Badge>
                         </div>
                         <CardDescription>
@@ -731,10 +742,10 @@ const Dashboard = () => {
                               <SelectValue placeholder="Update Status" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="new">New</SelectItem>
-                              <SelectItem value="in_progress">In Progress</SelectItem>
-                              <SelectItem value="pending">Pending</SelectItem>
-                              <SelectItem value="resolved">Resolved</SelectItem>
+                              <SelectItem value="new">Chase</SelectItem>
+                              <SelectItem value="in_progress">Following Up</SelectItem>
+                              <SelectItem value="pending">Contracts Sent</SelectItem>
+                              <SelectItem value="resolved">Contract Signed</SelectItem>
                               <SelectItem value="closed">Closed</SelectItem>
                             </SelectContent>
                           </Select>

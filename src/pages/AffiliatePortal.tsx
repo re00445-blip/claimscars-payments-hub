@@ -257,6 +257,17 @@ const AffiliatePortal = () => {
     }
   };
 
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case "new": return "Chase";
+      case "in_progress": return "Following Up";
+      case "pending": return "Contracts Sent";
+      case "resolved": return "Contract Signed";
+      case "closed": return "Closed";
+      default: return status.replace("_", " ");
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -789,14 +800,14 @@ const AffiliatePortal = () => {
                           >
                             <SelectTrigger className="w-32">
                               <span className={`px-2 py-1 rounded text-xs ${getStatusColor(claim.status)}`}>
-                                {claim.status.replace("_", " ")}
+                                {getStatusLabel(claim.status)}
                               </span>
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="new">New</SelectItem>
-                              <SelectItem value="in_progress">In Progress</SelectItem>
-                              <SelectItem value="pending">Pending</SelectItem>
-                              <SelectItem value="resolved">Resolved</SelectItem>
+                              <SelectItem value="new">Chase</SelectItem>
+                              <SelectItem value="in_progress">Following Up</SelectItem>
+                              <SelectItem value="pending">Contracts Sent</SelectItem>
+                              <SelectItem value="resolved">Contract Signed</SelectItem>
                               <SelectItem value="closed">Closed</SelectItem>
                             </SelectContent>
                           </Select>
