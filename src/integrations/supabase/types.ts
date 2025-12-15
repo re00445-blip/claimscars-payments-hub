@@ -195,6 +195,7 @@ export type Database = {
           total_earnings: number
           total_referrals: number
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           commission_rate?: number
@@ -210,6 +211,7 @@ export type Database = {
           total_earnings?: number
           total_referrals?: number
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           commission_rate?: number
@@ -225,8 +227,17 @@ export type Database = {
           total_earnings?: number
           total_referrals?: number
           updated_at?: string
+          user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "marketing_affiliates_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       payment_reminders: {
         Row: {

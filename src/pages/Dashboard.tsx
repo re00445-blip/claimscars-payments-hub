@@ -144,7 +144,7 @@ const Dashboard = () => {
     const { data: affiliateData } = await supabase
       .from("marketing_affiliates" as any)
       .select("*")
-      .eq("email", email)
+      .eq("user_id", userId)
       .eq("status", "active")
       .maybeSingle();
 

@@ -90,7 +90,7 @@ const AffiliatePortal = () => {
         
         if (session?.user) {
           setTimeout(() => {
-            checkAffiliateStatus(session.user.email || "");
+            checkAffiliateStatus(session.user.id);
           }, 0);
         }
       }
@@ -101,7 +101,7 @@ const AffiliatePortal = () => {
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        checkAffiliateStatus(session.user.email || "");
+        checkAffiliateStatus(session.user.id);
       } else {
         setLoading(false);
       }
@@ -110,11 +110,11 @@ const AffiliatePortal = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const checkAffiliateStatus = async (email: string) => {
+  const checkAffiliateStatus = async (userId: string) => {
     const { data, error } = await supabase
       .from("marketing_affiliates" as any)
       .select("*")
-      .eq("email", email)
+      .eq("user_id", userId)
       .eq("status", "active")
       .maybeSingle();
 
