@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "https://esm.sh/resend@4.0.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
@@ -96,6 +97,39 @@ const handler = async (req: Request): Promise<Response> => {
       .filter((url): url is string => url !== null)
       .slice(0, 10);
 
+    // Initialize Supabase client with service role key for database insertion
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Save claim to database first (this is the most important part)
+    const { data: claimData, error: dbError } = await supabase
+      .from("injury_claims")
+      .insert({
+        full_name: name,
+        address: address,
+        accident_date: accidentDate,
+        injury_area: injuryArea,
+        at_fault: atFault,
+        phone: contactNumber,
+        attachments: sanitizedAttachments,
+        referral_source: referralSource || null,
+        status: "new",
+      })
+      .select()
+      .single();
+
+    if (dbError) {
+      console.error("Error saving claim to database:", dbError);
+      return new Response(
+        JSON.stringify({ error: "Failed to save claim to database" }),
+        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    console.log("Claim saved to database with ID:", claimData.id);
+
+    // Now try to send email notification (optional - don't fail if email fails)
     const attachmentsHtml = sanitizedAttachments.length > 0
       ? `
         <h3>Attached Photos/Videos</h3>
@@ -112,37 +146,42 @@ const handler = async (req: Request): Promise<Response> => {
       ? `<li><strong>Referral Source:</strong> ${escapeHtml(referralSource)}</li>`
       : '';
 
-    const emailResponse = await resend.emails.send({
-      from: "Cars & Claims <noreply@carsandclaims.com>",
-      to: ["ramon@carsandclaims.com", "re00445@gmail.com"],
-      subject: "New Injury Claim Inquiry",
-      html: `
-        <h2>New Injury Claim Inquiry</h2>
-        <p><strong>Prospect Information:</strong></p>
-        <ul>
-          <li><strong>Name:</strong> ${escapeHtml(name)}</li>
-          <li><strong>Address:</strong> ${escapeHtml(address)}</li>
-          <li><strong>Best Contact Number:</strong> ${escapeHtml(contactNumber)}</li>
-          ${referralHtml}
-        </ul>
-        <p><strong>Accident Details:</strong></p>
-        <ul>
-          <li><strong>Accident Date:</strong> ${escapeHtml(accidentDate)}</li>
-          <li><strong>Area of Bodily Injury:</strong> ${escapeHtml(injuryArea)}</li>
-          <li><strong>Were They At Fault:</strong> ${escapeHtml(atFault)}</li>
-        </ul>
-        ${attachmentsHtml}
-      `,
-    });
+    try {
+      const emailResponse = await resend.emails.send({
+        from: "Cars & Claims <noreply@carsandclaims.com>",
+        to: ["ramon@carsandclaims.com", "re00445@gmail.com"],
+        subject: "New Injury Claim Inquiry",
+        html: `
+          <h2>New Injury Claim Inquiry</h2>
+          <p><strong>Claim ID:</strong> ${claimData.id}</p>
+          <p><strong>Prospect Information:</strong></p>
+          <ul>
+            <li><strong>Name:</strong> ${escapeHtml(name)}</li>
+            <li><strong>Address:</strong> ${escapeHtml(address)}</li>
+            <li><strong>Best Contact Number:</strong> ${escapeHtml(contactNumber)}</li>
+            ${referralHtml}
+          </ul>
+          <p><strong>Accident Details:</strong></p>
+          <ul>
+            <li><strong>Accident Date:</strong> ${escapeHtml(accidentDate)}</li>
+            <li><strong>Area of Bodily Injury:</strong> ${escapeHtml(injuryArea)}</li>
+            <li><strong>Were They At Fault:</strong> ${escapeHtml(atFault)}</li>
+          </ul>
+          ${attachmentsHtml}
+        `,
+      });
+      console.log("Injury claim email sent successfully:", emailResponse);
+    } catch (emailError) {
+      // Log email error but don't fail the request - claim is already saved
+      console.error("Email notification failed (claim still saved):", emailError);
+    }
 
-    console.log("Injury claim email sent successfully:", emailResponse);
-
-    return new Response(JSON.stringify(emailResponse), {
+    return new Response(JSON.stringify({ success: true, claimId: claimData.id }), {
       status: 200,
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });
   } catch (error: any) {
-    console.error("Error sending injury claim:", error);
+    console.error("Error processing injury claim:", error);
     return new Response(
       JSON.stringify({ error: "Failed to process claim" }),
       { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
