@@ -11,6 +11,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { AvatarEditor } from "./AvatarEditor";
 
 interface UserAvatarProps {
   userId: string;
@@ -44,17 +45,9 @@ export const UserAvatar = ({
   const [uploading, setUploading] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [showEditor, setShowEditor] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
-
-  const initials = fullName
-    ? fullName
-        .split(" ")
-        .map((n) => n[0])
-        .join("")
-        .toUpperCase()
-        .slice(0, 2)
-    : "U";
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -80,26 +73,26 @@ export const UserAvatar = ({
       return;
     }
 
-    // Show preview
+    // Show preview and open editor
     const reader = new FileReader();
-    reader.onload = (e) => setPreviewUrl(e.target?.result as string);
+    reader.onload = (e) => {
+      setPreviewUrl(e.target?.result as string);
+      setShowEditor(true);
+    };
     reader.readAsDataURL(file);
   };
 
-  const handleUpload = async () => {
-    const file = fileInputRef.current?.files?.[0];
-    if (!file) return;
-
+  const handleEditorSave = async (editedBlob: Blob) => {
     setUploading(true);
 
     try {
       // Upload to Supabase Storage
-      const fileExt = file.name.split(".").pop();
+      const fileExt = "jpg";
       const filePath = `avatars/${userId}/${Date.now()}.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
         .from("vehicle-images")
-        .upload(filePath, file, { upsert: true });
+        .upload(filePath, editedBlob, { upsert: true, contentType: "image/jpeg" });
 
       if (uploadError) throw uploadError;
 
@@ -121,6 +114,7 @@ export const UserAvatar = ({
       onAvatarUpdate?.(publicUrl);
       setDialogOpen(false);
       setPreviewUrl(null);
+      setShowEditor(false);
       
       toast({
         title: "Avatar updated",
@@ -138,6 +132,14 @@ export const UserAvatar = ({
     }
   };
 
+  const handleEditorCancel = () => {
+    setShowEditor(false);
+    setPreviewUrl(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
   const avatarContent = (
     <Avatar className={`${sizeClasses[size]} border-2 border-primary/20`}>
       <AvatarImage src={avatarUrl || undefined} alt={fullName || "User"} />
@@ -152,7 +154,13 @@ export const UserAvatar = ({
   }
 
   return (
-    <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+    <Dialog open={dialogOpen} onOpenChange={(open) => {
+      setDialogOpen(open);
+      if (!open) {
+        setShowEditor(false);
+        setPreviewUrl(null);
+      }
+    }}>
       <DialogTrigger asChild>
         <button className="relative group cursor-pointer">
           {avatarContent}
@@ -161,52 +169,58 @@ export const UserAvatar = ({
           </div>
         </button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Update Profile Picture</DialogTitle>
+          <DialogTitle>
+            {showEditor ? "Edit Profile Picture" : "Update Profile Picture"}
+          </DialogTitle>
         </DialogHeader>
-        <div className="space-y-6">
-          <div className="flex justify-center">
-            <Avatar className="h-32 w-32 border-4 border-primary/20">
-              <AvatarImage src={previewUrl || avatarUrl || undefined} />
-              <AvatarFallback className="bg-primary/10 text-primary">
-                <User className="h-12 w-12" />
-              </AvatarFallback>
-            </Avatar>
-          </div>
-
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            onChange={handleFileSelect}
-            className="hidden"
+        
+        {showEditor && previewUrl ? (
+          <AvatarEditor
+            imageUrl={previewUrl}
+            onSave={handleEditorSave}
+            onCancel={handleEditorCancel}
           />
+        ) : (
+          <div className="space-y-6">
+            <div className="flex justify-center">
+              <Avatar className="h-32 w-32 border-4 border-primary/20">
+                <AvatarImage src={avatarUrl || undefined} />
+                <AvatarFallback className="bg-primary/10 text-primary">
+                  <User className="h-12 w-12" />
+                </AvatarFallback>
+              </Avatar>
+            </div>
 
-          <div className="flex flex-col gap-3">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+
             <Button
               variant="outline"
               onClick={() => fileInputRef.current?.click()}
               className="w-full"
+              disabled={uploading}
             >
-              <Camera className="mr-2 h-4 w-4" />
-              Choose Photo
+              {uploading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Uploading...
+                </>
+              ) : (
+                <>
+                  <Camera className="mr-2 h-4 w-4" />
+                  Choose Photo
+                </>
+              )}
             </Button>
-
-            {previewUrl && (
-              <Button onClick={handleUpload} disabled={uploading} className="w-full">
-                {uploading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Uploading...
-                  </>
-                ) : (
-                  "Save Avatar"
-                )}
-              </Button>
-            )}
           </div>
-        </div>
+        )}
       </DialogContent>
     </Dialog>
   );
