@@ -66,6 +66,7 @@ const AffiliatePortal = () => {
   const [newNote, setNewNote] = useState("");
   const [addClaimOpen, setAddClaimOpen] = useState(false);
   const [notesDialogOpen, setNotesDialogOpen] = useState(false);
+  const [showQrCode, setShowQrCode] = useState(false);
   
   // Login form state
   const [email, setEmail] = useState("");
@@ -387,12 +388,32 @@ const AffiliatePortal = () => {
           </Card>
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Referral Code</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-medium">Referral Code</CardTitle>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowQrCode(!showQrCode)}
+                  className="h-6 px-2"
+                >
+                  <QrCode className="h-4 w-4" />
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
-              <code className="text-lg font-bold bg-muted px-2 py-1 rounded">
-                {affiliate.referral_code}
-              </code>
+              {showQrCode ? (
+                <div className="bg-white p-2 rounded inline-block">
+                  <QRCodeSVG
+                    value={`${window.location.origin}/claims?ref=${affiliate.referral_code}`}
+                    size={80}
+                    level="M"
+                  />
+                </div>
+              ) : (
+                <code className="text-lg font-bold bg-muted px-2 py-1 rounded">
+                  {affiliate.referral_code}
+                </code>
+              )}
             </CardContent>
           </Card>
         </div>
