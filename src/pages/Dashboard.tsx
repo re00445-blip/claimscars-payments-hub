@@ -5,7 +5,7 @@ import { User, Session } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Navbar } from "@/components/Navbar";
-import { Loader2, DollarSign, Car, FileText, Users, ClipboardList, Settings, UserPlus, Sparkles, CreditCard, Share2, Plus, MessageSquare, Phone, Mail, Flame } from "lucide-react";
+import { Loader2, DollarSign, Car, FileText, Users, ClipboardList, Settings, UserPlus, Sparkles, CreditCard, Share2, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { TransactionsReport } from "@/components/admin/TransactionsReport";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -13,10 +13,8 @@ import { UserAvatar } from "@/components/UserAvatar";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { format } from "date-fns";
+import { ClientProfileCard } from "@/components/ClientProfileCard";
 
 interface Affiliate {
   id: string;
@@ -43,6 +41,7 @@ interface Claim {
   notes: string | null;
   agreement_amount: number | null;
   created_at: string;
+  updated_at: string;
 }
 
 interface ClaimNote {
@@ -63,11 +62,8 @@ const Dashboard = () => {
   const [isAffiliate, setIsAffiliate] = useState(false);
   const [affiliate, setAffiliate] = useState<Affiliate | null>(null);
   const [claims, setClaims] = useState<Claim[]>([]);
-  const [selectedClaim, setSelectedClaim] = useState<Claim | null>(null);
-  const [claimNotes, setClaimNotes] = useState<ClaimNote[]>([]);
-  const [newNote, setNewNote] = useState("");
+  const [claimNotesMap, setClaimNotesMap] = useState<Record<string, ClaimNote[]>>({});
   const [addClaimOpen, setAddClaimOpen] = useState(false);
-  const [notesDialogOpen, setNotesDialogOpen] = useState(false);
   const [claimForm, setClaimForm] = useState({
     full_name: "",
     phone: "",
@@ -179,7 +175,10 @@ const Dashboard = () => {
       .order("created_at", { ascending: false });
 
     if (data) {
-      setClaimNotes(data as unknown as ClaimNote[]);
+      setClaimNotesMap(prev => ({
+        ...prev,
+        [claimId]: data as unknown as ClaimNote[]
+      }));
     }
   };
 
@@ -229,15 +228,15 @@ const Dashboard = () => {
     if (affiliate) fetchClaims(affiliate.id);
   };
 
-  const handleAddNote = async () => {
-    if (!selectedClaim || !affiliate || !newNote.trim()) return;
+  const handleAddNoteForClaim = async (claimId: string, noteText: string) => {
+    if (!affiliate || !noteText.trim()) return;
 
     const { error } = await supabase
       .from("affiliate_notes" as any)
       .insert({
-        claim_id: selectedClaim.id,
+        claim_id: claimId,
         affiliate_id: affiliate.id,
-        note: newNote.trim(),
+        note: noteText.trim(),
       });
 
     if (error) {
@@ -246,36 +245,7 @@ const Dashboard = () => {
     }
 
     toast({ title: "Note added" });
-    setNewNote("");
-    fetchClaimNotes(selectedClaim.id);
-  };
-
-  const openNotesDialog = async (claim: Claim) => {
-    setSelectedClaim(claim);
-    await fetchClaimNotes(claim.id);
-    setNotesDialogOpen(true);
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "new": return "bg-blue-500/10 text-blue-600 border-blue-500/20";
-      case "in_progress": return "bg-yellow-500/10 text-yellow-600 border-yellow-500/20";
-      case "pending": return "bg-orange-500/10 text-orange-600 border-orange-500/20";
-      case "resolved": return "bg-green-500/10 text-green-600 border-green-500/20";
-      case "closed": return "bg-muted text-muted-foreground border-muted";
-      default: return "bg-muted text-muted-foreground border-muted";
-    }
-  };
-
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case "new": return "Chase";
-      case "in_progress": return "Following Up";
-      case "pending": return "Contracts Sent";
-      case "resolved": return "Contract Signed";
-      case "closed": return "Closed";
-      default: return status.replace("_", " ");
-    }
+    fetchClaimNotes(claimId);
   };
 
   const fetchCustomerAccount = async (userId: string) => {
@@ -659,7 +629,7 @@ const Dashboard = () => {
               </Dialog>
             </div>
 
-            {/* Claims as Cards */}
+            {/* Claims as Expandable Cards */}
             {claims.length === 0 ? (
               <Card>
                 <CardContent className="py-12 text-center">
@@ -667,150 +637,19 @@ const Dashboard = () => {
                 </CardContent>
               </Card>
             ) : (
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-                {claims.map((claim) => {
-                  // Calculate heat level based on status
-                  const getHeatLevel = (status: string) => {
-                    switch (status) {
-                      case "new": return 20;
-                      case "in_progress": return 50;
-                      case "pending": return 70;
-                      case "resolved": return 90;
-                      case "closed": return 100;
-                      default: return 10;
-                    }
-                  };
-                  const heatLevel = getHeatLevel(claim.status);
-                  const getHeatColor = (level: number) => {
-                    if (level <= 30) return "bg-primary/30";
-                    if (level <= 50) return "bg-primary/50";
-                    if (level <= 70) return "bg-primary/70";
-                    return "bg-primary";
-                  };
-
-                  return (
-                    <Card key={claim.id} className="hover:shadow-lg transition-shadow">
-                      <CardHeader className="pb-3">
-                        <div className="flex justify-between items-start">
-                          <CardTitle className="text-lg">{claim.full_name}</CardTitle>
-                          <Badge className={`${getStatusColor(claim.status)} border`}>
-                            {getStatusLabel(claim.status)}
-                          </Badge>
-                        </div>
-                        <CardDescription>
-                          Accident: {format(new Date(claim.accident_date), "MMM d, yyyy")}
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent className="space-y-3">
-                        {/* Heat Bar */}
-                        <div className="space-y-1">
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="flex items-center gap-1 text-muted-foreground">
-                              <Flame className="h-3 w-3 text-primary" />
-                              Case Progress
-                            </span>
-                            <span className="font-medium">{heatLevel}%</span>
-                          </div>
-                          <div className="h-2 bg-muted rounded-full overflow-hidden">
-                            <div 
-                              className={`h-full ${getHeatColor(heatLevel)} transition-all duration-500`}
-                              style={{ width: `${heatLevel}%` }}
-                            />
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-2 text-sm">
-                          <Phone className="h-4 w-4 text-muted-foreground" />
-                          <span>{claim.phone}</span>
-                        </div>
-                        {claim.email && (
-                          <div className="flex items-center gap-2 text-sm">
-                            <Mail className="h-4 w-4 text-muted-foreground" />
-                            <span className="truncate">{claim.email}</span>
-                          </div>
-                        )}
-                        <div className="bg-muted/50 rounded-lg p-2">
-                          <p className="text-xs text-muted-foreground">Injury Area</p>
-                          <p className="font-medium">{claim.injury_area}</p>
-                        </div>
-                        <div className="flex gap-2 pt-2">
-                          <Select
-                            value={claim.status}
-                            onValueChange={(value) => handleUpdateStatus(claim.id, value)}
-                          >
-                            <SelectTrigger className="flex-1">
-                              <SelectValue placeholder="Update Status" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="new">Chase</SelectItem>
-                              <SelectItem value="in_progress">Following Up</SelectItem>
-                              <SelectItem value="pending">Contracts Sent</SelectItem>
-                              <SelectItem value="resolved">Contract Signed</SelectItem>
-                              <SelectItem value="closed">Closed</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={() => openNotesDialog(claim)}
-                          >
-                            <MessageSquare className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
+              <div className="space-y-4 mb-8">
+                {claims.map((claim) => (
+                  <ClientProfileCard
+                    key={claim.id}
+                    claim={claim}
+                    notes={claimNotesMap[claim.id] || []}
+                    onStatusChange={handleUpdateStatus}
+                    onAddNote={handleAddNoteForClaim}
+                    onExpand={fetchClaimNotes}
+                  />
+                ))}
               </div>
             )}
-
-            {/* Notes Dialog */}
-            <Dialog open={notesDialogOpen} onOpenChange={setNotesDialogOpen}>
-              <DialogContent className="max-w-lg">
-                <DialogHeader>
-                  <DialogTitle>Case Notes - {selectedClaim?.full_name}</DialogTitle>
-                  <DialogDescription>
-                    Track progress and add notes for this case
-                  </DialogDescription>
-                </DialogHeader>
-                
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>Add Note</Label>
-                    <Textarea
-                      value={newNote}
-                      onChange={(e) => setNewNote(e.target.value)}
-                      placeholder="Enter your note..."
-                      rows={3}
-                    />
-                    <Button onClick={handleAddNote} disabled={!newNote.trim()}>
-                      <Plus className="mr-2 h-4 w-4" />
-                      Add Note
-                    </Button>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Previous Notes</Label>
-                    {claimNotes.length === 0 ? (
-                      <p className="text-muted-foreground text-sm py-4 text-center">
-                        No notes yet for this case.
-                      </p>
-                    ) : (
-                      <div className="space-y-2 max-h-60 overflow-y-auto">
-                        {claimNotes.map((note) => (
-                          <div key={note.id} className="bg-muted p-3 rounded-lg">
-                            <p className="text-sm">{note.note}</p>
-                            <p className="text-xs text-muted-foreground mt-2">
-                              {format(new Date(note.created_at), "MMM d, yyyy h:mm a")}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog>
           </>
         )}
 
