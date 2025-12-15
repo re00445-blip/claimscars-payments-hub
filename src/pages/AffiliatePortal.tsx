@@ -418,6 +418,32 @@ const AffiliatePortal = () => {
           </Card>
         </div>
 
+        {/* Referral Link Card */}
+        <Card className="mb-8 border-primary/20 bg-primary/5">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Your Injury Claims Referral Link</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-2">
+              <Input
+                readOnly
+                value={`${window.location.origin}/claims?ref=${affiliate.referral_code}`}
+                className="font-mono text-sm bg-background"
+              />
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => {
+                  navigator.clipboard.writeText(`${window.location.origin}/claims?ref=${affiliate.referral_code}`);
+                  toast({ title: "Link copied!" });
+                }}
+              >
+                <Copy className="h-4 w-4" />
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* QR Code Share Card */}
         <Card className="mb-8">
           <CardHeader>
