@@ -9,15 +9,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
-import { Loader2, Plus, FileText, MessageSquare, LogOut, User as UserIcon, Calendar, Phone, Mail, MapPin, QrCode, Copy, Download, Share2, CreditCard } from "lucide-react";
+import { Loader2, Plus, LogOut, User as UserIcon, QrCode, Copy, Download, Share2, CreditCard } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { QRCodeSVG } from "qrcode.react";
 import { AffiliateBusinessCard } from "@/components/AffiliateBusinessCard";
+import { ClientProfileCard } from "@/components/ClientProfileCard";
 
 interface Affiliate {
   id: string;
@@ -63,11 +61,8 @@ const AffiliatePortal = () => {
   const [loading, setLoading] = useState(true);
   const [affiliate, setAffiliate] = useState<Affiliate | null>(null);
   const [claims, setClaims] = useState<Claim[]>([]);
-  const [selectedClaim, setSelectedClaim] = useState<Claim | null>(null);
-  const [claimNotes, setClaimNotes] = useState<ClaimNote[]>([]);
-  const [newNote, setNewNote] = useState("");
+  const [claimNotesMap, setClaimNotesMap] = useState<Record<string, ClaimNote[]>>({});
   const [addClaimOpen, setAddClaimOpen] = useState(false);
-  const [notesDialogOpen, setNotesDialogOpen] = useState(false);
   const [showQrCode, setShowQrCode] = useState(false);
   
   // Login form state
@@ -149,7 +144,10 @@ const AffiliatePortal = () => {
       .order("created_at", { ascending: false });
 
     if (data) {
-      setClaimNotes(data as unknown as ClaimNote[]);
+      setClaimNotesMap(prev => ({
+        ...prev,
+        [claimId]: data as unknown as ClaimNote[]
+      }));
     }
   };
 
@@ -221,15 +219,15 @@ const AffiliatePortal = () => {
     if (affiliate) fetchClaims(affiliate.id);
   };
 
-  const handleAddNote = async () => {
-    if (!selectedClaim || !affiliate || !newNote.trim()) return;
+  const handleAddNoteForClaim = async (claimId: string, noteText: string) => {
+    if (!affiliate || !noteText.trim()) return;
 
     const { error } = await supabase
       .from("affiliate_notes" as any)
       .insert({
-        claim_id: selectedClaim.id,
+        claim_id: claimId,
         affiliate_id: affiliate.id,
-        note: newNote.trim(),
+        note: noteText.trim(),
       });
 
     if (error) {
@@ -238,36 +236,7 @@ const AffiliatePortal = () => {
     }
 
     toast({ title: "Note added" });
-    setNewNote("");
-    fetchClaimNotes(selectedClaim.id);
-  };
-
-  const openNotesDialog = async (claim: Claim) => {
-    setSelectedClaim(claim);
-    await fetchClaimNotes(claim.id);
-    setNotesDialogOpen(true);
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "new": return "bg-blue-100 text-blue-800";
-      case "in_progress": return "bg-yellow-100 text-yellow-800";
-      case "pending": return "bg-orange-100 text-orange-800";
-      case "resolved": return "bg-green-100 text-green-800";
-      case "closed": return "bg-gray-100 text-gray-800";
-      default: return "bg-gray-100 text-gray-800";
-    }
-  };
-
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case "new": return "Chase";
-      case "in_progress": return "Following Up";
-      case "pending": return "Contracts Sent";
-      case "resolved": return "Contract Signed";
-      case "closed": return "Closed";
-      default: return status.replace("_", " ");
-    }
+    fetchClaimNotes(claimId);
   };
 
   if (loading) {
@@ -776,133 +745,21 @@ const AffiliatePortal = () => {
                 No claims yet. Add your first referral to get started.
               </p>
             ) : (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Client</TableHead>
-                      <TableHead>Contact</TableHead>
-                      <TableHead>Accident Date</TableHead>
-                      <TableHead>Injury</TableHead>
-                      <TableHead>At Fault</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {claims.map((claim) => (
-                      <TableRow key={claim.id}>
-                        <TableCell className="font-medium">{claim.full_name}</TableCell>
-                        <TableCell>
-                          <div className="flex flex-col gap-1 text-sm">
-                            <span className="flex items-center gap-1">
-                              <Phone className="h-3 w-3" />
-                              {claim.phone}
-                            </span>
-                            {claim.email && (
-                              <span className="flex items-center gap-1 text-muted-foreground">
-                                <Mail className="h-3 w-3" />
-                                {claim.email}
-                              </span>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          {format(new Date(claim.accident_date), "MMM d, yyyy")}
-                        </TableCell>
-                        <TableCell>{claim.injury_area}</TableCell>
-                        <TableCell>
-                          <Badge variant={claim.at_fault === "no" ? "default" : "secondary"}>
-                            {claim.at_fault}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Select
-                            value={claim.status}
-                            onValueChange={(value) => handleUpdateStatus(claim.id, value)}
-                          >
-                            <SelectTrigger className="w-32">
-                              <span className={`px-2 py-1 rounded text-xs ${getStatusColor(claim.status)}`}>
-                                {getStatusLabel(claim.status)}
-                              </span>
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="new">Chase</SelectItem>
-                              <SelectItem value="in_progress">Following Up</SelectItem>
-                              <SelectItem value="pending">Contracts Sent</SelectItem>
-                              <SelectItem value="resolved">Contract Signed</SelectItem>
-                              <SelectItem value="closed">Closed</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </TableCell>
-                        <TableCell>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => openNotesDialog(claim)}
-                          >
-                            <MessageSquare className="h-4 w-4 mr-1" />
-                            Notes
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+              <div className="space-y-4">
+                {claims.map((claim) => (
+                  <ClientProfileCard
+                    key={claim.id}
+                    claim={claim}
+                    notes={claimNotesMap[claim.id] || []}
+                    onStatusChange={handleUpdateStatus}
+                    onAddNote={handleAddNoteForClaim}
+                    onExpand={fetchClaimNotes}
+                  />
+                ))}
               </div>
             )}
           </CardContent>
         </Card>
-
-        {/* Notes Dialog */}
-        <Dialog open={notesDialogOpen} onOpenChange={setNotesDialogOpen}>
-          <DialogContent className="max-w-lg">
-            <DialogHeader>
-              <DialogTitle>Case Notes - {selectedClaim?.full_name}</DialogTitle>
-              <DialogDescription>
-                Track progress and add notes for this case
-              </DialogDescription>
-            </DialogHeader>
-            
-            <div className="space-y-4">
-              {/* Add new note */}
-              <div className="space-y-2">
-                <Label>Add Note</Label>
-                <Textarea
-                  value={newNote}
-                  onChange={(e) => setNewNote(e.target.value)}
-                  placeholder="Enter your note..."
-                  rows={3}
-                />
-                <Button onClick={handleAddNote} disabled={!newNote.trim()}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Note
-                </Button>
-              </div>
-
-              {/* Existing notes */}
-              <div className="space-y-2">
-                <Label>Previous Notes</Label>
-                {claimNotes.length === 0 ? (
-                  <p className="text-muted-foreground text-sm py-4 text-center">
-                    No notes yet for this case.
-                  </p>
-                ) : (
-                  <div className="space-y-2 max-h-60 overflow-y-auto">
-                    {claimNotes.map((note) => (
-                      <div key={note.id} className="bg-muted p-3 rounded-lg">
-                        <p className="text-sm">{note.note}</p>
-                        <p className="text-xs text-muted-foreground mt-2">
-                          {format(new Date(note.created_at), "MMM d, yyyy h:mm a")}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
       </div>
     </div>
   );
