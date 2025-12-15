@@ -138,20 +138,40 @@ const AdminUsers = () => {
         if (role === "affiliate" && user) {
           const referralCode = `REF-${user.email.split("@")[0].toUpperCase().slice(0, 6)}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
           
-          const { error: affiliateError } = await supabase
+          // Check if affiliate record already exists
+          const { data: existingAffiliate } = await supabase
             .from("marketing_affiliates")
-            .insert({
-              name: user.full_name || user.email.split("@")[0],
-              email: user.email,
-              phone: user.phone,
-              referral_code: referralCode,
-              commission_rate: 10, // Default 10%
-              status: "active",
-            });
+            .select("id")
+            .eq("email", user.email)
+            .maybeSingle();
 
-          if (affiliateError) {
-            console.error("Error creating affiliate record:", affiliateError);
-            // Don't throw - role was already assigned
+          if (!existingAffiliate) {
+            const { error: affiliateError } = await supabase
+              .from("marketing_affiliates")
+              .insert({
+                name: user.full_name || user.email.split("@")[0],
+                email: user.email,
+                phone: user.phone,
+                referral_code: referralCode,
+                commission_rate: 10,
+                status: "active",
+                contracts_sent: 0,
+                contracts_signed: 0,
+              });
+
+            if (affiliateError) {
+              console.error("Error creating affiliate record:", affiliateError);
+              toast({
+                title: "Warning",
+                description: "Affiliate role granted, but profile creation failed. Please create manually in Affiliates page.",
+                variant: "destructive",
+              });
+            } else {
+              toast({
+                title: "Affiliate Created",
+                description: `Marketing affiliate profile created for ${user.full_name || user.email}`,
+              });
+            }
           }
         }
 
