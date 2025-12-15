@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      affiliate_notes: {
+        Row: {
+          affiliate_id: string
+          claim_id: string
+          created_at: string
+          id: string
+          note: string
+          updated_at: string
+        }
+        Insert: {
+          affiliate_id: string
+          claim_id: string
+          created_at?: string
+          id?: string
+          note: string
+          updated_at?: string
+        }
+        Update: {
+          affiliate_id?: string
+          claim_id?: string
+          created_at?: string
+          id?: string
+          note?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "affiliate_notes_affiliate_id_fkey"
+            columns: ["affiliate_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_affiliates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliate_notes_claim_id_fkey"
+            columns: ["claim_id"]
+            isOneToOne: false
+            referencedRelation: "injury_claims"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customer_accounts: {
         Row: {
           created_at: string | null
@@ -74,6 +116,7 @@ export type Database = {
         Row: {
           accident_date: string
           address: string | null
+          affiliate_id: string | null
           agreement_amount: number | null
           assigned_to: string | null
           at_fault: string
@@ -92,6 +135,7 @@ export type Database = {
         Insert: {
           accident_date: string
           address?: string | null
+          affiliate_id?: string | null
           agreement_amount?: number | null
           assigned_to?: string | null
           at_fault: string
@@ -110,6 +154,7 @@ export type Database = {
         Update: {
           accident_date?: string
           address?: string | null
+          affiliate_id?: string | null
           agreement_amount?: number | null
           assigned_to?: string | null
           at_fault?: string
@@ -125,7 +170,15 @@ export type Database = {
           status?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "injury_claims_affiliate_id_fkey"
+            columns: ["affiliate_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_affiliates"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       marketing_affiliates: {
         Row: {
