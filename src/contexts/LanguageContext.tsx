@@ -25,7 +25,7 @@ const translations: Record<Language, Record<string, string>> = {
     "hero.viewInventory": "View Inventory",
     "hero.injuryClaims": "Injury Claims",
     "hero.carRepairs": "Car Repairs",
-    "hero.bhph": "BHPH",
+    "hero.bhph": "Buy Here Pay Here",
     
     // Services
     "services.title": "Our Services",
@@ -326,7 +326,7 @@ const translations: Record<Language, Record<string, string>> = {
     "hero.viewInventory": "Ver Inventario",
     "hero.injuryClaims": "Reclamos por Lesiones",
     "hero.carRepairs": "Reparaciones de Autos",
-    "hero.bhph": "BHPH",
+    "hero.bhph": "Compre Aquí Pague Aquí",
     
     // Services
     "services.title": "Nuestros Servicios",
