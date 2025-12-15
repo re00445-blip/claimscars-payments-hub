@@ -25,6 +25,8 @@ interface Affiliate {
   referral_code: string;
   total_referrals: number;
   total_earnings: number;
+  contracts_sent: number;
+  contracts_signed: number;
 }
 
 interface Claim {
@@ -390,6 +392,43 @@ const AffiliatePortal = () => {
               <code className="text-lg font-bold bg-muted px-2 py-1 rounded">
                 {affiliate.referral_code}
               </code>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Cases, Contracts Sent, Contracts Signed */}
+        <div className="grid md:grid-cols-3 gap-4 mb-8">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">Cases</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">{claims.length}</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Linked to: <code className="bg-muted px-1 rounded">{affiliate.referral_code}</code>
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">Contracts Sent</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">{affiliate.contracts_sent}</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Linked to: <code className="bg-muted px-1 rounded">{affiliate.referral_code}</code>
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">Contracts Signed</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-primary">{affiliate.contracts_signed}</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Linked to: <code className="bg-muted px-1 rounded">{affiliate.referral_code}</code>
+              </p>
             </CardContent>
           </Card>
         </div>
