@@ -5,11 +5,50 @@ import { User, Session } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Navbar } from "@/components/Navbar";
-import { Loader2, DollarSign, Car, FileText, Users, ClipboardList, Settings, UserPlus, Sparkles, CreditCard, Share2 } from "lucide-react";
+import { Loader2, DollarSign, Car, FileText, Users, ClipboardList, Settings, UserPlus, Sparkles, CreditCard, Share2, Plus, MessageSquare, Phone, Mail } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { TransactionsReport } from "@/components/admin/TransactionsReport";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { UserAvatar } from "@/components/UserAvatar";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { format } from "date-fns";
+
+interface Affiliate {
+  id: string;
+  name: string;
+  email: string;
+  commission_rate: number;
+  referral_code: string;
+  total_referrals: number;
+  total_earnings: number;
+}
+
+interface Claim {
+  id: string;
+  full_name: string;
+  phone: string;
+  email: string | null;
+  address: string | null;
+  accident_date: string;
+  injury_area: string;
+  at_fault: string;
+  status: string;
+  notes: string | null;
+  agreement_amount: number | null;
+  created_at: string;
+}
+
+interface ClaimNote {
+  id: string;
+  claim_id: string;
+  note: string;
+  created_at: string;
+}
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -19,6 +58,23 @@ const Dashboard = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isAffiliate, setIsAffiliate] = useState(false);
+  const [affiliate, setAffiliate] = useState<Affiliate | null>(null);
+  const [claims, setClaims] = useState<Claim[]>([]);
+  const [selectedClaim, setSelectedClaim] = useState<Claim | null>(null);
+  const [claimNotes, setClaimNotes] = useState<ClaimNote[]>([]);
+  const [newNote, setNewNote] = useState("");
+  const [addClaimOpen, setAddClaimOpen] = useState(false);
+  const [notesDialogOpen, setNotesDialogOpen] = useState(false);
+  const [claimForm, setClaimForm] = useState({
+    full_name: "",
+    phone: "",
+    email: "",
+    address: "",
+    accident_date: "",
+    injury_area: "",
+    at_fault: "no",
+  });
   const [quote, setQuote] = useState<string>("");
   const [quoteLoading, setQuoteLoading] = useState(true);
   const [customerAccount, setCustomerAccount] = useState<any>(null);
@@ -32,7 +88,7 @@ const Dashboard = () => {
         
         if (session?.user) {
           setTimeout(() => {
-            checkAdminStatus(session.user.id);
+            checkUserRoles(session.user.id, session.user.email || "");
           }, 0);
         }
       }
@@ -45,7 +101,7 @@ const Dashboard = () => {
       if (!session) {
         navigate("/auth");
       } else {
-        checkAdminStatus(session.user.id);
+        checkUserRoles(session.user.id, session.user.email || "");
       }
       
       setLoading(false);
@@ -54,15 +110,148 @@ const Dashboard = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  const checkAdminStatus = async (userId: string) => {
-    const { data } = await supabase
+  const checkUserRoles = async (userId: string, email: string) => {
+    // Check admin role
+    const { data: adminData } = await supabase
       .from("user_roles")
       .select("role")
       .eq("user_id", userId)
       .eq("role", "admin")
       .maybeSingle();
     
-    setIsAdmin(!!data);
+    setIsAdmin(!!adminData);
+
+    // Check affiliate role
+    const { data: affiliateRole } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .eq("role", "affiliate")
+      .maybeSingle();
+    
+    if (affiliateRole) {
+      setIsAffiliate(true);
+      // Fetch affiliate data
+      const { data: affiliateData } = await supabase
+        .from("marketing_affiliates" as any)
+        .select("*")
+        .eq("email", email)
+        .eq("status", "active")
+        .maybeSingle();
+      
+      if (affiliateData) {
+        setAffiliate(affiliateData as unknown as Affiliate);
+        fetchClaims((affiliateData as any).id);
+      }
+    }
+  };
+
+  const fetchClaims = async (affiliateId: string) => {
+    const { data } = await supabase
+      .from("injury_claims")
+      .select("*")
+      .eq("affiliate_id", affiliateId)
+      .order("created_at", { ascending: false });
+
+    if (data) {
+      setClaims(data as Claim[]);
+    }
+  };
+
+  const fetchClaimNotes = async (claimId: string) => {
+    const { data } = await supabase
+      .from("affiliate_notes" as any)
+      .select("*")
+      .eq("claim_id", claimId)
+      .order("created_at", { ascending: false });
+
+    if (data) {
+      setClaimNotes(data as unknown as ClaimNote[]);
+    }
+  };
+
+  const handleAddClaim = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!affiliate) return;
+
+    const { error } = await supabase
+      .from("injury_claims")
+      .insert({
+        ...claimForm,
+        affiliate_id: affiliate.id,
+        referral_source: affiliate.name,
+      });
+
+    if (error) {
+      toast({ title: "Error adding claim", description: error.message, variant: "destructive" });
+      return;
+    }
+
+    toast({ title: "Claim added successfully" });
+    setAddClaimOpen(false);
+    setClaimForm({
+      full_name: "",
+      phone: "",
+      email: "",
+      address: "",
+      accident_date: "",
+      injury_area: "",
+      at_fault: "no",
+    });
+    fetchClaims(affiliate.id);
+  };
+
+  const handleUpdateStatus = async (claimId: string, newStatus: string) => {
+    const { error } = await supabase
+      .from("injury_claims")
+      .update({ status: newStatus })
+      .eq("id", claimId);
+
+    if (error) {
+      toast({ title: "Error updating status", variant: "destructive" });
+      return;
+    }
+
+    toast({ title: "Status updated" });
+    if (affiliate) fetchClaims(affiliate.id);
+  };
+
+  const handleAddNote = async () => {
+    if (!selectedClaim || !affiliate || !newNote.trim()) return;
+
+    const { error } = await supabase
+      .from("affiliate_notes" as any)
+      .insert({
+        claim_id: selectedClaim.id,
+        affiliate_id: affiliate.id,
+        note: newNote.trim(),
+      });
+
+    if (error) {
+      toast({ title: "Error adding note", variant: "destructive" });
+      return;
+    }
+
+    toast({ title: "Note added" });
+    setNewNote("");
+    fetchClaimNotes(selectedClaim.id);
+  };
+
+  const openNotesDialog = async (claim: Claim) => {
+    setSelectedClaim(claim);
+    await fetchClaimNotes(claim.id);
+    setNotesDialogOpen(true);
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "new": return "bg-blue-500/10 text-blue-600 border-blue-500/20";
+      case "in_progress": return "bg-yellow-500/10 text-yellow-600 border-yellow-500/20";
+      case "pending": return "bg-orange-500/10 text-orange-600 border-orange-500/20";
+      case "resolved": return "bg-green-500/10 text-green-600 border-green-500/20";
+      case "closed": return "bg-muted text-muted-foreground border-muted";
+      default: return "bg-muted text-muted-foreground border-muted";
+    }
   };
 
   const fetchCustomerAccount = async (userId: string) => {
@@ -245,6 +434,265 @@ const Dashboard = () => {
               </Button>
             </CardContent>
           </Card>
+        )}
+
+        {/* Affiliate Dashboard Section */}
+        {isAffiliate && affiliate && (
+          <>
+            {/* Affiliate Stats Cards */}
+            <div className="grid md:grid-cols-4 gap-4 mb-8">
+              <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Total Referrals</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-primary">{claims.length}</div>
+                </CardContent>
+              </Card>
+              <Card className="bg-gradient-to-br from-accent/10 to-accent/5 border-accent/20">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Commission Rate</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold">{affiliate.commission_rate}%</div>
+                </CardContent>
+              </Card>
+              <Card className="bg-gradient-to-br from-green-500/10 to-green-500/5 border-green-500/20">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Total Earnings</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-green-600">
+                    ${affiliate.total_earnings.toFixed(2)}
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Your Referral Code</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <code className="text-xl font-bold bg-muted px-3 py-1 rounded">
+                    {affiliate.referral_code}
+                  </code>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Add New Claim Button */}
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold">My Referred Cases</h2>
+              <Dialog open={addClaimOpen} onOpenChange={setAddClaimOpen}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add New Claim
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-lg">
+                  <DialogHeader>
+                    <DialogTitle>Add New Injury Claim</DialogTitle>
+                    <DialogDescription>
+                      Enter the details of your new referral
+                    </DialogDescription>
+                  </DialogHeader>
+                  <form onSubmit={handleAddClaim} className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="col-span-2">
+                        <Label htmlFor="full_name">Full Name *</Label>
+                        <Input
+                          id="full_name"
+                          value={claimForm.full_name}
+                          onChange={(e) => setClaimForm({ ...claimForm, full_name: e.target.value })}
+                          required
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="phone">Phone *</Label>
+                        <Input
+                          id="phone"
+                          value={claimForm.phone}
+                          onChange={(e) => setClaimForm({ ...claimForm, phone: e.target.value })}
+                          required
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="claim_email">Email</Label>
+                        <Input
+                          id="claim_email"
+                          type="email"
+                          value={claimForm.email}
+                          onChange={(e) => setClaimForm({ ...claimForm, email: e.target.value })}
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        <Label htmlFor="address">Address</Label>
+                        <Input
+                          id="address"
+                          value={claimForm.address}
+                          onChange={(e) => setClaimForm({ ...claimForm, address: e.target.value })}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="accident_date">Accident Date *</Label>
+                        <Input
+                          id="accident_date"
+                          type="date"
+                          value={claimForm.accident_date}
+                          onChange={(e) => setClaimForm({ ...claimForm, accident_date: e.target.value })}
+                          required
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="at_fault">At Fault?</Label>
+                        <Select
+                          value={claimForm.at_fault}
+                          onValueChange={(value) => setClaimForm({ ...claimForm, at_fault: value })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="no">No</SelectItem>
+                            <SelectItem value="yes">Yes</SelectItem>
+                            <SelectItem value="unknown">Unknown</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="col-span-2">
+                        <Label htmlFor="injury_area">Injury Area *</Label>
+                        <Input
+                          id="injury_area"
+                          value={claimForm.injury_area}
+                          onChange={(e) => setClaimForm({ ...claimForm, injury_area: e.target.value })}
+                          placeholder="e.g., Neck, Back, Head"
+                          required
+                        />
+                      </div>
+                    </div>
+                    <Button type="submit" className="w-full">
+                      Submit Claim
+                    </Button>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            </div>
+
+            {/* Claims as Cards */}
+            {claims.length === 0 ? (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <p className="text-muted-foreground">No claims yet. Add your first referral to get started.</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+                {claims.map((claim) => (
+                  <Card key={claim.id} className="hover:shadow-lg transition-shadow">
+                    <CardHeader className="pb-3">
+                      <div className="flex justify-between items-start">
+                        <CardTitle className="text-lg">{claim.full_name}</CardTitle>
+                        <Badge className={`${getStatusColor(claim.status)} border`}>
+                          {claim.status.replace("_", " ")}
+                        </Badge>
+                      </div>
+                      <CardDescription>
+                        Accident: {format(new Date(claim.accident_date), "MMM d, yyyy")}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="flex items-center gap-2 text-sm">
+                        <Phone className="h-4 w-4 text-muted-foreground" />
+                        <span>{claim.phone}</span>
+                      </div>
+                      {claim.email && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <Mail className="h-4 w-4 text-muted-foreground" />
+                          <span className="truncate">{claim.email}</span>
+                        </div>
+                      )}
+                      <div className="bg-muted/50 rounded-lg p-2">
+                        <p className="text-xs text-muted-foreground">Injury Area</p>
+                        <p className="font-medium">{claim.injury_area}</p>
+                      </div>
+                      <div className="flex gap-2 pt-2">
+                        <Select
+                          value={claim.status}
+                          onValueChange={(value) => handleUpdateStatus(claim.id, value)}
+                        >
+                          <SelectTrigger className="flex-1">
+                            <SelectValue placeholder="Update Status" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="new">New</SelectItem>
+                            <SelectItem value="in_progress">In Progress</SelectItem>
+                            <SelectItem value="pending">Pending</SelectItem>
+                            <SelectItem value="resolved">Resolved</SelectItem>
+                            <SelectItem value="closed">Closed</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => openNotesDialog(claim)}
+                        >
+                          <MessageSquare className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+
+            {/* Notes Dialog */}
+            <Dialog open={notesDialogOpen} onOpenChange={setNotesDialogOpen}>
+              <DialogContent className="max-w-lg">
+                <DialogHeader>
+                  <DialogTitle>Case Notes - {selectedClaim?.full_name}</DialogTitle>
+                  <DialogDescription>
+                    Track progress and add notes for this case
+                  </DialogDescription>
+                </DialogHeader>
+                
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Add Note</Label>
+                    <Textarea
+                      value={newNote}
+                      onChange={(e) => setNewNote(e.target.value)}
+                      placeholder="Enter your note..."
+                      rows={3}
+                    />
+                    <Button onClick={handleAddNote} disabled={!newNote.trim()}>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add Note
+                    </Button>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Previous Notes</Label>
+                    {claimNotes.length === 0 ? (
+                      <p className="text-muted-foreground text-sm py-4 text-center">
+                        No notes yet for this case.
+                      </p>
+                    ) : (
+                      <div className="space-y-2 max-h-60 overflow-y-auto">
+                        {claimNotes.map((note) => (
+                          <div key={note.id} className="bg-muted p-3 rounded-lg">
+                            <p className="text-sm">{note.note}</p>
+                            <p className="text-xs text-muted-foreground mt-2">
+                              {format(new Date(note.created_at), "MMM d, yyyy h:mm a")}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </>
         )}
 
         {/* Summary Cards for users without BHPH accounts */}
