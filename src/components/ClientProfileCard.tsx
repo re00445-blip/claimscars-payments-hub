@@ -1,12 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown, ChevronUp, Phone, Mail, MapPin, Calendar, AlertTriangle, Plus, User } from "lucide-react";
+import { ChevronDown, ChevronUp, Phone, Mail, MapPin, Calendar, Plus, User, Save, X, Pencil } from "lucide-react";
 import { format } from "date-fns";
 
 interface ClaimNote {
@@ -38,6 +39,7 @@ interface ClientProfileCardProps {
   onStatusChange: (claimId: string, newStatus: string) => void;
   onAddNote: (claimId: string, note: string) => void;
   onExpand: (claimId: string) => void;
+  onUpdateClaim?: (claimId: string, updates: Partial<Claim>) => void;
 }
 
 const getStatusColor = (status: string) => {
@@ -67,10 +69,33 @@ export const ClientProfileCard = ({
   notes, 
   onStatusChange, 
   onAddNote,
-  onExpand 
+  onExpand,
+  onUpdateClaim
 }: ClientProfileCardProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [newNote, setNewNote] = useState("");
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({
+    full_name: claim.full_name,
+    phone: claim.phone,
+    email: claim.email || "",
+    address: claim.address || "",
+    injury_area: claim.injury_area,
+    accident_date: claim.accident_date,
+    at_fault: claim.at_fault,
+  });
+
+  useEffect(() => {
+    setEditForm({
+      full_name: claim.full_name,
+      phone: claim.phone,
+      email: claim.email || "",
+      address: claim.address || "",
+      injury_area: claim.injury_area,
+      accident_date: claim.accident_date,
+      at_fault: claim.at_fault,
+    });
+  }, [claim]);
 
   const handleToggle = () => {
     const newState = !isOpen;
@@ -85,6 +110,34 @@ export const ClientProfileCard = ({
       onAddNote(claim.id, newNote.trim());
       setNewNote("");
     }
+  };
+
+  const handleSave = () => {
+    if (onUpdateClaim) {
+      onUpdateClaim(claim.id, {
+        full_name: editForm.full_name.trim(),
+        phone: editForm.phone.trim(),
+        email: editForm.email.trim() || null,
+        address: editForm.address.trim() || null,
+        injury_area: editForm.injury_area.trim(),
+        accident_date: editForm.accident_date,
+        at_fault: editForm.at_fault,
+      });
+    }
+    setIsEditing(false);
+  };
+
+  const handleCancel = () => {
+    setEditForm({
+      full_name: claim.full_name,
+      phone: claim.phone,
+      email: claim.email || "",
+      address: claim.address || "",
+      injury_area: claim.injury_area,
+      accident_date: claim.accident_date,
+      at_fault: claim.at_fault,
+    });
+    setIsEditing(false);
   };
 
   // Sort notes by date (newest first)
@@ -133,30 +186,108 @@ export const ClientProfileCard = ({
             <div className="grid md:grid-cols-2 gap-6">
               {/* Client Details Section */}
               <div className="space-y-4">
-                <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
-                  Client Details
-                </h4>
-                
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2 text-sm">
-                    <Phone className="h-4 w-4 text-muted-foreground" />
-                    <span>{claim.phone}</span>
-                  </div>
-                  
-                  {claim.email && (
-                    <div className="flex items-center gap-2 text-sm">
-                      <Mail className="h-4 w-4 text-muted-foreground" />
-                      <span>{claim.email}</span>
-                    </div>
+                <div className="flex items-center justify-between">
+                  <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
+                    Client Details
+                  </h4>
+                  {onUpdateClaim && !isEditing && (
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsEditing(true);
+                      }}
+                    >
+                      <Pencil className="h-3 w-3 mr-1" />
+                      Edit
+                    </Button>
                   )}
-                  
-                  {claim.address && (
-                    <div className="flex items-center gap-2 text-sm">
-                      <MapPin className="h-4 w-4 text-muted-foreground" />
-                      <span>{claim.address}</span>
+                  {isEditing && (
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleCancel();
+                        }}
+                      >
+                        <X className="h-3 w-3 mr-1" />
+                        Cancel
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSave();
+                        }}
+                      >
+                        <Save className="h-3 w-3 mr-1" />
+                        Save
+                      </Button>
                     </div>
                   )}
                 </div>
+                
+                {isEditing ? (
+                  <div className="space-y-3">
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Full Name</Label>
+                      <Input
+                        value={editForm.full_name}
+                        onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })}
+                        className="mt-1"
+                        maxLength={100}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Phone</Label>
+                      <Input
+                        value={editForm.phone}
+                        onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                        className="mt-1"
+                        maxLength={20}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Email</Label>
+                      <Input
+                        type="email"
+                        value={editForm.email}
+                        onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                        className="mt-1"
+                        maxLength={255}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Address</Label>
+                      <Input
+                        value={editForm.address}
+                        onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
+                        className="mt-1"
+                        maxLength={255}
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-sm">
+                      <Phone className="h-4 w-4 text-muted-foreground" />
+                      <span>{claim.phone}</span>
+                    </div>
+                    
+                    <div className="flex items-center gap-2 text-sm">
+                      <Mail className="h-4 w-4 text-muted-foreground" />
+                      <span>{claim.email || "No email"}</span>
+                    </div>
+                    
+                    <div className="flex items-center gap-2 text-sm">
+                      <MapPin className="h-4 w-4 text-muted-foreground" />
+                      <span>{claim.address || "No address"}</span>
+                    </div>
+                  </div>
+                )}
 
                 {/* Case Info */}
                 <div className="mt-6 space-y-3">
@@ -164,26 +295,65 @@ export const ClientProfileCard = ({
                     Case Information
                   </h4>
                   
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div className="space-y-1">
-                      <span className="text-muted-foreground">Type of Case</span>
-                      <p className="font-medium">{claim.injury_area}</p>
+                  {isEditing ? (
+                    <div className="space-y-3">
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Type of Case / Injury Area</Label>
+                        <Input
+                          value={editForm.injury_area}
+                          onChange={(e) => setEditForm({ ...editForm, injury_area: e.target.value })}
+                          className="mt-1"
+                          maxLength={100}
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Date of Accident</Label>
+                        <Input
+                          type="date"
+                          value={editForm.accident_date}
+                          onChange={(e) => setEditForm({ ...editForm, accident_date: e.target.value })}
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs text-muted-foreground">At Fault</Label>
+                        <Select
+                          value={editForm.at_fault}
+                          onValueChange={(value) => setEditForm({ ...editForm, at_fault: value })}
+                        >
+                          <SelectTrigger className="mt-1">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="no">No</SelectItem>
+                            <SelectItem value="yes">Yes</SelectItem>
+                            <SelectItem value="unknown">Unknown</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
-                    <div className="space-y-1">
-                      <span className="text-muted-foreground">Date of Accident</span>
-                      <p className="font-medium">{format(new Date(claim.accident_date), "MMMM d, yyyy")}</p>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div className="space-y-1">
+                        <span className="text-muted-foreground">Type of Case</span>
+                        <p className="font-medium">{claim.injury_area}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <span className="text-muted-foreground">Date of Accident</span>
+                        <p className="font-medium">{format(new Date(claim.accident_date), "MMMM d, yyyy")}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <span className="text-muted-foreground">At Fault</span>
+                        <Badge variant={claim.at_fault === "no" ? "default" : "secondary"}>
+                          {claim.at_fault === "no" ? "Not At Fault" : claim.at_fault === "yes" ? "At Fault" : "Unknown"}
+                        </Badge>
+                      </div>
+                      <div className="space-y-1">
+                        <span className="text-muted-foreground">Date Entered</span>
+                        <p className="font-medium">{format(new Date(claim.created_at), "MMMM d, yyyy")}</p>
+                      </div>
                     </div>
-                    <div className="space-y-1">
-                      <span className="text-muted-foreground">At Fault</span>
-                      <Badge variant={claim.at_fault === "no" ? "default" : "secondary"}>
-                        {claim.at_fault === "no" ? "Not At Fault" : claim.at_fault === "yes" ? "At Fault" : "Unknown"}
-                      </Badge>
-                    </div>
-                    <div className="space-y-1">
-                      <span className="text-muted-foreground">Date Entered</span>
-                      <p className="font-medium">{format(new Date(claim.created_at), "MMMM d, yyyy")}</p>
-                    </div>
-                  </div>
+                  )}
 
                   {/* Status Selector */}
                   <div className="mt-4">
@@ -221,6 +391,7 @@ export const ClientProfileCard = ({
                     placeholder="Add a note about this case..."
                     rows={2}
                     className="resize-none"
+                    maxLength={1000}
                   />
                   <Button 
                     onClick={handleAddNote} 
