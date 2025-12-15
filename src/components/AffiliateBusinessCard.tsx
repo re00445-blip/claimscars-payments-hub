@@ -3,7 +3,8 @@ import { QRCodeSVG } from "qrcode.react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Printer, Share2, Pencil, CreditCard } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Printer, Share2, Pencil, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import logo from "@/assets/cars-claims-logo-new.jpg";
 
@@ -17,13 +18,16 @@ interface AffiliateBusinessCardProps {
 export const AffiliateBusinessCard = ({
   affiliateName,
   referralCode,
-  email,
-  phone,
+  email: initialEmail,
+  phone: initialPhone,
 }: AffiliateBusinessCardProps) => {
   const cardRef = useRef<HTMLDivElement>(null);
+  const [showFront, setShowFront] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [customTitle, setCustomTitle] = useState("Marketing Affiliate");
   const [customName, setCustomName] = useState(affiliateName);
+  const [customPhone, setCustomPhone] = useState(initialPhone || "");
+  const [customEmail, setCustomEmail] = useState(initialEmail || "");
 
   const referralUrl = `${window.location.origin}/claims?ref=${referralCode}`;
 
@@ -49,11 +53,13 @@ export const AffiliateBusinessCard = ({
                 margin: 0;
                 padding: 20px;
                 display: flex;
+                flex-direction: column;
                 justify-content: center;
                 align-items: center;
                 min-height: 100vh;
                 background: #f5f5f5;
                 font-family: Georgia, 'Times New Roman', serif;
+                gap: 30px;
               }
               .card {
                 width: 3.5in;
@@ -78,6 +84,33 @@ export const AffiliateBusinessCard = ({
                 bottom: 0;
                 background: radial-gradient(ellipse at top right, rgba(212, 175, 55, 0.1) 0%, transparent 50%);
                 pointer-events: none;
+              }
+              .card-front {
+                justify-content: center;
+                align-items: center;
+              }
+              .front-content {
+                text-align: center;
+                z-index: 1;
+              }
+              .front-logo {
+                width: 100px;
+                height: 100px;
+                object-fit: contain;
+                border-radius: 8px;
+                margin-bottom: 8px;
+              }
+              .front-brand {
+                font-size: 16px;
+                font-weight: bold;
+                color: #d4af37;
+                letter-spacing: 2px;
+                margin-bottom: 4px;
+              }
+              .front-tagline {
+                font-size: 8px;
+                color: #a08830;
+                font-style: italic;
               }
               .header {
                 display: flex;
@@ -146,6 +179,12 @@ export const AffiliateBusinessCard = ({
                 color: #666;
                 font-size: 12px;
               }
+              .card-label {
+                font-family: Arial, sans-serif;
+                color: #666;
+                font-size: 12px;
+                margin-bottom: 8px;
+              }
               @media print {
                 body {
                   background: white;
@@ -159,6 +198,17 @@ export const AffiliateBusinessCard = ({
           </head>
           <body>
             <div>
+              <p class="card-label">FRONT</p>
+              <div class="card card-front">
+                <div class="front-content">
+                  <img src="${logo}" alt="Cars & Claims" class="front-logo" />
+                  <p class="front-brand">CARS & CLAIMS</p>
+                  <p class="front-tagline">Car Sales, Car Accident Referrals, Marketing & Financing</p>
+                </div>
+              </div>
+            </div>
+            <div>
+              <p class="card-label">BACK</p>
               <div class="card">
                 <div class="header">
                   <div class="name-section">
@@ -172,20 +222,20 @@ export const AffiliateBusinessCard = ({
                   </div>
                 </div>
                 <div class="contact-info">
-                  ${phone ? `<p>📞 ${phone}</p>` : ''}
-                  ${email ? `<p>✉️ ${email}</p>` : ''}
+                  ${customPhone ? `<p>📞 ${customPhone}</p>` : ''}
+                  ${customEmail ? `<p>✉️ ${customEmail}</p>` : ''}
                 </div>
                 <div class="footer">
                   <div class="logo-container">
                     <div class="brand-text">CARS & CLAIMS</div>
                   </div>
-                  <p class="tagline">Car Sales, Car Accident Referrals, Marketing & Financing</p>
+                  <p class="tagline">Scan QR to submit a claim</p>
                 </div>
               </div>
-              <div class="print-instructions">
-                <p>Print this page and send to your preferred printing facility.</p>
-                <p>Recommended: Standard business card size (3.5" x 2")</p>
-              </div>
+            </div>
+            <div class="print-instructions">
+              <p>Print this page and send to your preferred printing facility.</p>
+              <p>Recommended: Standard business card size (3.5" x 2")</p>
             </div>
             <script>
               window.onload = function() {
@@ -219,47 +269,89 @@ export const AffiliateBusinessCard = ({
 
   return (
     <div className="space-y-4">
-      {/* Editing Controls */}
-      {isEditing ? (
-        <div className="bg-card p-4 rounded-lg border space-y-3">
-          <div className="space-y-2">
-            <Label htmlFor="cardName">Name on Card</Label>
-            <Input
-              id="cardName"
-              value={customName}
-              onChange={(e) => setCustomName(e.target.value)}
-              placeholder="Your name"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="cardTitle">Title</Label>
-            <Input
-              id="cardTitle"
-              value={customTitle}
-              onChange={(e) => setCustomTitle(e.target.value)}
-              placeholder="Your title"
-            />
-          </div>
-          <Button onClick={() => setIsEditing(false)} size="sm">
-            Done Editing
-          </Button>
-        </div>
-      ) : (
+      {/* Front/Back Toggle */}
+      <div className="flex items-center gap-3">
+        <Label htmlFor="card-side" className="text-sm font-medium">
+          {showFront ? "Front" : "Back"}
+        </Label>
+        <Switch
+          id="card-side"
+          checked={!showFront}
+          onCheckedChange={(checked) => setShowFront(!checked)}
+        />
         <Button
-          variant="outline"
+          variant="ghost"
           size="sm"
-          onClick={() => setIsEditing(true)}
-          className="gap-2"
+          onClick={() => setShowFront(!showFront)}
+          className="gap-1 text-xs"
         >
-          <Pencil className="h-4 w-4" />
-          Customize Card
+          <RotateCcw className="h-3 w-3" />
+          Flip
         </Button>
+      </div>
+
+      {/* Editing Controls - Only show for back side */}
+      {!showFront && (
+        isEditing ? (
+          <div className="bg-card p-4 rounded-lg border space-y-3">
+            <div className="space-y-2">
+              <Label htmlFor="cardName">Name on Card</Label>
+              <Input
+                id="cardName"
+                value={customName}
+                onChange={(e) => setCustomName(e.target.value)}
+                placeholder="Your name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="cardTitle">Title</Label>
+              <Input
+                id="cardTitle"
+                value={customTitle}
+                onChange={(e) => setCustomTitle(e.target.value)}
+                placeholder="Your title"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="cardPhone">Phone Number</Label>
+              <Input
+                id="cardPhone"
+                value={customPhone}
+                onChange={(e) => setCustomPhone(e.target.value)}
+                placeholder="Your phone number"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="cardEmail">Email</Label>
+              <Input
+                id="cardEmail"
+                type="email"
+                value={customEmail}
+                onChange={(e) => setCustomEmail(e.target.value)}
+                placeholder="Your email"
+              />
+            </div>
+            <Button onClick={() => setIsEditing(false)} size="sm">
+              Done Editing
+            </Button>
+          </div>
+        ) : (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsEditing(true)}
+            className="gap-2"
+          >
+            <Pencil className="h-4 w-4" />
+            Customize Card
+          </Button>
+        )
       )}
 
       {/* Business Card Preview */}
       <div
         ref={cardRef}
-        className="relative w-full max-w-[3.5in] aspect-[1.75] rounded-xl overflow-hidden shadow-2xl"
+        className="relative w-full max-w-[3.5in] aspect-[1.75] rounded-xl overflow-hidden shadow-2xl transition-all duration-300"
         style={{
           background: "linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 50%, #1a1a1a 100%)",
         }}
@@ -272,66 +364,87 @@ export const AffiliateBusinessCard = ({
           }}
         />
 
-        <div className="relative z-10 h-full p-4 flex flex-col justify-between">
-          {/* Header with name and QR */}
-          <div className="flex justify-between items-start">
-            <div>
-              <h2
-                className="text-lg font-semibold tracking-wide"
-                style={{ color: "#d4af37", fontFamily: "Georgia, serif" }}
-              >
-                {customName}
-              </h2>
-              <p
-                className="text-xs italic"
-                style={{ color: "#a08830", fontFamily: "Georgia, serif" }}
-              >
-                {customTitle}
-              </p>
-            </div>
-            <div id="business-card-qr" className="bg-white p-1 rounded">
-              <QRCodeSVG
-                value={referralUrl}
-                size={50}
-                level="M"
-              />
-            </div>
-          </div>
-
-          {/* Contact Info */}
-          <div className="space-y-0.5">
-            {phone && (
-              <p className="text-[10px]" style={{ color: "#b8a040" }}>
-                📞 {phone}
-              </p>
-            )}
-            {email && (
-              <p className="text-[10px]" style={{ color: "#b8a040" }}>
-                ✉️ {email}
-              </p>
-            )}
-          </div>
-
-          {/* Footer with logo and tagline */}
-          <div className="flex justify-between items-end">
-            <div className="flex items-center gap-2">
-              <img
-                src={logo}
-                alt="Cars & Claims"
-                className="w-8 h-8 object-contain rounded"
-              />
-              <span
-                className="text-[10px] font-bold tracking-wider"
-                style={{ color: "#d4af37" }}
-              >
-                CARS & CLAIMS
-              </span>
-            </div>
-            <p className="text-[7px] italic text-gray-500">
+        {showFront ? (
+          /* FRONT SIDE - Logo (Locked) */
+          <div className="relative z-10 h-full flex flex-col items-center justify-center p-4">
+            <img
+              src={logo}
+              alt="Cars & Claims"
+              className="w-24 h-24 object-contain rounded-lg mb-2"
+            />
+            <span
+              className="text-base font-bold tracking-widest"
+              style={{ color: "#d4af37" }}
+            >
+              CARS & CLAIMS
+            </span>
+            <p className="text-[8px] italic text-gray-500 mt-1 text-center">
               Car Sales, Car Accident Referrals, Marketing & Financing
             </p>
           </div>
-        </div>
+        ) : (
+          /* BACK SIDE - QR Code & Contact Info (Editable) */
+          <div className="relative z-10 h-full p-4 flex flex-col justify-between">
+            {/* Header with name and QR */}
+            <div className="flex justify-between items-start">
+              <div>
+                <h2
+                  className="text-lg font-semibold tracking-wide"
+                  style={{ color: "#d4af37", fontFamily: "Georgia, serif" }}
+                >
+                  {customName}
+                </h2>
+                <p
+                  className="text-xs italic"
+                  style={{ color: "#a08830", fontFamily: "Georgia, serif" }}
+                >
+                  {customTitle}
+                </p>
+              </div>
+              <div id="business-card-qr" className="bg-white p-1 rounded">
+                <QRCodeSVG
+                  value={referralUrl}
+                  size={50}
+                  level="M"
+                />
+              </div>
+            </div>
+
+            {/* Contact Info */}
+            <div className="space-y-0.5">
+              {customPhone && (
+                <p className="text-[10px]" style={{ color: "#b8a040" }}>
+                  📞 {customPhone}
+                </p>
+              )}
+              {customEmail && (
+                <p className="text-[10px]" style={{ color: "#b8a040" }}>
+                  ✉️ {customEmail}
+                </p>
+              )}
+            </div>
+
+            {/* Footer with logo and tagline */}
+            <div className="flex justify-between items-end">
+              <div className="flex items-center gap-2">
+                <img
+                  src={logo}
+                  alt="Cars & Claims"
+                  className="w-8 h-8 object-contain rounded"
+                />
+                <span
+                  className="text-[10px] font-bold tracking-wider"
+                  style={{ color: "#d4af37" }}
+                >
+                  CARS & CLAIMS
+                </span>
+              </div>
+              <p className="text-[7px] italic text-gray-500">
+                Scan QR to submit a claim
+              </p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Action Buttons */}
@@ -347,7 +460,7 @@ export const AffiliateBusinessCard = ({
       </div>
       
       <p className="text-xs text-muted-foreground">
-        Click "Print for Facility" to generate a print-ready version you can send to your printing service.
+        Click "Print for Facility" to generate a print-ready version with both sides for your printing service.
       </p>
     </div>
   );
