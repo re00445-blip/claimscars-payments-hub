@@ -26,6 +26,8 @@ interface Affiliate {
   referral_code: string;
   total_referrals: number;
   total_earnings: number;
+  contracts_sent: number;
+  contracts_signed: number;
 }
 
 interface Claim {
@@ -440,8 +442,8 @@ const Dashboard = () => {
         {/* Affiliate Dashboard Section */}
         {isAffiliate && affiliate && (
           <>
-            {/* Affiliate Stats Cards */}
-            <div className="grid md:grid-cols-4 gap-4 mb-8">
+            {/* Affiliate Stats Cards - Row 1 */}
+            <div className="grid md:grid-cols-4 gap-4 mb-4">
               <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">Total Referrals</CardTitle>
@@ -476,6 +478,43 @@ const Dashboard = () => {
                   <code className="text-xl font-bold bg-muted px-3 py-1 rounded">
                     {affiliate.referral_code}
                   </code>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Cases, Contracts Sent, Contracts Signed - Row 2 */}
+            <div className="grid md:grid-cols-3 gap-4 mb-8">
+              <Card className="border-2 border-primary/30">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Cases</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-4xl font-bold text-primary">{claims.length}</div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Linked to: <code className="bg-muted px-1 rounded">{affiliate.referral_code}</code>
+                  </p>
+                </CardContent>
+              </Card>
+              <Card className="border-2 border-amber-500/30">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Contracts Sent</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-4xl font-bold text-amber-600">{affiliate.contracts_sent}</div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Linked to: <code className="bg-muted px-1 rounded">{affiliate.referral_code}</code>
+                  </p>
+                </CardContent>
+              </Card>
+              <Card className="border-2 border-green-500/30">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Contracts Signed</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-4xl font-bold text-green-600">{affiliate.contracts_signed}</div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Linked to: <code className="bg-muted px-1 rounded">{affiliate.referral_code}</code>
+                  </p>
                 </CardContent>
               </Card>
             </div>
