@@ -9,6 +9,7 @@ import { Loader2, DollarSign, Car, FileText, Users, ClipboardList, Settings, Use
 import { useToast } from "@/hooks/use-toast";
 import { TransactionsReport } from "@/components/admin/TransactionsReport";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { UserAvatar } from "@/components/UserAvatar";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -21,6 +22,7 @@ const Dashboard = () => {
   const [quote, setQuote] = useState<string>("");
   const [quoteLoading, setQuoteLoading] = useState(true);
   const [customerAccount, setCustomerAccount] = useState<any>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -74,6 +76,18 @@ const Dashboard = () => {
     setCustomerAccount(data);
   };
 
+  const fetchProfile = async (userId: string) => {
+    const { data } = await supabase
+      .from("profiles")
+      .select("avatar_url")
+      .eq("id", userId)
+      .single();
+    
+    if (data?.avatar_url) {
+      setAvatarUrl(data.avatar_url);
+    }
+  };
+
   const fetchQuote = async () => {
     try {
       const response = await fetch(
@@ -95,8 +109,11 @@ const Dashboard = () => {
   };
 
   useEffect(() => {
-    if (user?.id && !isAdmin) {
-      fetchCustomerAccount(user.id);
+    if (user?.id) {
+      fetchProfile(user.id);
+      if (!isAdmin) {
+        fetchCustomerAccount(user.id);
+      }
     }
     fetchQuote();
   }, [user?.id, isAdmin]);
@@ -125,11 +142,21 @@ const Dashboard = () => {
       
       <div className="container px-4 py-8">
         <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-3xl font-bold">{t("dashboard.title")}</h1>
-            <p className="text-muted-foreground mt-1">
-              {t("dashboard.welcomeBack")} {user?.user_metadata?.full_name || user?.email}
-            </p>
+          <div className="flex items-center gap-4">
+            <UserAvatar
+              userId={user?.id || ""}
+              avatarUrl={avatarUrl}
+              fullName={user?.user_metadata?.full_name || null}
+              size="lg"
+              editable={true}
+              onAvatarUpdate={setAvatarUrl}
+            />
+            <div>
+              <h1 className="text-3xl font-bold">{t("dashboard.title")}</h1>
+              <p className="text-muted-foreground mt-1">
+                {t("dashboard.welcomeBack")} {user?.user_metadata?.full_name || user?.email}
+              </p>
+            </div>
           </div>
           <Button variant="outline" onClick={handleSignOut}>
             {t("dashboard.signOut")}
