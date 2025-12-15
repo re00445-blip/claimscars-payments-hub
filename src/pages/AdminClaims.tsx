@@ -31,7 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Plus, ArrowLeft, Edit, Trash2, Eye, ExternalLink } from "lucide-react";
+import { Loader2, Plus, ArrowLeft, Edit, Trash2, Eye, ExternalLink, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface InjuryClaim {
@@ -49,8 +49,13 @@ interface InjuryClaim {
   assigned_to: string | null;
   referral_source: string | null;
   agreement_amount: number | null;
+  affiliate_id: string | null;
   created_at: string;
   updated_at: string;
+  affiliate?: {
+    name: string;
+    referral_code: string;
+  } | null;
 }
 
 const statusOptions = [
@@ -129,7 +134,10 @@ const AdminClaims = () => {
   const fetchClaims = async () => {
     const { data, error } = await supabase
       .from("injury_claims")
-      .select("*")
+      .select(`
+        *,
+        affiliate:marketing_affiliates(name, referral_code)
+      `)
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -570,7 +578,7 @@ const AdminClaims = () => {
                       <TableHead>Phone</TableHead>
                       <TableHead>Accident Date</TableHead>
                       <TableHead>Injury</TableHead>
-                      <TableHead>Referral Code</TableHead>
+                      <TableHead>Referral Source</TableHead>
                       <TableHead>At Fault</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Created</TableHead>
@@ -584,7 +592,20 @@ const AdminClaims = () => {
                         <TableCell>{claim.phone}</TableCell>
                         <TableCell>{new Date(claim.accident_date).toLocaleDateString()}</TableCell>
                         <TableCell>{claim.injury_area}</TableCell>
-                        <TableCell>{claim.referral_source || "—"}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            {claim.affiliate_id && claim.affiliate && (
+                              <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
+                                <Users className="h-3 w-3 mr-1" />
+                                {claim.affiliate.name}
+                              </Badge>
+                            )}
+                            {claim.referral_source && !claim.affiliate_id && (
+                              <span className="text-muted-foreground">{claim.referral_source}</span>
+                            )}
+                            {!claim.referral_source && !claim.affiliate_id && "—"}
+                          </div>
+                        </TableCell>
                         <TableCell className="capitalize">{claim.at_fault}</TableCell>
                         <TableCell>
                           <Select
