@@ -133,6 +133,47 @@ export const ChatBot = () => {
     setIsOpen(false);
   };
 
+  // Render message content with clickable links
+  const renderMessageContent = (content: string, role: "user" | "assistant") => {
+    if (role === "user") return content;
+    
+    // Parse markdown links [text](/path) and make them clickable
+    const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
+    const parts: (string | JSX.Element)[] = [];
+    let lastIndex = 0;
+    let match;
+
+    while ((match = linkRegex.exec(content)) !== null) {
+      // Add text before the link
+      if (match.index > lastIndex) {
+        parts.push(content.slice(lastIndex, match.index));
+      }
+      
+      const linkText = match[1];
+      const linkPath = match[2];
+      
+      // Create clickable link
+      parts.push(
+        <button
+          key={match.index}
+          onClick={() => handleQuickLink(linkPath)}
+          className="text-primary font-semibold underline hover:text-primary/80 transition-colors"
+        >
+          {linkText}
+        </button>
+      );
+      
+      lastIndex = match.index + match[0].length;
+    }
+
+    // Add remaining text after last link
+    if (lastIndex < content.length) {
+      parts.push(content.slice(lastIndex));
+    }
+
+    return parts.length > 0 ? parts : content;
+  };
+
   return (
     <>
       {/* Chat Toggle Button */}
@@ -168,7 +209,7 @@ export const ChatBot = () => {
                         : "bg-background border border-border"
                     }`}
                   >
-                    {msg.content}
+                    {renderMessageContent(msg.content, msg.role)}
                   </div>
                 </div>
               ))}
