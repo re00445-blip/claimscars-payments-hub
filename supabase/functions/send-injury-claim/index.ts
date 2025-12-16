@@ -16,6 +16,7 @@ interface InjuryClaimRequest {
   injuryArea: string;
   atFault: string;
   contactNumber: string;
+  vehicleType: string;
   attachments?: string[];
   referralSource?: string;
   affiliateId?: string;
@@ -88,7 +89,7 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const { name, address, accidentDate, injuryArea, atFault, contactNumber, attachments, referralSource, affiliateId } = data;
+    const { name, address, accidentDate, injuryArea, atFault, contactNumber, vehicleType, attachments, referralSource, affiliateId } = data;
 
     console.log("Processing injury claim for:", escapeHtml(name), "Referral Source:", referralSource || "none", "Affiliate ID:", affiliateId || "none");
 
@@ -130,6 +131,7 @@ const handler = async (req: Request): Promise<Response> => {
         injury_area: injuryArea,
         at_fault: atFault,
         phone: contactNumber,
+        vehicle_type: vehicleType,
         attachments: sanitizedAttachments,
         referral_source: referralSource || null,
         affiliate_id: resolvedAffiliateId,
@@ -199,6 +201,7 @@ const handler = async (req: Request): Promise<Response> => {
             <li><strong>Accident Date:</strong> ${escapeHtml(accidentDate)}</li>
             <li><strong>Area of Bodily Injury:</strong> ${escapeHtml(injuryArea)}</li>
             <li><strong>Were They At Fault:</strong> ${escapeHtml(atFault)}</li>
+            <li><strong>Government Entity/Commercial Vehicle:</strong> ${escapeHtml(vehicleType)}</li>
           </ul>
           ${attachmentsHtml}
         `,

@@ -131,6 +131,7 @@ export type Database = {
           referral_source: string | null
           status: string
           updated_at: string
+          vehicle_type: string | null
         }
         Insert: {
           accident_date: string
@@ -150,6 +151,7 @@ export type Database = {
           referral_source?: string | null
           status?: string
           updated_at?: string
+          vehicle_type?: string | null
         }
         Update: {
           accident_date?: string
@@ -169,6 +171,7 @@ export type Database = {
           referral_source?: string | null
           status?: string
           updated_at?: string
+          vehicle_type?: string | null
         }
         Relationships: [
           {
