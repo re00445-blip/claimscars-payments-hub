@@ -23,6 +23,7 @@ const claimFormSchema = z.object({
   injuryArea: z.string().min(2, "Please describe the area of injury"),
   atFault: z.string().min(1, "Please indicate if you were at fault"),
   contactNumber: z.string().min(10, "Please enter a valid phone number"),
+  vehicleType: z.string().min(1, "Please select a vehicle type"),
   referralSource: z.string().optional(),
 });
 
@@ -45,6 +46,7 @@ const Claims = () => {
       injuryArea: "",
       atFault: "",
       contactNumber: "",
+      vehicleType: "",
       referralSource: referralCode || "",
     },
   });
@@ -270,6 +272,23 @@ const Claims = () => {
                 />
                 {form.formState.errors.injuryArea && (
                   <p className="text-sm text-destructive">{form.formState.errors.injuryArea.message}</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="vehicleType">{t("claims.vehicleType")} *</Label>
+                <Select onValueChange={(value) => form.setValue("vehicleType", value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={t("claims.select")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="government">{t("claims.governmentEntity")}</SelectItem>
+                    <SelectItem value="commercial">{t("claims.commercialVehicle")}</SelectItem>
+                    <SelectItem value="neither">{t("claims.neither")}</SelectItem>
+                  </SelectContent>
+                </Select>
+                {form.formState.errors.vehicleType && (
+                  <p className="text-sm text-destructive">{form.formState.errors.vehicleType.message}</p>
                 )}
               </div>
 
