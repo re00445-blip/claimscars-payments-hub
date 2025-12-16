@@ -396,14 +396,21 @@ const PaymentPortal = () => {
                     <CardDescription>{t("portal.nextPaymentDue")}</CardDescription>
                     <CardTitle className="text-xl">{formatDate(account.next_payment_date)}</CardTitle>
                     {paymentStatus && (
-                      <Badge variant={paymentStatus.variant} className="mt-1">
-                        {paymentStatus.status === "overdue" 
-                          ? t("portal.daysOverdue").replace("{days}", String(paymentStatus.days))
-                          : paymentStatus.status === "due-soon"
-                          ? t("portal.dueInDays").replace("{days}", String(paymentStatus.days))
-                          : t("portal.daysUntilDue").replace("{days}", String(paymentStatus.days))
-                        }
-                      </Badge>
+                      <div className="flex flex-col gap-1 mt-1">
+                        <Badge variant={paymentStatus.variant}>
+                          {paymentStatus.status === "overdue" 
+                            ? t("portal.daysOverdue").replace("{days}", String(paymentStatus.days))
+                            : paymentStatus.status === "due-soon"
+                            ? t("portal.dueInDays").replace("{days}", String(paymentStatus.days))
+                            : t("portal.daysUntilDue").replace("{days}", String(paymentStatus.days))
+                          }
+                        </Badge>
+                        {paymentStatus.status === "overdue" && (
+                          <Badge variant="destructive" className="bg-red-700">
+                            {language === 'es' ? 'Cargo por mora' : 'Late Fee'}: {formatCurrency(paymentStatus.days * 20)}
+                          </Badge>
+                        )}
+                      </div>
                     )}
                   </CardHeader>
                 </Card>
