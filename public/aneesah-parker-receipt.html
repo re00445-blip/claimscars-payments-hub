@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Payment Receipts - Aneesah Parker</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; color: #333; background: #f5f5f5; }
+    .receipt { max-width: 650px; margin: 20px auto; padding: 40px; background: white; border: 1px solid #ddd; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    .page-break { page-break-after: always; margin-bottom: 40px; }
+    
+    .header { text-align: center; border-bottom: 3px solid #1a472a; padding-bottom: 20px; margin-bottom: 25px; }
+    .header h1 { font-size: 24px; color: #1a472a; margin-bottom: 5px; }
+    .subtitle { font-size: 16px; color: #2d5a3d; font-weight: bold; }
+    .contact { font-size: 12px; color: #666; margin-top: 8px; }
+    
+    .title-section { text-align: center; margin-bottom: 25px; background: #f8f8f8; padding: 15px; border-radius: 5px; }
+    .title-section h2 { font-size: 20px; margin-bottom: 10px; color: #1a472a; }
+    .title-section p { font-size: 13px; color: #666; }
+    
+    .customer-info { background: #e8f5e9; padding: 15px; border-radius: 5px; margin-bottom: 25px; border-left: 4px solid #1a472a; }
+    .customer-info h3 { font-size: 12px; color: #666; margin-bottom: 8px; text-transform: uppercase; }
+    .customer-name { font-size: 18px; font-weight: bold; color: #1a472a; }
+    
+    .details { margin-bottom: 25px; }
+    .details h3 { font-size: 14px; border-bottom: 2px solid #1a472a; padding-bottom: 8px; margin-bottom: 12px; color: #1a472a; }
+    .details table { width: 100%; border-collapse: collapse; }
+    .details td { padding: 10px 0; border-bottom: 1px solid #eee; }
+    .details .right { text-align: right; font-weight: 500; }
+    .details .total-row { border-top: 2px solid #1a472a; border-bottom: none; }
+    .details .total-row td { padding-top: 15px; font-weight: bold; font-size: 16px; }
+    .details .total { color: #1a472a; font-size: 20px; }
+    
+    .balance-box { background: #e8f5e9; border: 2px solid #1a472a; padding: 15px; border-radius: 5px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center; }
+    .balance-box span { font-weight: 600; }
+    .balance-box .amount { font-size: 24px; font-weight: bold; color: #1a472a; }
+    
+    .footer { text-align: center; border-top: 1px solid #ddd; padding-top: 20px; font-size: 12px; color: #666; }
+    .thank-you { font-weight: bold; font-size: 14px; color: #1a472a; margin-bottom: 5px; }
+    
+    .summary-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+    .summary-table th { background: #1a472a; color: white; padding: 12px; text-align: left; font-size: 12px; }
+    .summary-table td { padding: 12px; border-bottom: 1px solid #ddd; }
+    .summary-table .total-row { background: #e8f5e9; font-weight: bold; }
+    
+    .print-btn { display: block; margin: 20px auto; padding: 15px 30px; background: #1a472a; color: white; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; }
+    .print-btn:hover { background: #2d5a3d; }
+    
+    @media print {
+      body { background: white; }
+      .receipt { border: none; margin: 0; box-shadow: none; }
+      .print-btn { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<button class="print-btn" onclick="window.print()">🖨️ Print / Save as PDF</button>
+
+<!-- RECEIPT 1: August 2024 -->
+<div class="receipt page-break">
+  <div class="header">
+    <h1>Quality Foreign and Domestic Auto's</h1>
+    <p class="subtitle">Cars & Claims</p>
+    <p class="contact">Phone: 470-519-6717</p>
+  </div>
+
+  <div class="title-section">
+    <h2>PAYMENT RECEIPT</h2>
+    <p>Invoice #: INV-20240815-00001</p>
+    <p>Date: August 15, 2024</p>
+  </div>
+
+  <div class="customer-info">
+    <h3>Bill To:</h3>
+    <p class="customer-name">Aneesah Parker</p>
+  </div>
+
+  <div class="details">
+    <h3>Payment Details</h3>
+    <table>
+      <tr><td>Payment Method:</td><td class="right">Cash/Check</td></tr>
+      <tr><td>Principal Paid:</td><td class="right">$200.00</td></tr>
+      <tr><td>Interest Paid:</td><td class="right">$50.00</td></tr>
+      <tr class="total-row"><td>Total Payment:</td><td class="right total">$250.00</td></tr>
+    </table>
+  </div>
+
+  <div class="balance-box">
+    <span>Balance After This Payment:</span>
+    <span class="amount">$2,100.00</span>
+  </div>
+
+  <div class="footer">
+    <p class="thank-you">Thank you for your payment!</p>
+    <p>Quality Foreign and Domestic Auto's - Cars & Claims</p>
+    <p>Your trusted partner in automotive financing</p>
+  </div>
+</div>
+
+<!-- RECEIPT 2: September 2024 -->
+<div class="receipt page-break">
+  <div class="header">
+    <h1>Quality Foreign and Domestic Auto's</h1>
+    <p class="subtitle">Cars & Claims</p>
+    <p class="contact">Phone: 470-519-6717</p>
+  </div>
+
+  <div class="title-section">
+    <h2>PAYMENT RECEIPT</h2>
+    <p>Invoice #: INV-20240915-00002</p>
+    <p>Date: September 15, 2024</p>
+  </div>
+
+  <div class="customer-info">
+    <h3>Bill To:</h3>
+    <p class="customer-name">Aneesah Parker</p>
+  </div>
+
+  <div class="details">
+    <h3>Payment Details</h3>
+    <table>
+      <tr><td>Payment Method:</td><td class="right">Cash/Check</td></tr>
+      <tr><td>Principal Paid:</td><td class="right">$200.00</td></tr>
+      <tr><td>Interest Paid:</td><td class="right">$50.00</td></tr>
+      <tr class="total-row"><td>Total Payment:</td><td class="right total">$250.00</td></tr>
+    </table>
+  </div>
+
+  <div class="balance-box">
+    <span>Balance After This Payment:</span>
+    <span class="amount">$1,900.00</span>
+  </div>
+
+  <div class="footer">
+    <p class="thank-you">Thank you for your payment!</p>
+    <p>Quality Foreign and Domestic Auto's - Cars & Claims</p>
+    <p>Your trusted partner in automotive financing</p>
+  </div>
+</div>
+
+<!-- RECEIPT 3: October 2024 -->
+<div class="receipt page-break">
+  <div class="header">
+    <h1>Quality Foreign and Domestic Auto's</h1>
+    <p class="subtitle">Cars & Claims</p>
+    <p class="contact">Phone: 470-519-6717</p>
+  </div>
+
+  <div class="title-section">
+    <h2>PAYMENT RECEIPT</h2>
+    <p>Invoice #: INV-20241015-00003</p>
+    <p>Date: October 15, 2024</p>
+  </div>
+
+  <div class="customer-info">
+    <h3>Bill To:</h3>
+    <p class="customer-name">Aneesah Parker</p>
+  </div>
+
+  <div class="details">
+    <h3>Payment Details</h3>
+    <table>
+      <tr><td>Payment Method:</td><td class="right">Cash/Check</td></tr>
+      <tr><td>Principal Paid:</td><td class="right">$200.00</td></tr>
+      <tr><td>Interest Paid:</td><td class="right">$50.00</td></tr>
+      <tr class="total-row"><td>Total Payment:</td><td class="right total">$250.00</td></tr>
+    </table>
+  </div>
+
+  <div class="balance-box">
+    <span>Balance After This Payment:</span>
+    <span class="amount">$1,700.00</span>
+  </div>
+
+  <div class="footer">
+    <p class="thank-you">Thank you for your payment!</p>
+    <p>Quality Foreign and Domestic Auto's - Cars & Claims</p>
+    <p>Your trusted partner in automotive financing</p>
+  </div>
+</div>
+
+<!-- RECEIPT 4: November 2024 -->
+<div class="receipt page-break">
+  <div class="header">
+    <h1>Quality Foreign and Domestic Auto's</h1>
+    <p class="subtitle">Cars & Claims</p>
+    <p class="contact">Phone: 470-519-6717</p>
+  </div>
+
+  <div class="title-section">
+    <h2>PAYMENT RECEIPT</h2>
+    <p>Invoice #: INV-20241115-00004</p>
+    <p>Date: November 15, 2024</p>
+  </div>
+
+  <div class="customer-info">
+    <h3>Bill To:</h3>
+    <p class="customer-name">Aneesah Parker</p>
+  </div>
+
+  <div class="details">
+    <h3>Payment Details</h3>
+    <table>
+      <tr><td>Payment Method:</td><td class="right">Cash/Check</td></tr>
+      <tr><td>Principal Paid:</td><td class="right">$200.00</td></tr>
+      <tr><td>Interest Paid:</td><td class="right">$50.00</td></tr>
+      <tr class="total-row"><td>Total Payment:</td><td class="right total">$250.00</td></tr>
+    </table>
+  </div>
+
+  <div class="balance-box">
+    <span>Balance After This Payment:</span>
+    <span class="amount">$1,500.00</span>
+  </div>
+
+  <div class="footer">
+    <p class="thank-you">Thank you for your payment!</p>
+    <p>Quality Foreign and Domestic Auto's - Cars & Claims</p>
+    <p>Your trusted partner in automotive financing</p>
+  </div>
+</div>
+
+<!-- ACCOUNT SUMMARY PAGE -->
+<div class="receipt">
+  <div class="header">
+    <h1>Quality Foreign and Domestic Auto's</h1>
+    <p class="subtitle">Cars & Claims</p>
+    <p class="contact">Phone: 470-519-6717</p>
+  </div>
+
+  <div class="title-section">
+    <h2>ACCOUNT SUMMARY</h2>
+    <p>As of December 17, 2024</p>
+  </div>
+
+  <div class="customer-info">
+    <h3>Customer:</h3>
+    <p class="customer-name">Aneesah Parker</p>
+  </div>
+
+  <h3 style="font-size: 14px; border-bottom: 2px solid #1a472a; padding-bottom: 8px; margin-bottom: 15px; color: #1a472a;">Payment History (Last 4 Months)</h3>
+  
+  <table class="summary-table">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Principal</th>
+        <th>Interest</th>
+        <th>Total</th>
+        <th>Balance</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>August 15, 2024</td>
+        <td>$200.00</td>
+        <td>$50.00</td>
+        <td>$250.00</td>
+        <td>$2,100.00</td>
+      </tr>
+      <tr>
+        <td>September 15, 2024</td>
+        <td>$200.00</td>
+        <td>$50.00</td>
+        <td>$250.00</td>
+        <td>$1,900.00</td>
+      </tr>
+      <tr>
+        <td>October 15, 2024</td>
+        <td>$200.00</td>
+        <td>$50.00</td>
+        <td>$250.00</td>
+        <td>$1,700.00</td>
+      </tr>
+      <tr>
+        <td>November 15, 2024</td>
+        <td>$200.00</td>
+        <td>$50.00</td>
+        <td>$250.00</td>
+        <td>$1,500.00</td>
+      </tr>
+      <tr class="total-row">
+        <td><strong>Total Paid</strong></td>
+        <td><strong>$800.00</strong></td>
+        <td><strong>$200.00</strong></td>
+        <td><strong>$1,000.00</strong></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="balance-box" style="background: #1a472a; color: white; border: none;">
+    <span style="color: white;">Current Balance Due:</span>
+    <span class="amount" style="color: white; font-size: 28px;">$1,350.00</span>
+  </div>
+
+  <div class="footer">
+    <p class="thank-you">Thank you for choosing Quality Foreign and Domestic Auto's!</p>
+    <p>We appreciate your continued business.</p>
+    <p style="margin-top: 10px;">Questions? Call us at 470-519-6717</p>
+  </div>
+</div>
+
+</body>
+</html>
