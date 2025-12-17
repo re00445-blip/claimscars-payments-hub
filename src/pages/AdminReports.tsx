@@ -9,6 +9,7 @@ import { Loader2, ArrowLeft, Car, DollarSign, TrendingUp, Users, AlertTriangle }
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import BatchReceiptExport from "@/components/admin/BatchReceiptExport";
 
 interface VehicleStats {
   total: number;
@@ -347,6 +348,11 @@ const AdminReports = () => {
             </CardContent>
           </Card>
         )}
+
+        {/* Batch Receipt Export */}
+        <div className="mb-8">
+          <BatchReceiptExport />
+        </div>
 
         {/* Vehicle Status Breakdown */}
         <div className="grid md:grid-cols-2 gap-6">
