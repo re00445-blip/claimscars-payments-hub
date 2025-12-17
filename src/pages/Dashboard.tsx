@@ -5,7 +5,7 @@ import { User, Session } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Navbar } from "@/components/Navbar";
-import { Loader2, DollarSign, Car, FileText, Users, ClipboardList, Settings, UserPlus, Sparkles, CreditCard, Share2, Plus } from "lucide-react";
+import { Loader2, DollarSign, Car, FileText, Users, ClipboardList, Settings, UserPlus, Sparkles, CreditCard, Share2, Plus, Printer } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { TransactionsReport } from "@/components/admin/TransactionsReport";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -768,6 +768,10 @@ const Dashboard = () => {
                 <Button variant="outline" onClick={() => navigate("/admin/reports")}>
                   <FileText className="mr-2 h-4 w-4" />
                   {t("dashboard.paymentReports")}
+                </Button>
+                <Button variant="outline" onClick={() => navigate("/admin/reports")}>
+                  <Printer className="mr-2 h-4 w-4" />
+                  Batch Receipts
                 </Button>
               </CardContent>
             </Card>
