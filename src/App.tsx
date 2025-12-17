@@ -19,6 +19,7 @@ import AdminClaims from "./pages/AdminClaims";
 import AdminUsers from "./pages/AdminUsers";
 import AdminAffiliates from "./pages/AdminAffiliates";
 import AffiliatePortal from "./pages/AffiliatePortal";
+import PrintReceipts from "./pages/PrintReceipts";
 import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
@@ -45,6 +46,7 @@ const App = () => (
             <Route path="/admin/users" element={<AdminUsers />} />
             <Route path="/admin/affiliates" element={<AdminAffiliates />} />
             <Route path="/affiliate" element={<AffiliatePortal />} />
+            <Route path="/print-receipts" element={<PrintReceipts />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
