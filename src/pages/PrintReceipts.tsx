@@ -18,13 +18,6 @@ const PrintReceipts = () => {
   // Current balance after all payments
   const currentBalance = 1350;
 
-  useEffect(() => {
-    // Auto-trigger print dialog
-    setTimeout(() => {
-      window.print();
-    }, 500);
-  }, []);
-
   return (
     <div className="bg-white text-black min-h-screen p-8 print:p-4">
       <style>
