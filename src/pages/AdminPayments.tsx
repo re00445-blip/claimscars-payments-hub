@@ -32,7 +32,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Plus, ArrowLeft, Receipt, Printer, DollarSign } from "lucide-react";
+import { Loader2, Plus, ArrowLeft, Receipt, Printer, DollarSign, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface CustomerAccount {
@@ -463,16 +463,21 @@ const AdminPayments = () => {
               </p>
             </div>
           </div>
-          <Dialog open={isDialogOpen} onOpenChange={(open) => {
-            setIsDialogOpen(open);
-            if (!open) resetForm();
-          }}>
-            <DialogTrigger asChild>
-              <Button disabled={accounts.length === 0}>
-                <Plus className="h-4 w-4 mr-2" />
-                Record Payment
-              </Button>
-            </DialogTrigger>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => navigate("/print-receipts")}>
+              <Eye className="h-4 w-4 mr-2" />
+              View Sample Receipt
+            </Button>
+            <Dialog open={isDialogOpen} onOpenChange={(open) => {
+              setIsDialogOpen(open);
+              if (!open) resetForm();
+            }}>
+              <DialogTrigger asChild>
+                <Button disabled={accounts.length === 0}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Record Payment
+                </Button>
+              </DialogTrigger>
             <DialogContent className="max-w-lg">
               <DialogHeader>
                 <DialogTitle>Record New Payment</DialogTitle>
@@ -590,6 +595,7 @@ const AdminPayments = () => {
               </form>
             </DialogContent>
           </Dialog>
+          </div>
         </div>
 
         {/* Stats */}
