@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ClientProfileCard } from "@/components/ClientProfileCard";
+import { RaceTrackProgress } from "@/components/RaceTrackProgress";
 
 interface Affiliate {
   id: string;
@@ -383,6 +384,18 @@ const Dashboard = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Race Track Progress - only for BHPH customers */}
+        {!isAdmin && !isAffiliate && customerAccount && customerAccount.starting_balance > 0 && (
+          <Card className="mb-8 border border-border">
+            <CardContent className="pt-6">
+              <RaceTrackProgress 
+                startingBalance={customerAccount.starting_balance || 0}
+                currentBalance={customerAccount.current_balance || 0}
+              />
+            </CardContent>
+          </Card>
+        )}
 
         {/* Customer BHPH Account Section - only show for non-admins with accounts */}
         {!isAdmin && !isAffiliate && customerAccount && (
