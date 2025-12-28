@@ -6,8 +6,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Navbar } from "@/components/Navbar";
-import { Loader2, ArrowLeft, Shield, User, Users } from "lucide-react";
+import { Loader2, ArrowLeft, Shield, User, Users, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface UserProfile {
   id: string;
@@ -25,6 +35,8 @@ const AdminUsers = () => {
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [togglingUserId, setTogglingUserId] = useState<string | null>(null);
+  const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
+  const [userToDelete, setUserToDelete] = useState<UserProfile | null>(null);
 
   useEffect(() => {
     checkAdminAndLoad();
@@ -232,6 +244,43 @@ const AdminUsers = () => {
     }
   };
 
+  const deleteUser = async (user: UserProfile) => {
+    setDeletingUserId(user.id);
+    
+    try {
+      // Delete user roles first
+      await supabase.from("user_roles").delete().eq("user_id", user.id);
+      
+      // Delete marketing affiliate record if exists
+      await supabase.from("marketing_affiliates").delete().eq("user_id", user.id);
+      
+      // Delete profile
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .delete()
+        .eq("id", user.id);
+
+      if (profileError) throw profileError;
+
+      // Update local state
+      setUsers(prev => prev.filter(u => u.id !== user.id));
+      
+      toast({
+        title: "User Deleted",
+        description: `${user.full_name || user.email} has been removed.`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete user.",
+        variant: "destructive",
+      });
+    } finally {
+      setDeletingUserId(null);
+      setUserToDelete(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -279,6 +328,7 @@ const AdminUsers = () => {
                     <TableHead>Joined</TableHead>
                     <TableHead className="text-center">Admin</TableHead>
                     <TableHead className="text-center">Affiliate</TableHead>
+                    <TableHead className="text-center">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -330,6 +380,21 @@ const AdminUsers = () => {
                           )}
                         </div>
                       </TableCell>
+                      <TableCell className="text-center">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={() => setUserToDelete(user)}
+                          disabled={deletingUserId === user.id}
+                        >
+                          {deletingUserId === user.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -338,6 +403,27 @@ const AdminUsers = () => {
           </CardContent>
         </Card>
       </div>
+
+      <AlertDialog open={!!userToDelete} onOpenChange={() => setUserToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete User Account</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <strong>{userToDelete?.full_name || userToDelete?.email}</strong>? 
+              This will remove their profile, roles, and any affiliate records. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => userToDelete && deleteUser(userToDelete)}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
