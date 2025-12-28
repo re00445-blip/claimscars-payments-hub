@@ -30,7 +30,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Plus, ArrowLeft, Edit, Trash2 } from "lucide-react";
+import { Loader2, Plus, ArrowLeft, Edit, Trash2, Mail } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface CustomerAccount {
@@ -64,11 +64,18 @@ const AdminAccounts = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
   const [accounts, setAccounts] = useState<CustomerAccount[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState<CustomerAccount | null>(null);
   const [saving, setSaving] = useState(false);
   const [interestViewType, setInterestViewType] = useState<"percentage" | "dollar">("percentage");
+  
+  // Email change dialog state
+  const [emailChangeDialogOpen, setEmailChangeDialogOpen] = useState(false);
+  const [emailChangeAccount, setEmailChangeAccount] = useState<CustomerAccount | null>(null);
+  const [newEmail, setNewEmail] = useState("");
+  const [changingEmail, setChangingEmail] = useState(false);
 
   const [formData, setFormData] = useState({
     // Customer info (manual entry)
@@ -100,6 +107,7 @@ const AdminAccounts = () => {
       if (!session) {
         navigate("/auth");
       } else {
+        setCurrentUserEmail(session.user.email || null);
         checkAdminStatus(session.user.id);
       }
       setLoading(false);
@@ -416,6 +424,61 @@ const AdminAccounts = () => {
       currency: "USD",
     }).format(amount);
   };
+
+  const handleOpenEmailChange = (account: CustomerAccount) => {
+    setEmailChangeAccount(account);
+    setNewEmail(account.profile?.email || "");
+    setEmailChangeDialogOpen(true);
+  };
+
+  const handleEmailChange = async () => {
+    if (!emailChangeAccount || !newEmail) return;
+    
+    setChangingEmail(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/update-user-email`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${sessionData.session?.access_token}`,
+          },
+          body: JSON.stringify({
+            user_id: emailChangeAccount.user_id,
+            new_email: newEmail,
+          }),
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to update email");
+      }
+
+      toast({
+        title: "Success",
+        description: "Email updated successfully",
+      });
+
+      setEmailChangeDialogOpen(false);
+      setEmailChangeAccount(null);
+      setNewEmail("");
+      await fetchData();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update email",
+        variant: "destructive",
+      });
+    }
+    setChangingEmail(false);
+  };
+
+  const isRamon = currentUserEmail === "ramon@carsandclaims.com";
 
   if (loading) {
     return (
@@ -800,6 +863,11 @@ const AdminAccounts = () => {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
+                            {isRamon && (
+                              <Button variant="ghost" size="sm" onClick={() => handleOpenEmailChange(account)} title="Change Email">
+                                <Mail className="h-4 w-4" />
+                              </Button>
+                            )}
                             <Button variant="ghost" size="sm" onClick={() => handleEdit(account)}>
                               <Edit className="h-4 w-4" />
                             </Button>
@@ -816,6 +884,43 @@ const AdminAccounts = () => {
             )}
           </CardContent>
         </Card>
+
+        {/* Email Change Dialog - Only for Ramon */}
+        <Dialog open={emailChangeDialogOpen} onOpenChange={setEmailChangeDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Change Account Email</DialogTitle>
+              <DialogDescription>
+                Update the login email for {emailChangeAccount?.profile?.full_name || "this customer"}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label>Current Email</Label>
+                <Input value={emailChangeAccount?.profile?.email || ""} disabled />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="new-email">New Email</Label>
+                <Input
+                  id="new-email"
+                  type="email"
+                  value={newEmail}
+                  onChange={(e) => setNewEmail(e.target.value)}
+                  placeholder="newemail@example.com"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setEmailChangeDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleEmailChange} disabled={changingEmail || !newEmail}>
+                {changingEmail && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                Update Email
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

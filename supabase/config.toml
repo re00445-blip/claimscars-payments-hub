@@ -47,3 +47,6 @@ verify_jwt = false
 
 [functions.translate-text]
 verify_jwt = false
+
+[functions.update-user-email]
+verify_jwt = true
