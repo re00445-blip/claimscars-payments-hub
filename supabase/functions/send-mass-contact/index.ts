@@ -58,7 +58,7 @@ const handler = async (req: Request): Promise<Response> => {
                   <p style="margin: 3px 0;">📞 (470) 519-6717</p>
                   <p style="margin: 3px 0;">✉️ info@carsandclaims.com</p>
                   <p style="margin: 8px 0 0 0;">
-                    <a href="https://www.carsandclaims.com" style="color: #4ade80; text-decoration: none; font-weight: bold;">WWW.CARSANDCLAIMS.COM</a>
+                    <a href="https://carsandclaims.com" style="color: #4ade80; text-decoration: none; font-weight: bold;">CARSANDCLAIMS.COM</a>
                   </p>
                 </div>
               </div>
