@@ -105,11 +105,11 @@ export const RaceTrackProgress = ({ startingBalance, currentBalance }: RaceTrack
               <Car 
                 className="h-8 w-8 text-primary drop-shadow-lg" 
               />
-              {/* Smoke puffs behind car */}
-              <div className="absolute left-full top-1/2 -translate-y-1/2 flex gap-1 ml-1">
-                <div className="w-2 h-2 bg-muted-foreground/40 rounded-full animate-ping" style={{ animationDuration: '1.5s' }} />
-                <div className="w-3 h-3 bg-muted-foreground/30 rounded-full animate-ping" style={{ animationDuration: '2s', animationDelay: '0.2s' }} />
+              {/* Smoke puffs behind car (to the left) */}
+              <div className="absolute right-full top-1/2 -translate-y-1/2 flex gap-1 mr-1">
                 <div className="w-2 h-2 bg-muted-foreground/20 rounded-full animate-ping" style={{ animationDuration: '2.5s', animationDelay: '0.4s' }} />
+                <div className="w-3 h-3 bg-muted-foreground/30 rounded-full animate-ping" style={{ animationDuration: '2s', animationDelay: '0.2s' }} />
+                <div className="w-2 h-2 bg-muted-foreground/40 rounded-full animate-ping" style={{ animationDuration: '1.5s' }} />
               </div>
             </div>
           </div>
