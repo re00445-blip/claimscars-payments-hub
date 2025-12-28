@@ -46,7 +46,17 @@ const handler = async (req: Request): Promise<Response> => {
                 ${message.replace(/\n/g, "<br>")}
               </div>
               <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;" />
-              <p style="color: #999; font-size: 12px;">
+              <div style="color: #666; font-size: 14px; margin-top: 20px;">
+                <p style="margin: 0; font-weight: bold;">Best regards,</p>
+                <p style="margin: 5px 0 0 0; font-weight: bold; color: #333;">Cars & Claims</p>
+              </div>
+              <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #eee; color: #888; font-size: 12px;">
+                <p style="margin: 0;">📍 2901 Buford Hwy NE, Suite B</p>
+                <p style="margin: 3px 0;">Atlanta, GA 30329</p>
+                <p style="margin: 3px 0;">📞 (470) 519-6717</p>
+                <p style="margin: 3px 0;">✉️ info@carsandclaims.com</p>
+              </div>
+              <p style="color: #999; font-size: 11px; margin-top: 15px;">
                 This message was sent from Cars & Claims.
               </p>
             </div>
