@@ -3,11 +3,13 @@ import { Car } from "lucide-react";
 interface RaceTrackProgressProps {
   startingBalance: number;
   currentBalance: number;
+  totalPaid?: number;
 }
 
-export const RaceTrackProgress = ({ startingBalance, currentBalance }: RaceTrackProgressProps) => {
-  // Calculate progress percentage (0% = just started, 100% = paid in full)
-  const amountPaid = startingBalance - currentBalance;
+export const RaceTrackProgress = ({ startingBalance, currentBalance, totalPaid }: RaceTrackProgressProps) => {
+  // Calculate progress percentage based on actual payments made
+  // Use totalPaid if available, otherwise fall back to principal - current balance
+  const amountPaid = totalPaid !== undefined ? totalPaid : (startingBalance - currentBalance);
   const progressPercent = startingBalance > 0 
     ? Math.min(100, Math.max(0, (amountPaid / startingBalance) * 100))
     : 0;

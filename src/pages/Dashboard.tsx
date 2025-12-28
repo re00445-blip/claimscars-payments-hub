@@ -272,7 +272,22 @@ const Dashboard = () => {
       .eq("status", "active")
       .maybeSingle();
     
-    setCustomerAccount(data);
+    if (data) {
+      // Fetch total payments made for this account
+      const { data: paymentsData } = await supabase
+        .from("payments")
+        .select("principal_paid")
+        .eq("account_id", data.id);
+      
+      const totalPaid = paymentsData?.reduce((sum, p) => sum + (Number(p.principal_paid) || 0), 0) || 0;
+      
+      setCustomerAccount({
+        ...data,
+        total_paid: totalPaid,
+      });
+    } else {
+      setCustomerAccount(null);
+    }
   };
 
   const fetchProfile = async (userId: string) => {
@@ -392,6 +407,7 @@ const Dashboard = () => {
               <RaceTrackProgress 
                 startingBalance={customerAccount.principal_amount || 0}
                 currentBalance={customerAccount.current_balance || 0}
+                totalPaid={customerAccount.total_paid}
               />
             </CardContent>
           </Card>
