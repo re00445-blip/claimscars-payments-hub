@@ -51,8 +51,8 @@ const handler = async (req: Request): Promise<Response> => {
                 <p style="margin: 5px 0 0 0; font-weight: bold; color: #333;">Cars & Claims</p>
               </div>
               <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #eee; color: #888; font-size: 12px;">
-                <p style="margin: 0;">📍 2901 Buford Hwy NE, Suite B</p>
-                <p style="margin: 3px 0;">Atlanta, GA 30329</p>
+                <p style="margin: 0;">📍 2500 W Broad Street, Suite 109</p>
+                <p style="margin: 3px 0;">Athens, GA 30606</p>
                 <p style="margin: 3px 0;">📞 (470) 519-6717</p>
                 <p style="margin: 3px 0;">✉️ info@carsandclaims.com</p>
               </div>
