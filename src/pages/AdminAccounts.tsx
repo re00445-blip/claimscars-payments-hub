@@ -311,6 +311,7 @@ const AdminAccounts = () => {
           .from("profiles")
           .update({
             full_name: formData.customer_name,
+            email: formData.customer_email,
             phone: formData.customer_phone,
             address: formData.customer_address,
           })
@@ -486,7 +487,6 @@ const AdminAccounts = () => {
                         value={formData.customer_email}
                         onChange={(e) => setFormData(prev => ({ ...prev, customer_email: e.target.value }))}
                         placeholder="john@example.com"
-                        disabled={!!editingAccount}
                       />
                     </div>
                   </div>
