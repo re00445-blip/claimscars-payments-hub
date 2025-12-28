@@ -329,7 +329,12 @@ const AdminAccounts = () => {
           throw profileError;
         }
 
+        // Check if we have vehicle data to save
+        const hasVehicleData = formData.vehicle_year.trim() || formData.vehicle_make.trim() || 
+                               formData.vehicle_model.trim() || formData.vehicle_vin.trim();
+
         if (editingAccount.vehicle_id) {
+          // Update existing vehicle
           const vehicleUpdate: Record<string, any> = {};
 
           const yearNum = Number.parseInt(formData.vehicle_year);
@@ -346,6 +351,37 @@ const AdminAccounts = () => {
 
             if (vehicleError) {
               throw vehicleError;
+            }
+          }
+        } else if (hasVehicleData) {
+          // Create new vehicle and link to account
+          const yearNum = Number.parseInt(formData.vehicle_year) || new Date().getFullYear();
+          const { data: newVehicle, error: vehicleError } = await supabase
+            .from("vehicles")
+            .insert({
+              year: yearNum,
+              make: formData.vehicle_make.trim() || "Unknown",
+              model: formData.vehicle_model.trim() || "Unknown",
+              vin: formData.vehicle_vin.trim() || `TEMP-${Date.now()}`,
+              price: formData.principal_amount,
+              status: "sold",
+            })
+            .select()
+            .single();
+
+          if (vehicleError) {
+            throw vehicleError;
+          }
+
+          // Link vehicle to account
+          if (newVehicle) {
+            const { error: linkError } = await supabase
+              .from("customer_accounts")
+              .update({ vehicle_id: newVehicle.id })
+              .eq("id", editingAccount.id);
+
+            if (linkError) {
+              throw linkError;
             }
           }
         }
