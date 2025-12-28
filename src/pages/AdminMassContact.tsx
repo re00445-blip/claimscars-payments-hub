@@ -9,8 +9,30 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, ArrowLeft, Mail, MessageSquare, Send, Users, CheckCircle2 } from "lucide-react";
+import { Loader2, ArrowLeft, Mail, MessageSquare, Send, Users, CheckCircle2, Sparkles } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+const occasionOptions = [
+  { label: "🌸 Spring", value: "spring", group: "Seasons" },
+  { label: "☀️ Summer", value: "summer", group: "Seasons" },
+  { label: "🍂 Fall", value: "fall", group: "Seasons" },
+  { label: "❄️ Winter", value: "winter", group: "Seasons" },
+  { label: "🎉 New Year", value: "new-year", group: "Holidays" },
+  { label: "💕 Valentine's Day", value: "valentines", group: "Holidays" },
+  { label: "🐣 Easter", value: "easter", group: "Holidays" },
+  { label: "🇺🇸 Memorial Day", value: "memorial-day", group: "Holidays" },
+  { label: "🎆 Independence Day", value: "independence-day", group: "Holidays" },
+  { label: "💼 Labor Day", value: "labor-day", group: "Holidays" },
+  { label: "🎃 Halloween", value: "halloween", group: "Holidays" },
+  { label: "🦃 Thanksgiving", value: "thanksgiving", group: "Holidays" },
+  { label: "🎄 Christmas", value: "christmas", group: "Holidays" },
+  { label: "💰 Tax Season", value: "tax-season", group: "Events" },
+  { label: "📚 Back to School", value: "back-to-school", group: "Events" },
+  { label: "🛒 Black Friday", value: "black-friday", group: "Events" },
+  { label: "📅 Payment Reminder", value: "payment-reminder", group: "Events" },
+  { label: "🔧 Service Reminder", value: "service-reminder", group: "Events" },
+  { label: "👥 Referral Program", value: "referral-program", group: "Events" },
+];
 
 interface CustomerWithProfile {
   id: string;
@@ -33,6 +55,7 @@ const AdminMassContact = () => {
   const [emailBody, setEmailBody] = useState("");
   const [smsMessage, setSmsMessage] = useState("");
   const [activeTab, setActiveTab] = useState("email");
+  const [generatingContent, setGeneratingContent] = useState(false);
 
   useEffect(() => {
     checkAdminAndFetchCustomers();
@@ -105,6 +128,37 @@ const AdminMassContact = () => {
       newSelected.add(customerId);
     }
     setSelectedCustomers(newSelected);
+  };
+
+  const handleGenerateContent = async (occasion: string) => {
+    if (!occasion) return;
+    
+    setGeneratingContent(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-email-content", {
+        body: { occasion, type: activeTab as "email" | "sms" },
+      });
+
+      if (error) throw error;
+
+      if (activeTab === "email") {
+        if (data.subject) setEmailSubject(data.subject);
+        if (data.content) setEmailBody(data.content);
+      } else {
+        if (data.content) setSmsMessage(data.content);
+      }
+
+      toast({ title: "Content generated!", description: "AI has filled in your message." });
+    } catch (error: any) {
+      console.error("Error generating content:", error);
+      toast({
+        title: "Failed to generate content",
+        description: error.message || "Please try again",
+        variant: "destructive",
+      });
+    } finally {
+      setGeneratingContent(false);
+    }
   };
 
   const handleSendEmail = async () => {
@@ -316,6 +370,37 @@ const AdminMassContact = () => {
                 </TabsList>
 
                 <TabsContent value="email" className="space-y-4">
+                  <div className="p-4 rounded-lg bg-muted/50 border border-dashed">
+                    <Label className="flex items-center gap-2 mb-2">
+                      <Sparkles className="h-4 w-4 text-primary" />
+                      AI Content Generator
+                    </Label>
+                    <Select onValueChange={handleGenerateContent} disabled={generatingContent}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder={generatingContent ? "Generating..." : "Select occasion to auto-generate content..."} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">Seasons</div>
+                        {occasionOptions.filter(o => o.group === "Seasons").map(option => (
+                          <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                        ))}
+                        <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground mt-2">Holidays</div>
+                        {occasionOptions.filter(o => o.group === "Holidays").map(option => (
+                          <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                        ))}
+                        <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground mt-2">Events</div>
+                        {occasionOptions.filter(o => o.group === "Events").map(option => (
+                          <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {generatingContent && (
+                      <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                        AI is writing your message...
+                      </div>
+                    )}
+                  </div>
                   <div>
                     <Label htmlFor="subject">Subject</Label>
                     <Input
@@ -355,6 +440,37 @@ const AdminMassContact = () => {
                 </TabsContent>
 
                 <TabsContent value="sms" className="space-y-4">
+                  <div className="p-4 rounded-lg bg-muted/50 border border-dashed">
+                    <Label className="flex items-center gap-2 mb-2">
+                      <Sparkles className="h-4 w-4 text-primary" />
+                      AI Content Generator
+                    </Label>
+                    <Select onValueChange={handleGenerateContent} disabled={generatingContent}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder={generatingContent ? "Generating..." : "Select occasion to auto-generate content..."} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">Seasons</div>
+                        {occasionOptions.filter(o => o.group === "Seasons").map(option => (
+                          <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                        ))}
+                        <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground mt-2">Holidays</div>
+                        {occasionOptions.filter(o => o.group === "Holidays").map(option => (
+                          <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                        ))}
+                        <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground mt-2">Events</div>
+                        {occasionOptions.filter(o => o.group === "Events").map(option => (
+                          <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {generatingContent && (
+                      <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                        AI is writing your message...
+                      </div>
+                    )}
+                  </div>
                   <div>
                     <Label htmlFor="sms-body">Message</Label>
                     <Textarea

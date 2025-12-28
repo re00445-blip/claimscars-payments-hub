@@ -50,3 +50,6 @@ verify_jwt = false
 
 [functions.update-user-email]
 verify_jwt = true
+
+[functions.generate-email-content]
+verify_jwt = true
