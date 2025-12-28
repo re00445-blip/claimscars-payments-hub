@@ -36,7 +36,7 @@ const handler = async (req: Request): Promise<Response> => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          from: "Cars & Claims <onboarding@resend.dev>",
+          from: "Cars & Claims <notifications@carsandclaims.com>",
           to: [to],
           subject: subject || "Message from Cars & Claims",
           html: `
