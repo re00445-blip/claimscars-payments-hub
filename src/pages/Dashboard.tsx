@@ -474,15 +474,16 @@ const Dashboard = () => {
               </div>
 
               {customerAccount.vehicles && (
-                <div className="bg-muted/50 rounded-lg p-4 mb-6">
-                  <div className="flex items-center gap-3">
-                    <Car className="h-5 w-5 text-primary" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">{t("dashboard.yourVehicle")}</p>
-                      <p className="font-semibold">
-                        {customerAccount.vehicles.year} {customerAccount.vehicles.make} {customerAccount.vehicles.model}
-                      </p>
-                    </div>
+                <div className="bg-muted/50 rounded-lg p-6 mb-6">
+                  <div className="flex flex-col items-center justify-center text-center">
+                    <Car className="h-10 w-10 text-primary mb-3" />
+                    <p className="text-sm text-muted-foreground mb-1">{t("dashboard.yourVehicle")}</p>
+                    <p className="text-2xl font-bold text-primary">
+                      {customerAccount.vehicles.year} {customerAccount.vehicles.make} {customerAccount.vehicles.model}
+                    </p>
+                    {customerAccount.vehicles.vin && (
+                      <p className="text-xs text-muted-foreground mt-2">VIN: {customerAccount.vehicles.vin}</p>
+                    )}
                   </div>
                 </div>
               )}
