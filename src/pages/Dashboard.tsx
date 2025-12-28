@@ -380,6 +380,28 @@ const Dashboard = () => {
           </Button>
         </div>
 
+        {/* Vehicle Header for BHPH Customers */}
+        {!isAdmin && !isAffiliate && customerAccount && customerAccount.vehicles && (
+          <Card className="mb-6 bg-gradient-to-r from-slate-800 to-slate-900 text-white border-0 shadow-lg">
+            <CardContent className="py-5">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-full bg-primary/20 flex items-center justify-center">
+                  <Car className="h-7 w-7 text-primary" />
+                </div>
+                <div>
+                  <p className="text-sm text-slate-300 mb-1">{t("dashboard.payingFor")}</p>
+                  <h2 className="text-2xl font-bold">
+                    {customerAccount.vehicles.year} {customerAccount.vehicles.make} {customerAccount.vehicles.model}
+                  </h2>
+                  {customerAccount.vehicles.vin && (
+                    <p className="text-xs text-slate-400 mt-1">VIN: {customerAccount.vehicles.vin}</p>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Inspirational Quote Card */}
         <Card className="mb-8 bg-gradient-to-r from-primary to-accent text-primary-foreground">
           <CardContent className="py-6">
