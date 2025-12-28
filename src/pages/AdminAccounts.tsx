@@ -49,11 +49,13 @@ interface CustomerAccount {
     full_name: string | null;
     email: string;
     phone: string | null;
+    address: string | null;
   };
   vehicle?: {
     year: number;
     make: string;
     model: string;
+    vin: string;
   };
 }
 
@@ -142,20 +144,20 @@ const AdminAccounts = () => {
         accountsData.map(async (account) => {
           const { data: profile } = await supabase
             .from("profiles")
-            .select("full_name, email, phone")
+            .select("full_name, email, phone, address")
             .eq("id", account.user_id)
             .maybeSingle();
-          
+
           let vehicle = null;
           if (account.vehicle_id) {
             const { data: vehicleData } = await supabase
               .from("vehicles")
-              .select("year, make, model")
+              .select("year, make, model, vin")
               .eq("id", account.vehicle_id)
               .maybeSingle();
             vehicle = vehicleData;
           }
-          
+
           return { ...account, profile, vehicle };
         })
       );
@@ -194,11 +196,11 @@ const AdminAccounts = () => {
       customer_name: account.profile?.full_name || "",
       customer_email: account.profile?.email || "",
       customer_phone: account.profile?.phone || "",
-      customer_address: "",
+      customer_address: account.profile?.address || "",
       vehicle_year: account.vehicle?.year?.toString() || "",
       vehicle_make: account.vehicle?.make || "",
       vehicle_model: account.vehicle?.model || "",
-      vehicle_vin: "",
+      vehicle_vin: account.vehicle?.vin || "",
       principal_amount: account.principal_amount,
       down_payment: 0,
       flat_fee_amount: 0,
@@ -304,10 +306,7 @@ const AdminAccounts = () => {
           description,
         });
       } else {
-        // For editing, update the profile and account directly
-        console.log("Updating account:", editingAccount.id);
-        console.log("Form data:", formData);
-        
+        // For editing, update the profile, vehicle (if linked), and account directly
         const { error: profileError } = await supabase
           .from("profiles")
           .update({
@@ -318,8 +317,28 @@ const AdminAccounts = () => {
           .eq("id", editingAccount.user_id);
 
         if (profileError) {
-          console.error("Profile update error:", profileError);
-          // Don't throw - profile update might fail if user doesn't have permission
+          throw profileError;
+        }
+
+        if (editingAccount.vehicle_id) {
+          const vehicleUpdate: Record<string, any> = {};
+
+          const yearNum = Number.parseInt(formData.vehicle_year);
+          if (Number.isFinite(yearNum) && yearNum > 0) vehicleUpdate.year = yearNum;
+          if (formData.vehicle_make.trim()) vehicleUpdate.make = formData.vehicle_make.trim();
+          if (formData.vehicle_model.trim()) vehicleUpdate.model = formData.vehicle_model.trim();
+          if (formData.vehicle_vin.trim()) vehicleUpdate.vin = formData.vehicle_vin.trim();
+
+          if (Object.keys(vehicleUpdate).length > 0) {
+            const { error: vehicleError } = await supabase
+              .from("vehicles")
+              .update(vehicleUpdate)
+              .eq("id", editingAccount.vehicle_id);
+
+            if (vehicleError) {
+              throw vehicleError;
+            }
+          }
         }
 
         const accountData = {
@@ -333,15 +352,11 @@ const AdminAccounts = () => {
           payment_frequency: formData.payment_frequency,
         };
 
-        console.log("Account data to update:", accountData);
-
         const { data: updatedData, error: updateError } = await supabase
           .from("customer_accounts")
           .update(accountData)
           .eq("id", editingAccount.id)
           .select();
-
-        console.log("Update result:", updatedData, updateError);
 
         if (updateError) {
           throw updateError;
@@ -357,7 +372,7 @@ const AdminAccounts = () => {
         });
       }
 
-      fetchData();
+      await fetchData();
       setIsDialogOpen(false);
       resetForm();
     } catch (error: any) {
