@@ -80,10 +80,11 @@ const AdminAccounts = () => {
     vehicle_model: "",
     vehicle_vin: "",
     // Account details
+    down_payment: 0,
     principal_amount: 0,
     current_balance: 0,
     interest_rate: 18,
-    interest_rate_type: "percentage" as "percentage" | "fixed", // percentage or fixed dollar
+    interest_rate_type: "percentage" as "percentage" | "fixed" | "flat_fee", // percentage, fixed dollar, or flat fee (no interest)
     payment_amount: 0,
     next_payment_date: "",
     late_fee_amount: 25,
@@ -171,6 +172,7 @@ const AdminAccounts = () => {
       vehicle_make: "",
       vehicle_model: "",
       vehicle_vin: "",
+      down_payment: 0,
       principal_amount: 0,
       current_balance: 0,
       interest_rate: 18,
@@ -195,10 +197,11 @@ const AdminAccounts = () => {
       vehicle_make: account.vehicle?.make || "",
       vehicle_model: account.vehicle?.model || "",
       vehicle_vin: "",
+      down_payment: 0,
       principal_amount: account.principal_amount,
       current_balance: account.current_balance,
       interest_rate: account.interest_rate,
-      interest_rate_type: "percentage", // Default to percentage when editing existing accounts
+      interest_rate_type: account.interest_rate === 0 ? "flat_fee" : "percentage",
       payment_amount: account.payment_amount,
       next_payment_date: account.next_payment_date,
       late_fee_amount: account.late_fee_amount || 25,
@@ -212,7 +215,11 @@ const AdminAccounts = () => {
     const principal = formData.principal_amount;
     const months = 36;
     
-    if (formData.interest_rate_type === "fixed") {
+    if (formData.interest_rate_type === "flat_fee") {
+      // Flat fee - no interest, just divide principal by months
+      const payment = principal / months;
+      setFormData(prev => ({ ...prev, payment_amount: Math.round(payment * 100) / 100 }));
+    } else if (formData.interest_rate_type === "fixed") {
       // Fixed dollar amount per month - just add to principal and divide
       const totalInterest = formData.interest_rate * months;
       const payment = (principal + totalInterest) / months;
@@ -516,7 +523,17 @@ const AdminAccounts = () => {
                 {/* Financing Details Section */}
                 <div className="space-y-4">
                   <h3 className="font-semibold text-lg border-b pb-2">Financing Details</h3>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="down_payment">Down Payment ($)</Label>
+                      <Input
+                        id="down_payment"
+                        type="number"
+                        step="0.01"
+                        value={formData.down_payment}
+                        onChange={(e) => setFormData(prev => ({ ...prev, down_payment: parseFloat(e.target.value) || 0 }))}
+                      />
+                    </div>
                     <div className="space-y-2">
                       <Label htmlFor="principal">Principal Amount ($) *</Label>
                       <Input
@@ -553,7 +570,13 @@ const AdminAccounts = () => {
                       <Label htmlFor="interest_type">Interest Type *</Label>
                       <Select
                         value={formData.interest_rate_type}
-                        onValueChange={(value: "percentage" | "fixed") => setFormData(prev => ({ ...prev, interest_rate_type: value }))}
+                        onValueChange={(value: "percentage" | "fixed" | "flat_fee") => {
+                          setFormData(prev => ({ 
+                            ...prev, 
+                            interest_rate_type: value,
+                            interest_rate: value === "flat_fee" ? 0 : prev.interest_rate
+                          }));
+                        }}
                       >
                         <SelectTrigger>
                           <SelectValue />
@@ -561,12 +584,13 @@ const AdminAccounts = () => {
                         <SelectContent>
                           <SelectItem value="percentage">% per Year</SelectItem>
                           <SelectItem value="fixed">$ per Month</SelectItem>
+                          <SelectItem value="flat_fee">Flat Fee (No Interest)</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="interest">
-                        {formData.interest_rate_type === "percentage" ? "Interest Rate (%)" : "Interest ($/mo)"} *
+                        {formData.interest_rate_type === "percentage" ? "Interest Rate (%)" : formData.interest_rate_type === "fixed" ? "Interest ($/mo)" : "Interest"} *
                       </Label>
                       <Input
                         id="interest"
@@ -575,6 +599,7 @@ const AdminAccounts = () => {
                         value={formData.interest_rate}
                         onChange={(e) => setFormData(prev => ({ ...prev, interest_rate: parseFloat(e.target.value) || 0 }))}
                         required
+                        disabled={formData.interest_rate_type === "flat_fee"}
                       />
                     </div>
                     <div className="space-y-2">
