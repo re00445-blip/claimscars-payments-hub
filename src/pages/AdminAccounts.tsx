@@ -891,7 +891,7 @@ const AdminAccounts = () => {
                           }
                         </TableCell>
                         <TableCell>{formatCurrency(account.payment_amount)}</TableCell>
-                        <TableCell>{new Date(account.next_payment_date).toLocaleDateString()}</TableCell>
+                        <TableCell>{new Date(account.next_payment_date + 'T00:00:00').toLocaleDateString()}</TableCell>
                         <TableCell>
                           <Badge variant={account.status === "active" ? "default" : "secondary"}>
                             {account.status}
