@@ -305,7 +305,10 @@ const AdminAccounts = () => {
         });
       } else {
         // For editing, update the profile and account directly
-        await supabase
+        console.log("Updating account:", editingAccount.id);
+        console.log("Form data:", formData);
+        
+        const { error: profileError } = await supabase
           .from("profiles")
           .update({
             full_name: formData.customer_name,
@@ -313,6 +316,11 @@ const AdminAccounts = () => {
             address: formData.customer_address,
           })
           .eq("id", editingAccount.user_id);
+
+        if (profileError) {
+          console.error("Profile update error:", profileError);
+          // Don't throw - profile update might fail if user doesn't have permission
+        }
 
         const accountData = {
           principal_amount: formData.principal_amount,
@@ -325,13 +333,22 @@ const AdminAccounts = () => {
           payment_frequency: formData.payment_frequency,
         };
 
-        const { error: updateError } = await supabase
+        console.log("Account data to update:", accountData);
+
+        const { data: updatedData, error: updateError } = await supabase
           .from("customer_accounts")
           .update(accountData)
-          .eq("id", editingAccount.id);
+          .eq("id", editingAccount.id)
+          .select();
+
+        console.log("Update result:", updatedData, updateError);
 
         if (updateError) {
           throw updateError;
+        }
+
+        if (!updatedData || updatedData.length === 0) {
+          throw new Error("No rows were updated. You may not have permission to update this account.");
         }
 
         toast({
