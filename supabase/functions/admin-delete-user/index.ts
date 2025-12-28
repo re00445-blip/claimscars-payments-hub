@@ -45,6 +45,11 @@ serve(async (req) => {
     if (roleError) return json({ error: roleError.message }, 500);
     if (!isAdmin) return json({ error: "Forbidden" }, 403);
 
+    // Only allow super admin to delete users
+    if (userData.user.email !== "ramon@carsandclaims.com") {
+      return json({ error: "Only the super admin can delete users" }, 403);
+    }
+
     const { userId } = await req.json();
     if (!userId) return json({ error: "userId is required" }, 400);
 
