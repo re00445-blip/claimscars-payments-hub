@@ -5,7 +5,7 @@ import { User, Session } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Navbar } from "@/components/Navbar";
-import { Loader2, DollarSign, Car, FileText, Users, ClipboardList, Settings, UserPlus, Sparkles, CreditCard, Share2, Plus, Printer } from "lucide-react";
+import { Loader2, DollarSign, Car, FileText, Users, ClipboardList, Settings, UserPlus, Sparkles, CreditCard, Share2, Plus, Printer, Mail, MessageSquare, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { TransactionsReport } from "@/components/admin/TransactionsReport";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -844,6 +844,27 @@ const Dashboard = () => {
                 <Button onClick={() => navigate("/admin/affiliates")}>
                   <Share2 className="mr-2 h-4 w-4" />
                   Manage Affiliates
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Contact the People */}
+            <Card className="mb-6 border-accent/50 bg-gradient-to-br from-accent/5 to-primary/5">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Send className="h-5 w-5" />
+                  Contact the People
+                </CardTitle>
+                <CardDescription>Mass send emails and text messages to customers</CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-wrap gap-4">
+                <Button onClick={() => navigate("/admin/mass-contact")}>
+                  <Mail className="mr-2 h-4 w-4" />
+                  Send Mass Email
+                </Button>
+                <Button variant="outline" onClick={() => navigate("/admin/mass-contact")}>
+                  <MessageSquare className="mr-2 h-4 w-4" />
+                  Send Mass Text
                 </Button>
               </CardContent>
             </Card>
