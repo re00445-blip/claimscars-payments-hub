@@ -50,13 +50,19 @@ const handler = async (req: Request): Promise<Response> => {
                 <p style="margin: 0; font-weight: bold;">Best regards,</p>
                 <p style="margin: 5px 0 0 0; font-weight: bold; color: #333;">Cars & Claims</p>
               </div>
-              <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #eee; color: #888; font-size: 12px;">
-                <p style="margin: 0;">📍 2500 W Broad Street, Suite 109</p>
-                <p style="margin: 3px 0;">Athens, GA 30606</p>
-                <p style="margin: 3px 0;">📞 (470) 519-6717</p>
-                <p style="margin: 3px 0;">✉️ info@carsandclaims.com</p>
+              <div style="margin-top: 20px; padding: 20px; background-color: #1a1a1a; border-radius: 8px; text-align: center;">
+                <img src="https://kauqfglsnbmshlteegaf.supabase.co/storage/v1/object/public/email-assets/email-logo.jpg" alt="Cars & Claims Logo" style="max-width: 150px; height: auto; margin-bottom: 15px;" />
+                <div style="color: #c9a227; font-size: 12px;">
+                  <p style="margin: 0;">📍 2500 W Broad Street, Suite 109</p>
+                  <p style="margin: 3px 0;">Athens, GA 30606</p>
+                  <p style="margin: 3px 0;">📞 (470) 519-6717</p>
+                  <p style="margin: 3px 0;">✉️ info@carsandclaims.com</p>
+                  <p style="margin: 8px 0 0 0;">
+                    <a href="https://www.carsandclaims.com" style="color: #4ade80; text-decoration: none; font-weight: bold;">WWW.CARSANDCLAIMS.COM</a>
+                  </p>
+                </div>
               </div>
-              <p style="color: #999; font-size: 11px; margin-top: 15px;">
+              <p style="color: #999; font-size: 11px; margin-top: 15px; text-align: center;">
                 This message was sent from Cars & Claims.
               </p>
             </div>
