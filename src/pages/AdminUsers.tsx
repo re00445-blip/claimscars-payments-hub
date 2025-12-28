@@ -246,25 +246,17 @@ const AdminUsers = () => {
 
   const deleteUser = async (user: UserProfile) => {
     setDeletingUserId(user.id);
-    
+
     try {
-      // Delete user roles first
-      await supabase.from("user_roles").delete().eq("user_id", user.id);
-      
-      // Delete marketing affiliate record if exists
-      await supabase.from("marketing_affiliates").delete().eq("user_id", user.id);
-      
-      // Delete profile
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .delete()
-        .eq("id", user.id);
+      const { data, error } = await supabase.functions.invoke("admin-delete-user", {
+        body: { userId: user.id },
+      });
 
-      if (profileError) throw profileError;
+      if (error) throw error;
+      if (!data?.success) throw new Error(data?.error || "Failed to delete user");
 
-      // Update local state
-      setUsers(prev => prev.filter(u => u.id !== user.id));
-      
+      setUsers((prev) => prev.filter((u) => u.id !== user.id));
+
       toast({
         title: "User Deleted",
         description: `${user.full_name || user.email} has been removed.`,
@@ -404,7 +396,7 @@ const AdminUsers = () => {
         </Card>
       </div>
 
-      <AlertDialog open={!!userToDelete} onOpenChange={() => setUserToDelete(null)}>
+      <AlertDialog open={!!userToDelete} onOpenChange={(open) => !open && setUserToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete User Account</AlertDialogTitle>
