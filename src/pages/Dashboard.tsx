@@ -464,7 +464,7 @@ const Dashboard = () => {
                   <p className="text-sm text-muted-foreground mb-1">{t("dashboard.nextPaymentDue")}</p>
                   <p className="text-2xl font-bold">
                     {customerAccount.next_payment_date 
-                      ? new Date(customerAccount.next_payment_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                      ? new Date(customerAccount.next_payment_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
                       : 'N/A'}
                   </p>
                 </div>
