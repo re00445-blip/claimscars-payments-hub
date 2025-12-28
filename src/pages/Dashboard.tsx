@@ -386,11 +386,11 @@ const Dashboard = () => {
         </Card>
 
         {/* Race Track Progress - only for BHPH customers */}
-        {!isAdmin && !isAffiliate && customerAccount && customerAccount.starting_balance > 0 && (
+        {!isAdmin && !isAffiliate && customerAccount && customerAccount.principal_amount > 0 && (
           <Card className="mb-8 border border-border">
             <CardContent className="pt-6">
               <RaceTrackProgress 
-                startingBalance={customerAccount.starting_balance || 0}
+                startingBalance={customerAccount.principal_amount || 0}
                 currentBalance={customerAccount.current_balance || 0}
               />
             </CardContent>
