@@ -80,8 +80,9 @@ const AdminAccounts = () => {
     vehicle_model: "",
     vehicle_vin: "",
     // Account details
-    down_payment: 0,
     principal_amount: 0,
+    down_payment: 0,
+    flat_fee_amount: 0,
     current_balance: 0,
     interest_rate: 18,
     interest_rate_type: "percentage" as "percentage" | "fixed" | "flat_fee", // percentage, fixed dollar, or flat fee (no interest)
@@ -172,8 +173,9 @@ const AdminAccounts = () => {
       vehicle_make: "",
       vehicle_model: "",
       vehicle_vin: "",
-      down_payment: 0,
       principal_amount: 0,
+      down_payment: 0,
+      flat_fee_amount: 0,
       current_balance: 0,
       interest_rate: 18,
       interest_rate_type: "percentage",
@@ -197,8 +199,9 @@ const AdminAccounts = () => {
       vehicle_make: account.vehicle?.make || "",
       vehicle_model: account.vehicle?.model || "",
       vehicle_vin: "",
-      down_payment: 0,
       principal_amount: account.principal_amount,
+      down_payment: 0,
+      flat_fee_amount: 0,
       current_balance: account.current_balance,
       interest_rate: account.interest_rate,
       interest_rate_type: account.interest_rate === 0 ? "flat_fee" : "percentage",
@@ -523,17 +526,7 @@ const AdminAccounts = () => {
                 {/* Financing Details Section */}
                 <div className="space-y-4">
                   <h3 className="font-semibold text-lg border-b pb-2">Financing Details</h3>
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="down_payment">Down Payment ($)</Label>
-                      <Input
-                        id="down_payment"
-                        type="number"
-                        step="0.01"
-                        value={formData.down_payment}
-                        onChange={(e) => setFormData(prev => ({ ...prev, down_payment: parseFloat(e.target.value) || 0 }))}
-                      />
-                    </div>
+                  <div className="grid grid-cols-4 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="principal">Principal Amount ($) *</Label>
                       <Input
@@ -550,6 +543,27 @@ const AdminAccounts = () => {
                           }));
                         }}
                         required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="down_payment">Down Payment ($)</Label>
+                      <Input
+                        id="down_payment"
+                        type="number"
+                        step="0.01"
+                        value={formData.down_payment}
+                        onChange={(e) => setFormData(prev => ({ ...prev, down_payment: parseFloat(e.target.value) || 0 }))}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="flat_fee">Flat Fee ($)</Label>
+                      <Input
+                        id="flat_fee"
+                        type="number"
+                        step="0.01"
+                        value={formData.flat_fee_amount}
+                        onChange={(e) => setFormData(prev => ({ ...prev, flat_fee_amount: parseFloat(e.target.value) || 0 }))}
+                        disabled={formData.interest_rate_type !== "flat_fee"}
                       />
                     </div>
                     <div className="space-y-2">
