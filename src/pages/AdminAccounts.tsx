@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { formatPhoneE164 } from "@/lib/utils";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -279,7 +280,7 @@ const AdminAccounts = () => {
             body: JSON.stringify({
               customer_name: formData.customer_name,
               customer_email: formData.customer_email,
-              customer_phone: formData.customer_phone,
+              customer_phone: formatPhoneE164(formData.customer_phone),
               customer_address: formData.customer_address,
               vehicle_year: formData.vehicle_year,
               vehicle_make: formData.vehicle_make,
@@ -320,7 +321,7 @@ const AdminAccounts = () => {
           .update({
             full_name: formData.customer_name,
             email: formData.customer_email,
-            phone: formData.customer_phone,
+            phone: formatPhoneE164(formData.customer_phone),
             address: formData.customer_address,
           })
           .eq("id", editingAccount.user_id);
