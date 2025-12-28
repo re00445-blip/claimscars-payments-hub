@@ -71,8 +71,8 @@ serve(async (req) => {
     // Generate email if not provided (use phone-based placeholder)
     const email = customer_email || `${customer_phone.replace(/\D/g, '')}@customer.local`;
     
-    // Generate a random password for the customer
-    const password = crypto.randomUUID().slice(0, 12);
+    // Default password for BHPH customers
+    const password = "123456";
 
     // Check if user already exists by email
     const { data: existingProfile } = await supabaseAdmin
