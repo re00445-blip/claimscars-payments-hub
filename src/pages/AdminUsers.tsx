@@ -37,6 +37,7 @@ const AdminUsers = () => {
   const [togglingUserId, setTogglingUserId] = useState<string | null>(null);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
   const [userToDelete, setUserToDelete] = useState<UserProfile | null>(null);
+  const [canDelete, setCanDelete] = useState(false);
 
   useEffect(() => {
     checkAdminAndLoad();
@@ -65,6 +66,11 @@ const AdminUsers = () => {
         variant: "destructive",
       });
       return;
+    }
+
+    // Only allow delete for super admin
+    if (session.user.email === "ramon@carsandclaims.com") {
+      setCanDelete(true);
     }
 
     await loadUsers();
@@ -320,7 +326,7 @@ const AdminUsers = () => {
                     <TableHead>Joined</TableHead>
                     <TableHead className="text-center">Admin</TableHead>
                     <TableHead className="text-center">Affiliate</TableHead>
-                    <TableHead className="text-center">Actions</TableHead>
+                    {canDelete && <TableHead className="text-center">Actions</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -372,21 +378,23 @@ const AdminUsers = () => {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell className="text-center">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                          onClick={() => setUserToDelete(user)}
-                          disabled={deletingUserId === user.id}
-                        >
-                          {deletingUserId === user.id ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Trash2 className="h-4 w-4" />
-                          )}
-                        </Button>
-                      </TableCell>
+                      {canDelete && (
+                        <TableCell className="text-center">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={() => setUserToDelete(user)}
+                            disabled={deletingUserId === user.id}
+                          >
+                            {deletingUserId === user.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </TableCell>
+                      )}
                     </TableRow>
                   ))}
                 </TableBody>
