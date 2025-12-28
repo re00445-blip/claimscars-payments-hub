@@ -219,8 +219,9 @@ const AdminAccounts = () => {
     const months = 36;
     
     if (formData.interest_rate_type === "flat_fee") {
-      // Flat fee - no interest, just divide principal by months
-      const payment = principal / months;
+      // Flat fee - add flat fee per month to principal divided by months
+      const principalPerMonth = principal / months;
+      const payment = principalPerMonth + formData.flat_fee_amount;
       setFormData(prev => ({ ...prev, payment_amount: Math.round(payment * 100) / 100 }));
     } else if (formData.interest_rate_type === "fixed") {
       // Fixed dollar amount per month - just add to principal and divide
@@ -526,7 +527,7 @@ const AdminAccounts = () => {
                 {/* Financing Details Section */}
                 <div className="space-y-4">
                   <h3 className="font-semibold text-lg border-b pb-2">Financing Details</h3>
-                  <div className="grid grid-cols-4 gap-4">
+                  <div className="grid grid-cols-3 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="principal">Principal Amount ($) *</Label>
                       <Input
@@ -553,17 +554,6 @@ const AdminAccounts = () => {
                         step="0.01"
                         value={formData.down_payment}
                         onChange={(e) => setFormData(prev => ({ ...prev, down_payment: parseFloat(e.target.value) || 0 }))}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="flat_fee">Flat Fee ($)</Label>
-                      <Input
-                        id="flat_fee"
-                        type="number"
-                        step="0.01"
-                        value={formData.flat_fee_amount}
-                        onChange={(e) => setFormData(prev => ({ ...prev, flat_fee_amount: parseFloat(e.target.value) || 0 }))}
-                        disabled={formData.interest_rate_type !== "flat_fee"}
                       />
                     </div>
                     <div className="space-y-2">
@@ -601,6 +591,17 @@ const AdminAccounts = () => {
                           <SelectItem value="flat_fee">Flat Fee (No Interest)</SelectItem>
                         </SelectContent>
                       </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="flat_fee">Flat Fee ($/mo)</Label>
+                      <Input
+                        id="flat_fee"
+                        type="number"
+                        step="0.01"
+                        value={formData.flat_fee_amount}
+                        onChange={(e) => setFormData(prev => ({ ...prev, flat_fee_amount: parseFloat(e.target.value) || 0 }))}
+                        disabled={formData.interest_rate_type !== "flat_fee"}
+                      />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="interest">
