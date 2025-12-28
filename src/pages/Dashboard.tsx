@@ -267,12 +267,23 @@ const Dashboard = () => {
   const fetchCustomerAccount = async (userId: string) => {
     const { data } = await supabase
       .from("customer_accounts")
-      .select("*, vehicles(*)")
+      .select("*")
       .eq("user_id", userId)
       .eq("status", "active")
       .maybeSingle();
     
     if (data) {
+      // Fetch vehicle if linked
+      let vehicleData = null;
+      if (data.vehicle_id) {
+        const { data: vehicle } = await supabase
+          .from("vehicles")
+          .select("year, make, model, vin")
+          .eq("id", data.vehicle_id)
+          .maybeSingle();
+        vehicleData = vehicle;
+      }
+
       // Fetch total payments made for this account
       const { data: paymentsData } = await supabase
         .from("payments")
@@ -283,6 +294,7 @@ const Dashboard = () => {
       
       setCustomerAccount({
         ...data,
+        vehicles: vehicleData,
         total_paid: totalPaid,
       });
     } else {
