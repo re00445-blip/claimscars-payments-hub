@@ -392,28 +392,6 @@ const Dashboard = () => {
           </Button>
         </div>
 
-        {/* Vehicle Header for BHPH Customers */}
-        {!isAdmin && !isAffiliate && customerAccount && customerAccount.vehicles && (
-          <Card className="mb-6 bg-gradient-to-r from-slate-800 to-slate-900 text-white border-0 shadow-lg">
-            <CardContent className="py-5">
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-full bg-primary/20 flex items-center justify-center">
-                  <Car className="h-7 w-7 text-primary" />
-                </div>
-                <div>
-                  <p className="text-sm text-slate-300 mb-1">{t("dashboard.payingFor")}</p>
-                  <h2 className="text-2xl font-bold">
-                    {customerAccount.vehicles.year} {customerAccount.vehicles.make} {customerAccount.vehicles.model}
-                  </h2>
-                  {customerAccount.vehicles.vin && (
-                    <p className="text-xs text-slate-400 mt-1">VIN: {customerAccount.vehicles.vin}</p>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
         {/* Inspirational Quote Card */}
         <Card className="mb-8 bg-gradient-to-r from-primary to-accent text-primary-foreground">
           <CardContent className="py-6">
@@ -456,7 +434,14 @@ const Dashboard = () => {
                   <DollarSign className="h-6 w-6 text-primary-foreground" />
                 </div>
                 <div>
-                  <CardTitle className="text-2xl text-primary">{t("dashboard.yourBhphAccount")}</CardTitle>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <CardTitle className="text-2xl text-primary">{t("dashboard.yourBhphAccount")}</CardTitle>
+                    {customerAccount.vehicles && (
+                      <span className="text-xl font-semibold text-muted-foreground">
+                        — {customerAccount.vehicles.year} {customerAccount.vehicles.make} {customerAccount.vehicles.model}
+                      </span>
+                    )}
+                  </div>
                   <CardDescription>{t("dashboard.bhphFinancing")}</CardDescription>
                 </div>
               </div>
@@ -482,25 +467,6 @@ const Dashboard = () => {
                       ? new Date(customerAccount.next_payment_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
                       : 'N/A'}
                   </p>
-                </div>
-              </div>
-
-              <div className="bg-muted/50 rounded-lg p-6 mb-6">
-                <div className="flex flex-col items-center justify-center text-center">
-                  <Car className="h-10 w-10 text-primary mb-3" />
-                  <p className="text-sm text-muted-foreground mb-1">{t("dashboard.yourVehicle")}</p>
-                  {customerAccount.vehicles ? (
-                    <>
-                      <p className="text-2xl font-bold text-primary">
-                        {customerAccount.vehicles.year} {customerAccount.vehicles.make} {customerAccount.vehicles.model}
-                      </p>
-                      {customerAccount.vehicles.vin && (
-                        <p className="text-xs text-muted-foreground mt-2">VIN: {customerAccount.vehicles.vin}</p>
-                      )}
-                    </>
-                  ) : (
-                    <p className="text-lg text-muted-foreground italic">Vehicle information loading...</p>
-                  )}
                 </div>
               </div>
 
