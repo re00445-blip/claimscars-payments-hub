@@ -25,8 +25,18 @@ const Auth = () => {
   const { toast } = useToast();
   const { t } = useLanguage();
   const [loading, setLoading] = useState(false);
-  const [email, setEmail] = useState("");
+  const [emailOrPhone, setEmailOrPhone] = useState("");
   const [password, setPassword] = useState("");
+
+  // Helper to convert phone number to email format used for BHPH customers
+  const getLoginEmail = (input: string): string => {
+    const digitsOnly = input.replace(/\D/g, '');
+    // If input looks like a phone number (10 digits), convert to email format
+    if (digitsOnly.length === 10 && !/[@.]/.test(input)) {
+      return `${digitsOnly}@customer.local`;
+    }
+    return input;
+  };
   const [fullName, setFullName] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
@@ -35,10 +45,10 @@ const Auth = () => {
 
   useEffect(() => {
     // Load saved credentials if "Remember Me" was checked
-    const savedEmail = localStorage.getItem("rememberedEmail");
+    const savedEmailOrPhone = localStorage.getItem("rememberedEmailOrPhone");
     const savedPassword = localStorage.getItem("rememberedPassword");
-    if (savedEmail) {
-      setEmail(savedEmail);
+    if (savedEmailOrPhone) {
+      setEmailOrPhone(savedEmailOrPhone);
       setRememberMe(true);
     }
     if (savedPassword) {
@@ -54,12 +64,14 @@ const Auth = () => {
     checkUser();
   }, [navigate]);
 
+  const [signupEmail, setSignupEmail] = useState("");
+
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     const { error } = await supabase.auth.signUp({
-      email,
+      email: signupEmail,
       password,
       options: {
         data: {
@@ -82,7 +94,7 @@ const Auth = () => {
         title: t("auth.success"),
         description: t("auth.accountCreated"),
       });
-      setEmail("");
+      setSignupEmail("");
       setPassword("");
       setFullName("");
     }
@@ -94,15 +106,17 @@ const Auth = () => {
 
     // Handle "Remember Me" - save or remove credentials
     if (rememberMe) {
-      localStorage.setItem("rememberedEmail", email);
+      localStorage.setItem("rememberedEmailOrPhone", emailOrPhone);
       localStorage.setItem("rememberedPassword", password);
     } else {
-      localStorage.removeItem("rememberedEmail");
+      localStorage.removeItem("rememberedEmailOrPhone");
       localStorage.removeItem("rememberedPassword");
     }
 
+    const loginEmail = getLoginEmail(emailOrPhone);
+
     const { error } = await supabase.auth.signInWithPassword({
-      email,
+      email: loginEmail,
       password,
     });
 
@@ -167,13 +181,13 @@ const Auth = () => {
               <TabsContent value="signin">
                 <form onSubmit={handleSignIn} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="signin-email">{t("auth.email")}</Label>
+                    <Label htmlFor="signin-email">{t("auth.emailOrPhone")}</Label>
                     <Input
                       id="signin-email"
-                      type="email"
-                      placeholder="you@example.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      type="text"
+                      placeholder="you@example.com or (470) 555-1234"
+                      value={emailOrPhone}
+                      onChange={(e) => setEmailOrPhone(e.target.value)}
                       required
                     />
                   </div>
@@ -257,8 +271,8 @@ const Auth = () => {
                       id="signup-email"
                       type="email"
                       placeholder="you@example.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      value={signupEmail}
+                      onChange={(e) => setSignupEmail(e.target.value)}
                       required
                     />
                   </div>
