@@ -38,7 +38,7 @@ const AdminAffiliates = () => {
     name: "",
     email: "",
     phone: "",
-    flat_fee: "100",
+    flat_fee: "250",
     contracts_sent: "0",
     contracts_signed: "0",
   });
@@ -135,7 +135,7 @@ const AdminAffiliates = () => {
 
     setDialogOpen(false);
     setEditingAffiliate(null);
-    setFormData({ name: "", email: "", phone: "", flat_fee: "100", contracts_sent: "0", contracts_signed: "0" });
+    setFormData({ name: "", email: "", phone: "", flat_fee: "250", contracts_sent: "0", contracts_signed: "0" });
     fetchAffiliates();
   };
 
@@ -204,7 +204,7 @@ const AdminAffiliates = () => {
             setDialogOpen(open);
             if (!open) {
               setEditingAffiliate(null);
-              setFormData({ name: "", email: "", phone: "", flat_fee: "100", contracts_sent: "0", contracts_signed: "0" });
+              setFormData({ name: "", email: "", phone: "", flat_fee: "250", contracts_sent: "0", contracts_signed: "0" });
             }
           }}>
             <DialogTrigger asChild>
