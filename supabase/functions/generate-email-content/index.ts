@@ -53,18 +53,25 @@ serve(async (req) => {
 
     const occasionContext = occasionPrompts[occasion] || occasion;
     
+    // Get current date for accurate year references
+    const currentDate = new Date();
+    const currentYear = currentDate.getFullYear();
+    const upcomingYear = currentYear + 1;
+    
     const systemPrompt = type === "email" 
       ? `You are a professional marketing copywriter for Cars & Claims, a buy-here-pay-here car dealership and injury claims company in Athens, GA. 
          Generate a warm, professional email for customers.
          Keep the tone friendly but professional.
          The email should be 2-3 short paragraphs.
          Do NOT include greetings like "Dear Customer" or sign-offs - those are added automatically.
-         Focus on the content/body only.`
+         Focus on the content/body only.
+         IMPORTANT: Today's date is ${currentDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}. The current year is ${currentYear} and the upcoming year is ${upcomingYear}. Always use these correct years in your content.`
       : `You are a professional marketing copywriter for Cars & Claims.
          Generate a short, friendly SMS message for customers.
          Keep it under 150 characters.
          Be concise and include a clear call to action if appropriate.
-         Do NOT include greetings - get straight to the point.`;
+         Do NOT include greetings - get straight to the point.
+         IMPORTANT: Today's date is ${currentDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}. The current year is ${currentYear}. Always use the correct year.`;
 
     const userPrompt = `Generate ${type === "email" ? "an email body" : "an SMS message"} for: ${occasionContext}`;
 
