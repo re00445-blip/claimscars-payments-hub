@@ -22,7 +22,7 @@ interface Affiliate {
   name: string;
   email: string;
   phone: string | null;
-  commission_rate: number;
+  flat_fee: number;
   referral_code: string;
   total_referrals: number;
   total_earnings: number;
@@ -367,10 +367,10 @@ const AffiliatePortal = () => {
           </Card>
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Commission Rate</CardTitle>
+              <CardTitle className="text-sm font-medium">Flat Rate Fee</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{affiliate.commission_rate}%</div>
+              <div className="text-2xl font-bold">${affiliate.flat_fee.toFixed(2)}</div>
             </CardContent>
           </Card>
           <Card>
