@@ -21,7 +21,7 @@ interface Affiliate {
   id: string;
   name: string;
   email: string;
-  commission_rate: number;
+  flat_fee: number;
   referral_code: string;
   total_referrals: number;
   total_earnings: number;
@@ -514,10 +514,10 @@ const Dashboard = () => {
               </Card>
               <Card className="bg-gradient-to-br from-accent/10 to-accent/5 border-accent/20">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Commission Rate</CardTitle>
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Flat Fee Rate</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold">{affiliate.commission_rate}%</div>
+                  <div className="text-3xl font-bold">${affiliate.flat_fee}</div>
                 </CardContent>
               </Card>
               <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
