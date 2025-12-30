@@ -185,11 +185,11 @@ export type Database = {
       }
       marketing_affiliates: {
         Row: {
-          commission_rate: number
           contracts_sent: number
           contracts_signed: number
           created_at: string
           email: string
+          flat_fee: number
           id: string
           name: string
           phone: string | null
@@ -201,11 +201,11 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
-          commission_rate?: number
           contracts_sent?: number
           contracts_signed?: number
           created_at?: string
           email: string
+          flat_fee?: number
           id?: string
           name: string
           phone?: string | null
@@ -217,11 +217,11 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
-          commission_rate?: number
           contracts_sent?: number
           contracts_signed?: number
           created_at?: string
           email?: string
+          flat_fee?: number
           id?: string
           name?: string
           phone?: string | null

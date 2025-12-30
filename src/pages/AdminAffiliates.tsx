@@ -16,7 +16,7 @@ interface Affiliate {
   name: string;
   email: string;
   phone: string | null;
-  commission_rate: number;
+  flat_fee: number;
   referral_code: string;
   total_referrals: number;
   total_earnings: number;
@@ -38,7 +38,7 @@ const AdminAffiliates = () => {
     name: "",
     email: "",
     phone: "",
-    commission_rate: "10",
+    flat_fee: "100",
     contracts_sent: "0",
     contracts_signed: "0",
   });
@@ -100,7 +100,7 @@ const AdminAffiliates = () => {
           name: formData.name,
           email: formData.email,
           phone: formData.phone || null,
-          commission_rate: parseFloat(formData.commission_rate),
+          flat_fee: parseFloat(formData.flat_fee),
           contracts_sent: parseInt(formData.contracts_sent),
           contracts_signed: parseInt(formData.contracts_signed),
         })
@@ -119,7 +119,7 @@ const AdminAffiliates = () => {
           name: formData.name,
           email: formData.email,
           phone: formData.phone || null,
-          commission_rate: parseFloat(formData.commission_rate),
+          flat_fee: parseFloat(formData.flat_fee),
           referral_code: generateReferralCode(),
           contracts_sent: parseInt(formData.contracts_sent),
           contracts_signed: parseInt(formData.contracts_signed),
@@ -135,7 +135,7 @@ const AdminAffiliates = () => {
 
     setDialogOpen(false);
     setEditingAffiliate(null);
-    setFormData({ name: "", email: "", phone: "", commission_rate: "10", contracts_sent: "0", contracts_signed: "0" });
+    setFormData({ name: "", email: "", phone: "", flat_fee: "100", contracts_sent: "0", contracts_signed: "0" });
     fetchAffiliates();
   };
 
@@ -145,7 +145,7 @@ const AdminAffiliates = () => {
       name: affiliate.name,
       email: affiliate.email,
       phone: affiliate.phone || "",
-      commission_rate: affiliate.commission_rate.toString(),
+      flat_fee: affiliate.flat_fee.toString(),
       contracts_sent: affiliate.contracts_sent.toString(),
       contracts_signed: affiliate.contracts_signed.toString(),
     });
@@ -204,7 +204,7 @@ const AdminAffiliates = () => {
             setDialogOpen(open);
             if (!open) {
               setEditingAffiliate(null);
-              setFormData({ name: "", email: "", phone: "", commission_rate: "10", contracts_sent: "0", contracts_signed: "0" });
+              setFormData({ name: "", email: "", phone: "", flat_fee: "100", contracts_sent: "0", contracts_signed: "0" });
             }
           }}>
             <DialogTrigger asChild>
@@ -249,15 +249,14 @@ const AdminAffiliates = () => {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="commission_rate">Commission Rate (%)</Label>
+                  <Label htmlFor="flat_fee">Flat Fee ($)</Label>
                   <Input
-                    id="commission_rate"
+                    id="flat_fee"
                     type="number"
                     min="0"
-                    max="100"
-                    step="0.5"
-                    value={formData.commission_rate}
-                    onChange={(e) => setFormData({ ...formData, commission_rate: e.target.value })}
+                    step="1"
+                    value={formData.flat_fee}
+                    onChange={(e) => setFormData({ ...formData, flat_fee: e.target.value })}
                     required
                   />
                 </div>
@@ -313,7 +312,7 @@ const AdminAffiliates = () => {
                       <TableHead>Name</TableHead>
                       <TableHead>Email</TableHead>
                       <TableHead>Referral Code</TableHead>
-                      <TableHead>Commission</TableHead>
+                      <TableHead>Flat Fee</TableHead>
                       <TableHead>Cases</TableHead>
                       <TableHead>Contracts Sent</TableHead>
                       <TableHead>Contracts Signed</TableHead>
@@ -332,7 +331,7 @@ const AdminAffiliates = () => {
                             {affiliate.referral_code}
                           </code>
                         </TableCell>
-                        <TableCell>{affiliate.commission_rate}%</TableCell>
+                        <TableCell>${affiliate.flat_fee.toFixed(2)}</TableCell>
                         <TableCell>{affiliate.total_referrals}</TableCell>
                         <TableCell>{affiliate.contracts_sent}</TableCell>
                         <TableCell>{affiliate.contracts_signed}</TableCell>
