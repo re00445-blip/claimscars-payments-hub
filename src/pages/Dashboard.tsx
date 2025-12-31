@@ -8,6 +8,7 @@ import { Navbar } from "@/components/Navbar";
 import { Loader2, DollarSign, Car, FileText, Users, ClipboardList, Settings, UserPlus, Sparkles, CreditCard, Share2, Plus, Printer, Mail, MessageSquare, Send, Calculator } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { YearEndStatementHelper } from "@/components/admin/YearEndStatementHelper";
+import { ExpensesTracker } from "@/components/admin/ExpensesTracker";
 import { useToast } from "@/hooks/use-toast";
 import { TransactionsReport } from "@/components/admin/TransactionsReport";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -884,8 +885,17 @@ const Dashboard = () => {
               <TransactionsReport />
             </TabsContent>
 
-            <TabsContent value="accounting">
-              <YearEndStatementHelper />
+            <TabsContent value="accounting" className="space-y-6">
+              <div className="grid gap-6">
+                <div>
+                  <h2 className="text-xl font-semibold mb-4">Revenue Summary</h2>
+                  <YearEndStatementHelper />
+                </div>
+                <div>
+                  <h2 className="text-xl font-semibold mb-4">Daily Expenses & Transactions</h2>
+                  <ExpensesTracker />
+                </div>
+              </div>
             </TabsContent>
           </Tabs>
         )}
