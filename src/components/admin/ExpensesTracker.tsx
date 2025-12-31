@@ -13,6 +13,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 
 const PAYMENT_METHODS = ["Cash", "Check", "Credit Card", "Debit Card", "Wire Transfer", "Zelle", "Venmo", "PayPal", "Other"];
 const CLASSIFICATIONS = ["Operating Expense", "Cost of Goods Sold", "Payroll", "Marketing", "Utilities", "Insurance", "Office Supplies", "Vehicle Expense", "Professional Services", "Rent", "Interest", "Depreciation", "Other"];
+const VENDORS = ["Apple", "Delta", "Amazon", "BOA", "WF", "Chase", "NF", "Other"];
 
 interface Expense {
   id: string;
@@ -25,6 +26,7 @@ interface Expense {
   created_at: string;
   payment_method: string | null;
   classification: string | null;
+  vendor: string | null;
 }
 
 export const ExpensesTracker = () => {
@@ -44,6 +46,7 @@ export const ExpensesTracker = () => {
     expense_date: format(new Date(), "yyyy-MM-dd"),
     payment_method: "",
     classification: "",
+    vendor: "",
   });
 
   useEffect(() => {
@@ -93,6 +96,7 @@ export const ExpensesTracker = () => {
         expense_date: formData.expense_date,
         payment_method: formData.payment_method || null,
         classification: formData.classification || null,
+        vendor: formData.vendor || null,
         created_by: userData.user?.id,
       });
 
@@ -112,6 +116,7 @@ export const ExpensesTracker = () => {
         expense_date: format(new Date(), "yyyy-MM-dd"),
         payment_method: "",
         classification: "",
+        vendor: "",
       });
       setShowAddForm(false);
       fetchExpenses();
@@ -146,6 +151,7 @@ export const ExpensesTracker = () => {
           expense_date: formData.expense_date,
           payment_method: formData.payment_method || null,
           classification: formData.classification || null,
+          vendor: formData.vendor || null,
         })
         .eq("id", id);
 
@@ -288,6 +294,7 @@ export const ExpensesTracker = () => {
       expense_date: expense.expense_date,
       payment_method: expense.payment_method || "",
       classification: expense.classification || "",
+      vendor: expense.vendor || "",
     });
   };
 
@@ -302,6 +309,7 @@ export const ExpensesTracker = () => {
       expense_date: format(new Date(), "yyyy-MM-dd"),
       payment_method: "",
       classification: "",
+      vendor: "",
     });
   };
 
@@ -673,6 +681,22 @@ export const ExpensesTracker = () => {
                 </Select>
               </div>
               <div>
+                <Label htmlFor="vendor">Vendor</Label>
+                <Select
+                  value={formData.vendor}
+                  onValueChange={(value) => setFormData({ ...formData, vendor: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select vendor" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {VENDORS.map((v) => (
+                      <SelectItem key={v} value={v}>{v}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
                 <Label htmlFor="description">Description</Label>
                 <Input
                   id="description"
@@ -681,7 +705,7 @@ export const ExpensesTracker = () => {
                   placeholder="Description"
                 />
               </div>
-              <div className="md:col-span-4 flex gap-2 justify-end">
+              <div className="md:col-span-5 flex gap-2 justify-end">
                 <Button variant="outline" onClick={() => setShowAddForm(false)}>
                   <X className="h-4 w-4 mr-2" />
                   Cancel
@@ -705,6 +729,7 @@ export const ExpensesTracker = () => {
                   <TableHead>Type</TableHead>
                   <TableHead>Category</TableHead>
                   <TableHead>Payment Method</TableHead>
+                  <TableHead>Vendor</TableHead>
                   <TableHead>Classification</TableHead>
                   <TableHead>Description</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -713,7 +738,7 @@ export const ExpensesTracker = () => {
               <TableBody>
                 {expenses.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
+                    <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
                       No expenses recorded yet. Click "Add Entry" to get started.
                     </TableCell>
                   </TableRow>
@@ -805,6 +830,21 @@ export const ExpensesTracker = () => {
                           </Select>
                         </TableCell>
                         <TableCell>
+                          <Select
+                            value={formData.vendor}
+                            onValueChange={(value) => setFormData({ ...formData, vendor: value })}
+                          >
+                            <SelectTrigger className="w-24">
+                              <SelectValue placeholder="Select" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {VENDORS.map((v) => (
+                                <SelectItem key={v} value={v}>{v}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
+                        <TableCell>
                           <Input
                             value={formData.description}
                             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -854,6 +894,7 @@ export const ExpensesTracker = () => {
                           </span>
                         </TableCell>
                         <TableCell>{expense.payment_method || "-"}</TableCell>
+                        <TableCell>{expense.vendor || "-"}</TableCell>
                         <TableCell className="max-w-[150px] truncate">{expense.classification || "-"}</TableCell>
                         <TableCell className="max-w-[150px] truncate">{expense.description || "-"}</TableCell>
                         <TableCell className="text-right">
