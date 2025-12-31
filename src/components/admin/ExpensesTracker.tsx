@@ -7,9 +7,12 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Plus, Pencil, Trash2, Save, X } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2, Save, X, Upload, Download } from "lucide-react";
 import { format, parseISO, startOfMonth } from "date-fns";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from "recharts";
+
+const PAYMENT_METHODS = ["Cash", "Check", "Credit Card", "Debit Card", "Wire Transfer", "Zelle", "Venmo", "PayPal", "Other"];
+const CLASSIFICATIONS = ["Operating Expense", "Cost of Goods Sold", "Payroll", "Marketing", "Utilities", "Insurance", "Office Supplies", "Vehicle Expense", "Professional Services", "Rent", "Interest", "Depreciation", "Other"];
 
 interface Expense {
   id: string;
@@ -20,6 +23,8 @@ interface Expense {
   category: string;
   expense_date: string;
   created_at: string;
+  payment_method: string | null;
+  classification: string | null;
 }
 
 export const ExpensesTracker = () => {
@@ -28,6 +33,7 @@ export const ExpensesTracker = () => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [importing, setImporting] = useState(false);
   
   const [formData, setFormData] = useState({
     amount: "",
@@ -36,6 +42,8 @@ export const ExpensesTracker = () => {
     transaction_type: "expenses",
     category: "business",
     expense_date: format(new Date(), "yyyy-MM-dd"),
+    payment_method: "",
+    classification: "",
   });
 
   useEffect(() => {
@@ -83,6 +91,8 @@ export const ExpensesTracker = () => {
         transaction_type: formData.transaction_type,
         category: formData.category,
         expense_date: formData.expense_date,
+        payment_method: formData.payment_method || null,
+        classification: formData.classification || null,
         created_by: userData.user?.id,
       });
 
@@ -100,6 +110,8 @@ export const ExpensesTracker = () => {
         transaction_type: "expenses",
         category: "business",
         expense_date: format(new Date(), "yyyy-MM-dd"),
+        payment_method: "",
+        classification: "",
       });
       setShowAddForm(false);
       fetchExpenses();
@@ -132,6 +144,8 @@ export const ExpensesTracker = () => {
           transaction_type: formData.transaction_type,
           category: formData.category,
           expense_date: formData.expense_date,
+          payment_method: formData.payment_method || null,
+          classification: formData.classification || null,
         })
         .eq("id", id);
 
@@ -176,6 +190,93 @@ export const ExpensesTracker = () => {
     }
   };
 
+  const downloadTemplate = () => {
+    const headers = "Date,Amount,Debtor,Transaction Type,Category,Payment Method,Classification,Description";
+    const sampleRow = "2024-01-15,100.00,John Doe,expenses,business,Cash,Operating Expense,Office supplies";
+    const csvContent = `${headers}\n${sampleRow}`;
+    
+    const blob = new Blob([csvContent], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "expenses_template.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setImporting(true);
+    
+    try {
+      const text = await file.text();
+      const lines = text.split("\n").filter(line => line.trim());
+      
+      if (lines.length < 2) {
+        throw new Error("CSV file must have at least a header row and one data row");
+      }
+
+      const { data: userData } = await supabase.auth.getUser();
+      const expenses: any[] = [];
+
+      for (let i = 1; i < lines.length; i++) {
+        const values = lines[i].split(",").map(v => v.trim().replace(/^"|"$/g, ""));
+        
+        if (values.length < 5) continue;
+
+        const [date, amount, debtor, transactionType, category, paymentMethod, classification, description] = values;
+        
+        const parsedAmount = parseFloat(amount);
+        if (isNaN(parsedAmount) || parsedAmount <= 0) continue;
+
+        const validTransactionTypes = ["revenue", "expenses", "taxes"];
+        const validCategories = ["business", "personal"];
+        
+        expenses.push({
+          expense_date: date || format(new Date(), "yyyy-MM-dd"),
+          amount: parsedAmount,
+          debtor: debtor || null,
+          transaction_type: validTransactionTypes.includes(transactionType?.toLowerCase()) 
+            ? transactionType.toLowerCase() 
+            : "expenses",
+          category: validCategories.includes(category?.toLowerCase()) 
+            ? category.toLowerCase() 
+            : "business",
+          payment_method: paymentMethod || null,
+          classification: classification || null,
+          description: description || null,
+          created_by: userData.user?.id,
+        });
+      }
+
+      if (expenses.length === 0) {
+        throw new Error("No valid expenses found in the CSV file");
+      }
+
+      const { error } = await supabase.from("expenses").insert(expenses);
+      
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: `Imported ${expenses.length} expenses successfully`,
+      });
+
+      fetchExpenses();
+    } catch (error: any) {
+      toast({
+        title: "Import Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setImporting(false);
+      e.target.value = "";
+    }
+  };
+
   const startEditing = (expense: Expense) => {
     setEditingId(expense.id);
     setFormData({
@@ -185,6 +286,8 @@ export const ExpensesTracker = () => {
       transaction_type: expense.transaction_type,
       category: expense.category,
       expense_date: expense.expense_date,
+      payment_method: expense.payment_method || "",
+      classification: expense.classification || "",
     });
   };
 
@@ -197,6 +300,8 @@ export const ExpensesTracker = () => {
       transaction_type: "expenses",
       category: "business",
       expense_date: format(new Date(), "yyyy-MM-dd"),
+      payment_method: "",
+      classification: "",
     });
   };
 
@@ -439,18 +544,42 @@ export const ExpensesTracker = () => {
 
       {/* Add Expense Card */}
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-4">
           <CardTitle>Daily Expenses Tracker</CardTitle>
-          {!showAddForm && (
-            <Button onClick={() => setShowAddForm(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Entry
-            </Button>
-          )}
+          <div className="flex gap-2 flex-wrap">
+            {!showAddForm && (
+              <>
+                <Button variant="outline" onClick={downloadTemplate}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Download Template
+                </Button>
+                <label htmlFor="csv-upload">
+                  <Button variant="outline" asChild disabled={importing}>
+                    <span className="cursor-pointer">
+                      <Upload className="h-4 w-4 mr-2" />
+                      {importing ? "Importing..." : "Import CSV"}
+                    </span>
+                  </Button>
+                </label>
+                <input
+                  id="csv-upload"
+                  type="file"
+                  accept=".csv"
+                  className="hidden"
+                  onChange={handleFileUpload}
+                  disabled={importing}
+                />
+                <Button onClick={() => setShowAddForm(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Entry
+                </Button>
+              </>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           {showAddForm && (
-            <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-6 p-4 border rounded-lg bg-muted/30">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 p-4 border rounded-lg bg-muted/30">
               <div>
                 <Label htmlFor="amount">Amount ($)</Label>
                 <Input
@@ -512,6 +641,38 @@ export const ExpensesTracker = () => {
                 />
               </div>
               <div>
+                <Label htmlFor="payment_method">Payment Method</Label>
+                <Select
+                  value={formData.payment_method}
+                  onValueChange={(value) => setFormData({ ...formData, payment_method: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select method" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PAYMENT_METHODS.map((method) => (
+                      <SelectItem key={method} value={method}>{method}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="classification">Classification</Label>
+                <Select
+                  value={formData.classification}
+                  onValueChange={(value) => setFormData({ ...formData, classification: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select classification" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CLASSIFICATIONS.map((cls) => (
+                      <SelectItem key={cls} value={cls}>{cls}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
                 <Label htmlFor="description">Description</Label>
                 <Input
                   id="description"
@@ -520,7 +681,7 @@ export const ExpensesTracker = () => {
                   placeholder="Description"
                 />
               </div>
-              <div className="md:col-span-6 flex gap-2 justify-end">
+              <div className="md:col-span-4 flex gap-2 justify-end">
                 <Button variant="outline" onClick={() => setShowAddForm(false)}>
                   <X className="h-4 w-4 mr-2" />
                   Cancel
@@ -543,6 +704,8 @@ export const ExpensesTracker = () => {
                   <TableHead>Debtor</TableHead>
                   <TableHead>Type</TableHead>
                   <TableHead>Category</TableHead>
+                  <TableHead>Payment Method</TableHead>
+                  <TableHead>Classification</TableHead>
                   <TableHead>Description</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -550,7 +713,7 @@ export const ExpensesTracker = () => {
               <TableBody>
                 {expenses.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                    <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
                       No expenses recorded yet. Click "Add Entry" to get started.
                     </TableCell>
                   </TableRow>
@@ -612,6 +775,36 @@ export const ExpensesTracker = () => {
                           </Select>
                         </TableCell>
                         <TableCell>
+                          <Select
+                            value={formData.payment_method}
+                            onValueChange={(value) => setFormData({ ...formData, payment_method: value })}
+                          >
+                            <SelectTrigger className="w-28">
+                              <SelectValue placeholder="Select" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {PAYMENT_METHODS.map((method) => (
+                                <SelectItem key={method} value={method}>{method}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
+                        <TableCell>
+                          <Select
+                            value={formData.classification}
+                            onValueChange={(value) => setFormData({ ...formData, classification: value })}
+                          >
+                            <SelectTrigger className="w-32">
+                              <SelectValue placeholder="Select" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {CLASSIFICATIONS.map((cls) => (
+                                <SelectItem key={cls} value={cls}>{cls}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
+                        <TableCell>
                           <Input
                             value={formData.description}
                             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -660,7 +853,9 @@ export const ExpensesTracker = () => {
                             {expense.category.charAt(0).toUpperCase() + expense.category.slice(1)}
                           </span>
                         </TableCell>
-                        <TableCell className="max-w-[200px] truncate">{expense.description || "-"}</TableCell>
+                        <TableCell>{expense.payment_method || "-"}</TableCell>
+                        <TableCell className="max-w-[150px] truncate">{expense.classification || "-"}</TableCell>
+                        <TableCell className="max-w-[150px] truncate">{expense.description || "-"}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex gap-1 justify-end">
                             <Button size="sm" variant="ghost" onClick={() => startEditing(expense)}>
