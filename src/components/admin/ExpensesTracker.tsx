@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Plus, Pencil, Trash2, Save, X } from "lucide-react";
-import { format } from "date-fns";
+import { format, parseISO, startOfMonth } from "date-fns";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from "recharts";
 
 interface Expense {
   id: string;
@@ -220,6 +221,45 @@ export const ExpensesTracker = () => {
     .filter((e) => e.category === "personal")
     .reduce((sum, e) => sum + Number(e.amount), 0);
 
+  // Chart data - group by month
+  const monthlyData = useMemo(() => {
+    const grouped: Record<string, { month: string; revenue: number; expenses: number; taxes: number }> = {};
+    
+    expenses.forEach((expense) => {
+      const monthKey = format(startOfMonth(parseISO(expense.expense_date)), "yyyy-MM");
+      const monthLabel = format(parseISO(expense.expense_date), "MMM yyyy");
+      
+      if (!grouped[monthKey]) {
+        grouped[monthKey] = { month: monthLabel, revenue: 0, expenses: 0, taxes: 0 };
+      }
+      
+      if (expense.transaction_type === "revenue") {
+        grouped[monthKey].revenue += Number(expense.amount);
+      } else if (expense.transaction_type === "expenses") {
+        grouped[monthKey].expenses += Number(expense.amount);
+      } else if (expense.transaction_type === "taxes") {
+        grouped[monthKey].taxes += Number(expense.amount);
+      }
+    });
+    
+    return Object.entries(grouped)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([, data]) => data);
+  }, [expenses]);
+
+  // Pie chart data for category breakdown
+  const categoryData = useMemo(() => [
+    { name: "Business", value: businessTotal, color: "#3b82f6" },
+    { name: "Personal", value: personalTotal, color: "#a855f7" },
+  ].filter(item => item.value > 0), [businessTotal, personalTotal]);
+
+  // Pie chart data for transaction type breakdown
+  const typeData = useMemo(() => [
+    { name: "Revenue", value: totalRevenue, color: "#22c55e" },
+    { name: "Expenses", value: totalExpenses, color: "#ef4444" },
+    { name: "Taxes", value: totalTaxes, color: "#f97316" },
+  ].filter(item => item.value > 0), [totalRevenue, totalExpenses, totalTaxes]);
+
   if (loading) {
     return (
       <div className="flex justify-center items-center py-8">
@@ -287,6 +327,115 @@ export const ExpensesTracker = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Charts Section */}
+      {expenses.length > 0 && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Monthly Bar Chart */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Revenue vs Expenses Over Time</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={monthlyData}>
+                  <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                  <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+                  <YAxis tick={{ fontSize: 12 }} tickFormatter={(value) => `$${value.toLocaleString()}`} />
+                  <Tooltip 
+                    formatter={(value: number) => [`$${value.toLocaleString("en-US", { minimumFractionDigits: 2 })}`, ""]}
+                    contentStyle={{ backgroundColor: "hsl(var(--background))", border: "1px solid hsl(var(--border))" }}
+                  />
+                  <Legend />
+                  <Bar dataKey="revenue" name="Revenue" fill="#22c55e" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="expenses" name="Expenses" fill="#ef4444" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="taxes" name="Taxes" fill="#f97316" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          {/* Line Chart for Trends */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Monthly Trends</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={monthlyData}>
+                  <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                  <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+                  <YAxis tick={{ fontSize: 12 }} tickFormatter={(value) => `$${value.toLocaleString()}`} />
+                  <Tooltip 
+                    formatter={(value: number) => [`$${value.toLocaleString("en-US", { minimumFractionDigits: 2 })}`, ""]}
+                    contentStyle={{ backgroundColor: "hsl(var(--background))", border: "1px solid hsl(var(--border))" }}
+                  />
+                  <Legend />
+                  <Line type="monotone" dataKey="revenue" name="Revenue" stroke="#22c55e" strokeWidth={2} dot={{ fill: "#22c55e" }} />
+                  <Line type="monotone" dataKey="expenses" name="Expenses" stroke="#ef4444" strokeWidth={2} dot={{ fill: "#ef4444" }} />
+                  <Line type="monotone" dataKey="taxes" name="Taxes" stroke="#f97316" strokeWidth={2} dot={{ fill: "#f97316" }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          {/* Transaction Type Pie Chart */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Transaction Type Breakdown</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={250}>
+                <PieChart>
+                  <Pie
+                    data={typeData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={100}
+                    paddingAngle={2}
+                    dataKey="value"
+                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                  >
+                    {typeData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value: number) => [`$${value.toLocaleString("en-US", { minimumFractionDigits: 2 })}`, ""]} />
+                </PieChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          {/* Category Pie Chart */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Business vs Personal</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={250}>
+                <PieChart>
+                  <Pie
+                    data={categoryData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={100}
+                    paddingAngle={2}
+                    dataKey="value"
+                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                  >
+                    {categoryData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value: number) => [`$${value.toLocaleString("en-US", { minimumFractionDigits: 2 })}`, ""]} />
+                </PieChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Add Expense Card */}
       <Card>
