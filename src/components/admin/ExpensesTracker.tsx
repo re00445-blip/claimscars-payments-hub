@@ -545,7 +545,7 @@ export const ExpensesTracker = () => {
       {/* Add Expense Card */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-4">
-          <CardTitle>Daily Expenses Tracker</CardTitle>
+          <CardTitle>Daily Tracker</CardTitle>
           <div className="flex gap-2 flex-wrap">
             {!showAddForm && (
               <>
