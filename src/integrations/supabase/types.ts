@@ -116,36 +116,42 @@ export type Database = {
         Row: {
           amount: number
           category: string
+          classification: string | null
           created_at: string
           created_by: string | null
           debtor: string | null
           description: string | null
           expense_date: string
           id: string
+          payment_method: string | null
           transaction_type: string
           updated_at: string
         }
         Insert: {
           amount: number
           category: string
+          classification?: string | null
           created_at?: string
           created_by?: string | null
           debtor?: string | null
           description?: string | null
           expense_date?: string
           id?: string
+          payment_method?: string | null
           transaction_type: string
           updated_at?: string
         }
         Update: {
           amount?: number
           category?: string
+          classification?: string | null
           created_at?: string
           created_by?: string | null
           debtor?: string | null
           description?: string | null
           expense_date?: string
           id?: string
+          payment_method?: string | null
           transaction_type?: string
           updated_at?: string
         }
