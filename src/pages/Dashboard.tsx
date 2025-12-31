@@ -892,7 +892,7 @@ const Dashboard = () => {
                   <YearEndStatementHelper />
                 </div>
                 <div>
-                  <h2 className="text-xl font-semibold mb-4">Daily Expenses & Transactions</h2>
+                  <h2 className="text-xl font-semibold mb-4">Daily Transactions</h2>
                   <ExpensesTracker />
                 </div>
               </div>
