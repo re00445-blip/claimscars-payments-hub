@@ -5,7 +5,9 @@ import { User, Session } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Navbar } from "@/components/Navbar";
-import { Loader2, DollarSign, Car, FileText, Users, ClipboardList, Settings, UserPlus, Sparkles, CreditCard, Share2, Plus, Printer, Mail, MessageSquare, Send } from "lucide-react";
+import { Loader2, DollarSign, Car, FileText, Users, ClipboardList, Settings, UserPlus, Sparkles, CreditCard, Share2, Plus, Printer, Mail, MessageSquare, Send, Calculator } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { YearEndStatementHelper } from "@/components/admin/YearEndStatementHelper";
 import { useToast } from "@/hooks/use-toast";
 import { TransactionsReport } from "@/components/admin/TransactionsReport";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -742,138 +744,150 @@ const Dashboard = () => {
         )}
 
         {isAdmin && (
-          <>
-            {/* User Management */}
-            <Card className="mb-6 border-primary/50">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5" />
-                  {t("dashboard.userManagement")}
-                </CardTitle>
-                <CardDescription>{t("dashboard.userManagementDesc")}</CardDescription>
-              </CardHeader>
-              <CardContent className="flex flex-wrap gap-4">
-                <Button onClick={() => navigate("/admin/users")}>
-                  <Users className="mr-2 h-4 w-4" />
-                  {t("dashboard.manageUsers")}
-                </Button>
-              </CardContent>
-            </Card>
+          <Tabs defaultValue="management" className="w-full">
+            <TabsList className="mb-6">
+              <TabsTrigger value="management">Management</TabsTrigger>
+              <TabsTrigger value="accounting" className="flex items-center gap-2">
+                <Calculator className="h-4 w-4" />
+                Accounting
+              </TabsTrigger>
+            </TabsList>
 
-            {/* Vehicle Management */}
-            <Card className="mb-6 border-primary/50">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Car className="h-5 w-5" />
-                  {t("dashboard.vehicleManagement")}
-                </CardTitle>
-                <CardDescription>{t("dashboard.vehicleManagementDesc")}</CardDescription>
-              </CardHeader>
-              <CardContent className="flex flex-wrap gap-4">
-                <Button onClick={() => navigate("/admin/vehicles")}>
-                  <Car className="mr-2 h-4 w-4" />
-                  {t("dashboard.manageVehicles")}
-                </Button>
-              </CardContent>
-            </Card>
+            <TabsContent value="management" className="space-y-6">
+              {/* User Management */}
+              <Card className="border-primary/50">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Users className="h-5 w-5" />
+                    {t("dashboard.userManagement")}
+                  </CardTitle>
+                  <CardDescription>{t("dashboard.userManagementDesc")}</CardDescription>
+                </CardHeader>
+                <CardContent className="flex flex-wrap gap-4">
+                  <Button onClick={() => navigate("/admin/users")}>
+                    <Users className="mr-2 h-4 w-4" />
+                    {t("dashboard.manageUsers")}
+                  </Button>
+                </CardContent>
+              </Card>
 
-            {/* BHPH Account Management */}
-            <Card className="mb-6 border-accent/50">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <DollarSign className="h-5 w-5" />
-                  {t("dashboard.bhphAccountManagement")}
-                </CardTitle>
-                <CardDescription>{t("dashboard.bhphAccountManagementDesc")}</CardDescription>
-              </CardHeader>
-              <CardContent className="flex flex-wrap gap-4">
-                <Button onClick={() => navigate("/admin/accounts")}>
-                  <UserPlus className="mr-2 h-4 w-4" />
-                  {t("dashboard.addBhphAccount")}
-                </Button>
-                <Button variant="outline" onClick={() => navigate("/admin/accounts")}>
-                  <Settings className="mr-2 h-4 w-4" />
-                  {t("dashboard.editAccounts")}
-                </Button>
-                <Button variant="outline" onClick={() => navigate("/admin/payments")}>
-                  <DollarSign className="mr-2 h-4 w-4" />
-                  {t("dashboard.recordPayments")}
-                </Button>
-                <Button variant="outline" onClick={() => navigate("/admin/reports")}>
-                  <FileText className="mr-2 h-4 w-4" />
-                  {t("dashboard.paymentReports")}
-                </Button>
-                <Button variant="outline" onClick={() => navigate("/admin/reports")}>
-                  <Printer className="mr-2 h-4 w-4" />
-                  Batch Receipts
-                </Button>
-              </CardContent>
-            </Card>
+              {/* Vehicle Management */}
+              <Card className="border-primary/50">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Car className="h-5 w-5" />
+                    {t("dashboard.vehicleManagement")}
+                  </CardTitle>
+                  <CardDescription>{t("dashboard.vehicleManagementDesc")}</CardDescription>
+                </CardHeader>
+                <CardContent className="flex flex-wrap gap-4">
+                  <Button onClick={() => navigate("/admin/vehicles")}>
+                    <Car className="mr-2 h-4 w-4" />
+                    {t("dashboard.manageVehicles")}
+                  </Button>
+                </CardContent>
+              </Card>
 
-            {/* Claims Portal Management */}
-            <Card className="mb-6 border-secondary/50">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <ClipboardList className="h-5 w-5" />
-                  {t("dashboard.claimsPortal")}
-                </CardTitle>
-                <CardDescription>{t("dashboard.claimsPortalDesc")}</CardDescription>
-              </CardHeader>
-              <CardContent className="flex flex-wrap gap-4">
-                <Button onClick={() => navigate("/admin/claims")}>
-                  <UserPlus className="mr-2 h-4 w-4" />
-                  {t("dashboard.addNewClaimUser")}
-                </Button>
-                <Button variant="outline" onClick={() => navigate("/admin/claims")}>
-                  <ClipboardList className="mr-2 h-4 w-4" />
-                  {t("dashboard.trackClaimProgress")}
-                </Button>
-              </CardContent>
-            </Card>
+              {/* BHPH Account Management */}
+              <Card className="border-accent/50">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <DollarSign className="h-5 w-5" />
+                    {t("dashboard.bhphAccountManagement")}
+                  </CardTitle>
+                  <CardDescription>{t("dashboard.bhphAccountManagementDesc")}</CardDescription>
+                </CardHeader>
+                <CardContent className="flex flex-wrap gap-4">
+                  <Button onClick={() => navigate("/admin/accounts")}>
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    {t("dashboard.addBhphAccount")}
+                  </Button>
+                  <Button variant="outline" onClick={() => navigate("/admin/accounts")}>
+                    <Settings className="mr-2 h-4 w-4" />
+                    {t("dashboard.editAccounts")}
+                  </Button>
+                  <Button variant="outline" onClick={() => navigate("/admin/payments")}>
+                    <DollarSign className="mr-2 h-4 w-4" />
+                    {t("dashboard.recordPayments")}
+                  </Button>
+                  <Button variant="outline" onClick={() => navigate("/admin/reports")}>
+                    <FileText className="mr-2 h-4 w-4" />
+                    {t("dashboard.paymentReports")}
+                  </Button>
+                  <Button variant="outline" onClick={() => navigate("/admin/reports")}>
+                    <Printer className="mr-2 h-4 w-4" />
+                    Batch Receipts
+                  </Button>
+                </CardContent>
+              </Card>
 
-            {/* Marketing Affiliates */}
-            <Card className="mb-6 border-primary/50">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Share2 className="h-5 w-5" />
-                  Marketing Affiliates
-                </CardTitle>
-                <CardDescription>Manage affiliate partners and track referrals</CardDescription>
-              </CardHeader>
-              <CardContent className="flex flex-wrap gap-4">
-                <Button onClick={() => navigate("/admin/affiliates")}>
-                  <Share2 className="mr-2 h-4 w-4" />
-                  Manage Affiliates
-                </Button>
-              </CardContent>
-            </Card>
+              {/* Claims Portal Management */}
+              <Card className="border-secondary/50">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <ClipboardList className="h-5 w-5" />
+                    {t("dashboard.claimsPortal")}
+                  </CardTitle>
+                  <CardDescription>{t("dashboard.claimsPortalDesc")}</CardDescription>
+                </CardHeader>
+                <CardContent className="flex flex-wrap gap-4">
+                  <Button onClick={() => navigate("/admin/claims")}>
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    {t("dashboard.addNewClaimUser")}
+                  </Button>
+                  <Button variant="outline" onClick={() => navigate("/admin/claims")}>
+                    <ClipboardList className="mr-2 h-4 w-4" />
+                    {t("dashboard.trackClaimProgress")}
+                  </Button>
+                </CardContent>
+              </Card>
 
-            {/* Contact the People */}
-            <Card className="mb-6 border-accent/50 bg-gradient-to-br from-accent/5 to-primary/5">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Send className="h-5 w-5" />
-                  Contact the People
-                </CardTitle>
-                <CardDescription>Mass send emails and text messages to customers</CardDescription>
-              </CardHeader>
-              <CardContent className="flex flex-wrap gap-4">
-                <Button onClick={() => navigate("/admin/mass-contact")}>
-                  <Mail className="mr-2 h-4 w-4" />
-                  Send Mass Email
-                </Button>
-                <Button variant="outline" onClick={() => navigate("/admin/mass-contact")}>
-                  <MessageSquare className="mr-2 h-4 w-4" />
-                  Send Mass Text
-                </Button>
-              </CardContent>
-            </Card>
+              {/* Marketing Affiliates */}
+              <Card className="border-primary/50">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Share2 className="h-5 w-5" />
+                    Marketing Affiliates
+                  </CardTitle>
+                  <CardDescription>Manage affiliate partners and track referrals</CardDescription>
+                </CardHeader>
+                <CardContent className="flex flex-wrap gap-4">
+                  <Button onClick={() => navigate("/admin/affiliates")}>
+                    <Share2 className="mr-2 h-4 w-4" />
+                    Manage Affiliates
+                  </Button>
+                </CardContent>
+              </Card>
 
-            {/* Transactions Report */}
-            <div className="mb-6">
+              {/* Contact the People */}
+              <Card className="border-accent/50 bg-gradient-to-br from-accent/5 to-primary/5">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Send className="h-5 w-5" />
+                    Contact the People
+                  </CardTitle>
+                  <CardDescription>Mass send emails and text messages to customers</CardDescription>
+                </CardHeader>
+                <CardContent className="flex flex-wrap gap-4">
+                  <Button onClick={() => navigate("/admin/mass-contact")}>
+                    <Mail className="mr-2 h-4 w-4" />
+                    Send Mass Email
+                  </Button>
+                  <Button variant="outline" onClick={() => navigate("/admin/mass-contact")}>
+                    <MessageSquare className="mr-2 h-4 w-4" />
+                    Send Mass Text
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Transactions Report */}
               <TransactionsReport />
-            </div>
-          </>
+            </TabsContent>
+
+            <TabsContent value="accounting">
+              <YearEndStatementHelper />
+            </TabsContent>
+          </Tabs>
         )}
 
         <Card>
