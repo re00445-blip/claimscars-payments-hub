@@ -9,6 +9,7 @@ import { Loader2, DollarSign, Car, FileText, Users, ClipboardList, Settings, Use
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { YearEndStatementHelper } from "@/components/admin/YearEndStatementHelper";
 import { ExpensesTracker } from "@/components/admin/ExpensesTracker";
+import { DigitalReceipts } from "@/components/admin/DigitalReceipts";
 import { useToast } from "@/hooks/use-toast";
 import { TransactionsReport } from "@/components/admin/TransactionsReport";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -894,6 +895,10 @@ const Dashboard = () => {
                 <div>
                   <h2 className="text-xl font-semibold mb-4">Daily Transactions</h2>
                   <ExpensesTracker />
+                </div>
+                <div>
+                  <h2 className="text-xl font-semibold mb-4">Digital Receipts</h2>
+                  <DigitalReceipts />
                 </div>
               </div>
             </TabsContent>
