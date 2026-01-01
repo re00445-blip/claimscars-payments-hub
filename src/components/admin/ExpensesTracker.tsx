@@ -12,7 +12,7 @@ import { format, parseISO, startOfMonth } from "date-fns";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from "recharts";
 
 const PAYMENT_METHODS = ["Cash", "Check", "Credit Card", "Debit Card", "Wire Transfer", "Zelle", "Venmo", "PayPal", "Other"];
-const CLASSIFICATIONS = ["Operating Expense", "Cost of Goods Sold", "Payroll", "Marketing", "Utilities", "Insurance", "Office Supplies", "Vehicle Expense", "Professional Services", "Rent", "Interest", "Depreciation", "Other"];
+const CLASSIFICATIONS = ["Operating Expense", "Cost of Goods Sold", "Payroll", "Marketing", "Utilities", "Insurance", "Office Supplies", "Vehicle Expense", "Professional Services", "Rent", "Interest", "Depreciation", "Food", "Gas", "Other"];
 const VENDORS = ["Apple", "Delta", "Amazon", "BOA", "WF", "Chase", "NF", "Other"];
 
 interface Expense {
