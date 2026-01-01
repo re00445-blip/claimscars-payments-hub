@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Navbar } from "@/components/Navbar";
-import { Loader2, ArrowLeft, Shield, User, Users, Trash2 } from "lucide-react";
+import { Loader2, ArrowLeft, Shield, User, Users, Trash2, Calculator } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -27,6 +27,7 @@ interface UserProfile {
   created_at: string | null;
   isAdmin: boolean;
   isAffiliate: boolean;
+  hasAccountingAccess: boolean;
 }
 
 const AdminUsers = () => {
@@ -100,8 +101,17 @@ const AdminUsers = () => {
       .from("user_roles")
       .select("user_id, role");
 
+    // Get all permissions
+    const { data: userPermissions } = await supabase
+      .from("user_permissions")
+      .select("user_id, permission_key, is_enabled");
+
     const adminUserIds = new Set(userRoles?.filter(r => r.role === "admin").map(r => r.user_id) || []);
     const affiliateUserIds = new Set(userRoles?.filter(r => r.role === "affiliate").map(r => r.user_id) || []);
+    
+    const accountingAccessIds = new Set(
+      userPermissions?.filter(p => p.permission_key === "accounting" && p.is_enabled).map(p => p.user_id) || []
+    );
 
     const usersWithRoles: UserProfile[] = (profiles || []).map(profile => ({
       id: profile.id,
@@ -111,6 +121,7 @@ const AdminUsers = () => {
       created_at: profile.created_at,
       isAdmin: adminUserIds.has(profile.id),
       isAffiliate: affiliateUserIds.has(profile.id),
+      hasAccountingAccess: accountingAccessIds.has(profile.id),
     }));
 
     setUsers(usersWithRoles);
@@ -250,6 +261,55 @@ const AdminUsers = () => {
     }
   };
 
+  const toggleAccountingAccess = async (userId: string, currentlyHasAccess: boolean) => {
+    setTogglingUserId(userId);
+
+    try {
+      if (currentlyHasAccess) {
+        // Update to disable
+        const { error } = await supabase
+          .from("user_permissions")
+          .update({ is_enabled: false })
+          .eq("user_id", userId)
+          .eq("permission_key", "accounting");
+
+        if (error) throw error;
+      } else {
+        // Upsert to enable
+        const { error } = await supabase
+          .from("user_permissions")
+          .upsert({ 
+            user_id: userId, 
+            permission_key: "accounting", 
+            is_enabled: true 
+          }, { 
+            onConflict: "user_id,permission_key" 
+          });
+
+        if (error) throw error;
+      }
+
+      toast({
+        title: "Permission Updated",
+        description: currentlyHasAccess ? "Accounting access revoked." : "Accounting access granted.",
+      });
+
+      // Update local state
+      setUsers(prev => prev.map(u => {
+        if (u.id !== userId) return u;
+        return { ...u, hasAccountingAccess: !currentlyHasAccess };
+      }));
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update permission.",
+        variant: "destructive",
+      });
+    } finally {
+      setTogglingUserId(null);
+    }
+  };
+
   const deleteUser = async (user: UserProfile) => {
     setDeletingUserId(user.id);
 
@@ -326,6 +386,7 @@ const AdminUsers = () => {
                     <TableHead>Joined</TableHead>
                     <TableHead className="text-center">Admin</TableHead>
                     <TableHead className="text-center">Affiliate</TableHead>
+                    <TableHead className="text-center">Accounting</TableHead>
                     {canDelete && <TableHead className="text-center">Actions</TableHead>}
                   </TableRow>
                 </TableHeader>
@@ -374,6 +435,18 @@ const AdminUsers = () => {
                             <Switch
                               checked={user.isAffiliate}
                               onCheckedChange={() => toggleRole(user.id, "affiliate", user.isAffiliate)}
+                            />
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <div className="flex items-center justify-center">
+                          {togglingUserId === user.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Switch
+                              checked={user.hasAccountingAccess}
+                              onCheckedChange={() => toggleAccountingAccess(user.id, user.hasAccountingAccess)}
                             />
                           )}
                         </div>
