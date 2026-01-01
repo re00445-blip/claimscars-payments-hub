@@ -876,6 +876,9 @@ const AdminAccounts = () => {
                           <div>
                             <div className="font-medium">{account.profile?.full_name || "N/A"}</div>
                             <div className="text-sm text-muted-foreground">{account.profile?.email}</div>
+                            {account.profile?.phone && (
+                              <div className="text-sm text-muted-foreground">{account.profile.phone}</div>
+                            )}
                           </div>
                         </TableCell>
                         <TableCell>
