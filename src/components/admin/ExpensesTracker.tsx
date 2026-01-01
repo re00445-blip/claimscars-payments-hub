@@ -10,10 +10,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Plus, Pencil, Trash2, Save, X, Upload, Download } from "lucide-react";
 import { format, parseISO, startOfMonth } from "date-fns";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from "recharts";
-
-const PAYMENT_METHODS = ["Cash", "Check", "Credit Card", "Debit Card", "Wire Transfer", "Zelle", "Venmo", "PayPal", "Other"];
-const CLASSIFICATIONS = ["Operating Expense", "Cost of Goods Sold", "Payroll", "Marketing", "Utilities", "Insurance", "Office Supplies", "Vehicle Expense", "Professional Services", "Rent", "Interest", "Depreciation", "Food", "Gas", "Other"];
-const VENDORS = ["Apple", "Delta", "Amazon", "BOA", "WF", "Chase", "NF", "Other"];
+import { useDropdownOptions } from "@/hooks/useDropdownOptions";
+import { DropdownOptionsManager } from "./DropdownOptionsManager";
 
 interface Expense {
   id: string;
@@ -36,6 +34,7 @@ export const ExpensesTracker = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [importing, setImporting] = useState(false);
+  const { vendors, classifications, paymentMethods } = useDropdownOptions();
   
   const [formData, setFormData] = useState({
     amount: "",
@@ -557,6 +556,7 @@ export const ExpensesTracker = () => {
           <div className="flex gap-2 flex-wrap">
             {!showAddForm && (
               <>
+                <DropdownOptionsManager />
                 <Button variant="outline" onClick={downloadTemplate}>
                   <Download className="h-4 w-4 mr-2" />
                   Download Template
@@ -658,7 +658,7 @@ export const ExpensesTracker = () => {
                     <SelectValue placeholder="Select method" />
                   </SelectTrigger>
                   <SelectContent>
-                    {PAYMENT_METHODS.map((method) => (
+                    {paymentMethods.map((method) => (
                       <SelectItem key={method} value={method}>{method}</SelectItem>
                     ))}
                   </SelectContent>
@@ -674,7 +674,7 @@ export const ExpensesTracker = () => {
                     <SelectValue placeholder="Select classification" />
                   </SelectTrigger>
                   <SelectContent>
-                    {CLASSIFICATIONS.map((cls) => (
+                    {classifications.map((cls) => (
                       <SelectItem key={cls} value={cls}>{cls}</SelectItem>
                     ))}
                   </SelectContent>
@@ -690,7 +690,7 @@ export const ExpensesTracker = () => {
                     <SelectValue placeholder="Select vendor" />
                   </SelectTrigger>
                   <SelectContent>
-                    {VENDORS.map((v) => (
+                    {vendors.map((v) => (
                       <SelectItem key={v} value={v}>{v}</SelectItem>
                     ))}
                   </SelectContent>
@@ -808,7 +808,7 @@ export const ExpensesTracker = () => {
                               <SelectValue placeholder="Select" />
                             </SelectTrigger>
                             <SelectContent>
-                              {PAYMENT_METHODS.map((method) => (
+                              {paymentMethods.map((method) => (
                                 <SelectItem key={method} value={method}>{method}</SelectItem>
                               ))}
                             </SelectContent>
@@ -823,7 +823,7 @@ export const ExpensesTracker = () => {
                               <SelectValue placeholder="Select" />
                             </SelectTrigger>
                             <SelectContent>
-                              {CLASSIFICATIONS.map((cls) => (
+                              {classifications.map((cls) => (
                                 <SelectItem key={cls} value={cls}>{cls}</SelectItem>
                               ))}
                             </SelectContent>
@@ -838,7 +838,7 @@ export const ExpensesTracker = () => {
                               <SelectValue placeholder="Select" />
                             </SelectTrigger>
                             <SelectContent>
-                              {VENDORS.map((v) => (
+                              {vendors.map((v) => (
                                 <SelectItem key={v} value={v}>{v}</SelectItem>
                               ))}
                             </SelectContent>
