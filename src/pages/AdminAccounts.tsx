@@ -869,8 +869,10 @@ const AdminAccounts = () => {
 
         {/* Summary Statistics - excluding Jonathan Lowe (test account) */}
         {(() => {
+          const isTestAccount = (name: string | null | undefined) => 
+            name?.toLowerCase().includes("jonathan") && name?.toLowerCase().includes("low");
           const filteredAccounts = accounts.filter(
-            (account) => account.profile?.full_name?.toLowerCase() !== "jonathan lowe"
+            (account) => !isTestAccount(account.profile?.full_name)
           );
           const totalCustomers = filteredAccounts.length;
           const totalBalance = filteredAccounts.reduce((sum, acc) => sum + acc.current_balance, 0);
@@ -925,17 +927,24 @@ const AdminAccounts = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {accounts.map((account) => (
-                      <TableRow key={account.id}>
+                    {accounts.map((account) => {
+                      const isTest = account.profile?.full_name?.toLowerCase().includes("jonathan") && 
+                                     account.profile?.full_name?.toLowerCase().includes("low");
+                      return (
+                      <TableRow key={account.id} className={isTest ? "bg-muted/50" : ""}>
                         <TableCell>
                           <div>
-                            <div className="font-medium">{account.profile?.full_name || "N/A"}</div>
+                            <div className="font-medium flex items-center gap-2">
+                              {account.profile?.full_name || "N/A"}
+                              {isTest && <Badge variant="outline" className="text-xs">Test Account</Badge>}
+                            </div>
                             <div className="text-sm text-muted-foreground">{account.profile?.email}</div>
                             {account.profile?.phone && (
                               <div className="text-sm text-muted-foreground">{account.profile.phone}</div>
                             )}
                           </div>
                         </TableCell>
+                      );
                         <TableCell>
                           {account.vehicle 
                             ? `${account.vehicle.year} ${account.vehicle.make} ${account.vehicle.model}`
@@ -990,7 +999,8 @@ const AdminAccounts = () => {
                           </div>
                         </TableCell>
                       </TableRow>
-                    ))}
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </div>
