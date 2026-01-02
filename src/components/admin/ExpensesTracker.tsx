@@ -6,8 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Plus, Pencil, Trash2, Save, X, Upload, Download } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2, Save, X, Upload, Download, ChevronDown, ChevronUp } from "lucide-react";
 import { format, parseISO, startOfMonth } from "date-fns";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from "recharts";
 import { useDropdownOptions } from "@/hooks/useDropdownOptions";
@@ -34,6 +35,8 @@ export const ExpensesTracker = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [isChartsExpanded, setIsChartsExpanded] = useState(false);
+  const [isTableExpanded, setIsTableExpanded] = useState(false);
   const { vendors, classifications, paymentMethods } = useDropdownOptions();
   
   const [formData, setFormData] = useState({
@@ -440,113 +443,123 @@ export const ExpensesTracker = () => {
         </Card>
       </div>
 
-      {/* Charts Section */}
+      {/* Charts Section - Collapsible */}
       {expenses.length > 0 && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Monthly Bar Chart */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Revenue vs Expenses Over Time</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={monthlyData}>
-                  <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                  <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-                  <YAxis tick={{ fontSize: 12 }} tickFormatter={(value) => `$${value.toLocaleString()}`} />
-                  <Tooltip 
-                    formatter={(value: number) => [`$${value.toLocaleString("en-US", { minimumFractionDigits: 2 })}`, ""]}
-                    contentStyle={{ backgroundColor: "hsl(var(--background))", border: "1px solid hsl(var(--border))" }}
-                  />
-                  <Legend />
-                  <Bar dataKey="revenue" name="Revenue" fill="#22c55e" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="expenses" name="Expenses" fill="#ef4444" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="taxes" name="Taxes" fill="#f97316" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
+        <Collapsible open={isChartsExpanded} onOpenChange={setIsChartsExpanded}>
+          <CollapsibleTrigger asChild>
+            <Button variant="outline" className="w-full flex items-center justify-between py-3 mb-2">
+              <span className="font-medium">View Charts & Analytics</span>
+              {isChartsExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-4">
+              {/* Monthly Bar Chart */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Revenue vs Expenses Over Time</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={monthlyData}>
+                      <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                      <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+                      <YAxis tick={{ fontSize: 12 }} tickFormatter={(value) => `$${value.toLocaleString()}`} />
+                      <Tooltip 
+                        formatter={(value: number) => [`$${value.toLocaleString("en-US", { minimumFractionDigits: 2 })}`, ""]}
+                        contentStyle={{ backgroundColor: "hsl(var(--background))", border: "1px solid hsl(var(--border))" }}
+                      />
+                      <Legend />
+                      <Bar dataKey="revenue" name="Revenue" fill="#22c55e" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="expenses" name="Expenses" fill="#ef4444" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="taxes" name="Taxes" fill="#f97316" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
 
-          {/* Line Chart for Trends */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Monthly Trends</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={monthlyData}>
-                  <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                  <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-                  <YAxis tick={{ fontSize: 12 }} tickFormatter={(value) => `$${value.toLocaleString()}`} />
-                  <Tooltip 
-                    formatter={(value: number) => [`$${value.toLocaleString("en-US", { minimumFractionDigits: 2 })}`, ""]}
-                    contentStyle={{ backgroundColor: "hsl(var(--background))", border: "1px solid hsl(var(--border))" }}
-                  />
-                  <Legend />
-                  <Line type="monotone" dataKey="revenue" name="Revenue" stroke="#22c55e" strokeWidth={2} dot={{ fill: "#22c55e" }} />
-                  <Line type="monotone" dataKey="expenses" name="Expenses" stroke="#ef4444" strokeWidth={2} dot={{ fill: "#ef4444" }} />
-                  <Line type="monotone" dataKey="taxes" name="Taxes" stroke="#f97316" strokeWidth={2} dot={{ fill: "#f97316" }} />
-                </LineChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
+              {/* Line Chart for Trends */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Monthly Trends</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <LineChart data={monthlyData}>
+                      <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                      <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+                      <YAxis tick={{ fontSize: 12 }} tickFormatter={(value) => `$${value.toLocaleString()}`} />
+                      <Tooltip 
+                        formatter={(value: number) => [`$${value.toLocaleString("en-US", { minimumFractionDigits: 2 })}`, ""]}
+                        contentStyle={{ backgroundColor: "hsl(var(--background))", border: "1px solid hsl(var(--border))" }}
+                      />
+                      <Legend />
+                      <Line type="monotone" dataKey="revenue" name="Revenue" stroke="#22c55e" strokeWidth={2} dot={{ fill: "#22c55e" }} />
+                      <Line type="monotone" dataKey="expenses" name="Expenses" stroke="#ef4444" strokeWidth={2} dot={{ fill: "#ef4444" }} />
+                      <Line type="monotone" dataKey="taxes" name="Taxes" stroke="#f97316" strokeWidth={2} dot={{ fill: "#f97316" }} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
 
-          {/* Transaction Type Pie Chart */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Transaction Type Breakdown</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={250}>
-                <PieChart>
-                  <Pie
-                    data={typeData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={100}
-                    paddingAngle={2}
-                    dataKey="value"
-                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                  >
-                    {typeData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={(value: number) => [`$${value.toLocaleString("en-US", { minimumFractionDigits: 2 })}`, ""]} />
-                </PieChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
+              {/* Transaction Type Pie Chart */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Transaction Type Breakdown</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={250}>
+                    <PieChart>
+                      <Pie
+                        data={typeData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={100}
+                        paddingAngle={2}
+                        dataKey="value"
+                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                      >
+                        {typeData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(value: number) => [`$${value.toLocaleString("en-US", { minimumFractionDigits: 2 })}`, ""]} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
 
-          {/* Category Pie Chart */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Business vs Personal</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={250}>
-                <PieChart>
-                  <Pie
-                    data={categoryData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={100}
-                    paddingAngle={2}
-                    dataKey="value"
-                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                  >
-                    {categoryData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={(value: number) => [`$${value.toLocaleString("en-US", { minimumFractionDigits: 2 })}`, ""]} />
-                </PieChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </div>
+              {/* Category Pie Chart */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Business vs Personal</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={250}>
+                    <PieChart>
+                      <Pie
+                        data={categoryData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={100}
+                        paddingAngle={2}
+                        dataKey="value"
+                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                      >
+                        {categoryData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(value: number) => [`$${value.toLocaleString("en-US", { minimumFractionDigits: 2 })}`, ""]} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
       )}
 
       {/* Add Expense Card */}
@@ -718,9 +731,17 @@ export const ExpensesTracker = () => {
             </div>
           )}
 
-          {/* Expenses Table */}
-          <div className="rounded-md border">
-            <Table>
+          {/* Expenses Table - Collapsible */}
+          <Collapsible open={isTableExpanded} onOpenChange={setIsTableExpanded}>
+            <CollapsibleTrigger asChild>
+              <Button variant="ghost" className="w-full flex items-center justify-between py-2 mb-2">
+                <span className="text-sm font-medium">View Entries ({expenses.length} items)</span>
+                {isTableExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <div className="rounded-md border">
+                <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Date</TableHead>
@@ -917,8 +938,10 @@ export const ExpensesTracker = () => {
                   )
                 )}
               </TableBody>
-            </Table>
-          </div>
+              </Table>
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
         </CardContent>
       </Card>
     </div>

@@ -7,7 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, Receipt, Loader2 } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Plus, Pencil, Trash2, Receipt, Loader2, ChevronDown, ChevronUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface AccountPayable {
@@ -25,6 +26,7 @@ export const AccountsPayable = () => {
   const [accounts, setAccounts] = useState<AccountPayable[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [editingAccount, setEditingAccount] = useState<AccountPayable | null>(null);
   const [formData, setFormData] = useState({
     vendor_name: "",
@@ -207,7 +209,7 @@ export const AccountsPayable = () => {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-2 gap-4 mb-6">
+        <div className="grid grid-cols-2 gap-4 mb-4">
           <div className="bg-red-50 dark:bg-red-950 p-4 rounded-lg">
             <p className="text-sm text-muted-foreground">Outstanding</p>
             <p className="text-2xl font-bold text-red-600">${totalPending.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
@@ -218,56 +220,66 @@ export const AccountsPayable = () => {
           </div>
         </div>
 
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Vendor</TableHead>
-              <TableHead>Description</TableHead>
-              <TableHead>Amount</TableHead>
-              <TableHead>Due Date</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {accounts.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                  No accounts payable yet
-                </TableCell>
-              </TableRow>
-            ) : (
-              accounts.map((account) => (
-                <TableRow key={account.id}>
-                  <TableCell className="font-medium">{account.vendor_name}</TableCell>
-                  <TableCell>{account.description || "-"}</TableCell>
-                  <TableCell>${account.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}</TableCell>
-                  <TableCell>{account.due_date ? new Date(account.due_date + 'T00:00:00').toLocaleDateString() : "-"}</TableCell>
-                  <TableCell>
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${
-                      account.status === 'paid' ? 'bg-green-100 text-green-800' :
-                      account.status === 'overdue' ? 'bg-red-100 text-red-800' :
-                      account.status === 'cancelled' ? 'bg-gray-100 text-gray-800' :
-                      'bg-yellow-100 text-yellow-800'
-                    }`}>
-                      {account.status}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-2">
-                      <Button size="sm" variant="ghost" onClick={() => openEditDialog(account)}>
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button size="sm" variant="ghost" onClick={() => handleDelete(account.id)}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </div>
-                  </TableCell>
+        <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
+          <CollapsibleTrigger asChild>
+            <Button variant="ghost" className="w-full flex items-center justify-between py-2 mb-2">
+              <span className="text-sm font-medium">View Details ({accounts.length} items)</span>
+              {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Vendor</TableHead>
+                  <TableHead>Description</TableHead>
+                  <TableHead>Amount</TableHead>
+                  <TableHead>Due Date</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+              </TableHeader>
+              <TableBody>
+                {accounts.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                      No accounts payable yet
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  accounts.map((account) => (
+                    <TableRow key={account.id}>
+                      <TableCell className="font-medium">{account.vendor_name}</TableCell>
+                      <TableCell>{account.description || "-"}</TableCell>
+                      <TableCell>${account.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}</TableCell>
+                      <TableCell>{account.due_date ? new Date(account.due_date + 'T00:00:00').toLocaleDateString() : "-"}</TableCell>
+                      <TableCell>
+                        <span className={`px-2 py-1 rounded text-xs font-medium ${
+                          account.status === 'paid' ? 'bg-green-100 text-green-800' :
+                          account.status === 'overdue' ? 'bg-red-100 text-red-800' :
+                          account.status === 'cancelled' ? 'bg-gray-100 text-gray-800' :
+                          'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {account.status}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-2">
+                          <Button size="sm" variant="ghost" onClick={() => openEditDialog(account)}>
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={() => handleDelete(account.id)}>
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </CollapsibleContent>
+        </Collapsible>
       </CardContent>
     </Card>
   );
