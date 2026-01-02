@@ -942,9 +942,8 @@ const AdminAccounts = () => {
                             {account.profile?.phone && (
                               <div className="text-sm text-muted-foreground">{account.profile.phone}</div>
                             )}
-                          </div>
+                        </div>
                         </TableCell>
-                      );
                         <TableCell>
                           {account.vehicle 
                             ? `${account.vehicle.year} ${account.vehicle.make} ${account.vehicle.model}`
