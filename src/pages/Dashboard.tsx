@@ -22,6 +22,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ClientProfileCard } from "@/components/ClientProfileCard";
 import { RaceTrackProgress } from "@/components/RaceTrackProgress";
+import { AccountDocuments } from "@/components/AccountDocuments";
 
 interface Affiliate {
   id: string;
@@ -433,9 +434,9 @@ const Dashboard = () => {
 
         {/* Customer BHPH Account Section - only show for non-admins with accounts */}
         {!isAdmin && !isAffiliate && customerAccount && (
-          <Card className="mb-8 border-2 border-primary bg-gradient-to-br from-primary/5 to-accent/5">
-            <CardHeader className="pb-4">
-              <div className="flex items-start justify-between gap-4">
+          <>
+            <Card className="mb-8 border-2 border-primary bg-gradient-to-br from-primary/5 to-accent/5">
+              <CardHeader className="pb-4">
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center">
                     <DollarSign className="h-6 w-6 text-primary-foreground" />
@@ -452,52 +453,51 @@ const Dashboard = () => {
                     <CardDescription>{t("dashboard.bhphFinancing")}</CardDescription>
                   </div>
                 </div>
+              </CardHeader>
+              <CardContent>
+                <div className="grid md:grid-cols-3 gap-6 mb-6">
+                  <div className="bg-background rounded-lg p-4 border">
+                    <p className="text-sm text-muted-foreground mb-1">{t("dashboard.currentBalance")}</p>
+                    <p className="text-3xl font-bold text-primary">
+                      ${customerAccount.current_balance?.toLocaleString('en-US', { minimumFractionDigits: 2 }) || '0.00'}
+                    </p>
+                  </div>
+                  <div className="bg-background rounded-lg p-4 border">
+                    <p className="text-sm text-muted-foreground mb-1">{t("dashboard.monthlyPayment")}</p>
+                    <p className="text-3xl font-bold">
+                      ${customerAccount.payment_amount?.toLocaleString('en-US', { minimumFractionDigits: 2 }) || '0.00'}
+                    </p>
+                  </div>
+                  <div className="bg-background rounded-lg p-4 border">
+                    <p className="text-sm text-muted-foreground mb-1">{t("dashboard.nextPaymentDue")}</p>
+                    <p className="text-2xl font-bold">
+                      {customerAccount.next_payment_date 
+                        ? new Date(customerAccount.next_payment_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                        : 'N/A'}
+                    </p>
+                  </div>
+                </div>
 
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => navigate("/payments?tab=documents")}
-                  className="shrink-0"
+                <Button 
+                  size="lg" 
+                  className="w-full bg-primary hover:bg-primary/90 text-lg py-6"
+                  onClick={() => navigate("/payments")}
                 >
-                  <FileText className="mr-2 h-4 w-4" />
-                  {language === "es" ? "Documentos" : "Documents"}
+                  <CreditCard className="mr-2 h-5 w-5" />
+                  {t("dashboard.makePayment")}
                 </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="grid md:grid-cols-3 gap-6 mb-6">
-                <div className="bg-background rounded-lg p-4 border">
-                  <p className="text-sm text-muted-foreground mb-1">{t("dashboard.currentBalance")}</p>
-                  <p className="text-3xl font-bold text-primary">
-                    ${customerAccount.current_balance?.toLocaleString('en-US', { minimumFractionDigits: 2 }) || '0.00'}
-                  </p>
-                </div>
-                <div className="bg-background rounded-lg p-4 border">
-                  <p className="text-sm text-muted-foreground mb-1">{t("dashboard.monthlyPayment")}</p>
-                  <p className="text-3xl font-bold">
-                    ${customerAccount.payment_amount?.toLocaleString('en-US', { minimumFractionDigits: 2 }) || '0.00'}
-                  </p>
-                </div>
-                <div className="bg-background rounded-lg p-4 border">
-                  <p className="text-sm text-muted-foreground mb-1">{t("dashboard.nextPaymentDue")}</p>
-                  <p className="text-2xl font-bold">
-                    {customerAccount.next_payment_date 
-                      ? new Date(customerAccount.next_payment_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-                      : 'N/A'}
-                  </p>
-                </div>
-              </div>
+              </CardContent>
+            </Card>
 
-              <Button 
-                size="lg" 
-                className="w-full bg-primary hover:bg-primary/90 text-lg py-6"
-                onClick={() => navigate("/payments")}
-              >
-                <CreditCard className="mr-2 h-5 w-5" />
-                {t("dashboard.makePayment")}
-              </Button>
-            </CardContent>
-          </Card>
+            {/* Account Documents Section */}
+            <div className="mb-8">
+              <AccountDocuments 
+                accountId={customerAccount.id} 
+                userRole="customer" 
+                userId={user?.id || ""} 
+              />
+            </div>
+          </>
         )}
 
         {/* Affiliate Dashboard Section */}
