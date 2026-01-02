@@ -31,8 +31,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Plus, ArrowLeft, Edit, Trash2, Mail } from "lucide-react";
+import { Loader2, Plus, ArrowLeft, Edit, Trash2, Mail, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { AccountDetailView } from "@/components/admin/AccountDetailView";
 
 interface CustomerAccount {
   id: string;
@@ -81,6 +82,15 @@ const AdminAccounts = () => {
   const [emailChangeDialogOpen, setEmailChangeDialogOpen] = useState(false);
   const [emailChangeAccount, setEmailChangeAccount] = useState<CustomerAccount | null>(null);
   const [newEmail, setNewEmail] = useState("");
+  
+  // Account detail view state
+  const [detailViewOpen, setDetailViewOpen] = useState(false);
+  const [selectedAccount, setSelectedAccount] = useState<CustomerAccount | null>(null);
+
+  const handleViewAccount = (account: CustomerAccount) => {
+    setSelectedAccount(account);
+    setDetailViewOpen(true);
+  };
   const [changingEmail, setChangingEmail] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -929,6 +939,9 @@ const AdminAccounts = () => {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
+                            <Button variant="ghost" size="sm" onClick={() => handleViewAccount(account)} title="View Account">
+                              <Eye className="h-4 w-4" />
+                            </Button>
                             {isRamon && (
                               <Button variant="ghost" size="sm" onClick={() => handleOpenEmailChange(account)} title="Change Email">
                                 <Mail className="h-4 w-4" />
@@ -987,6 +1000,16 @@ const AdminAccounts = () => {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Account Detail View Dialog */}
+        {selectedAccount && (
+          <AccountDetailView
+            account={selectedAccount}
+            open={detailViewOpen}
+            onOpenChange={setDetailViewOpen}
+            onPaymentRecorded={fetchData}
+          />
+        )}
       </div>
     </div>
   );
