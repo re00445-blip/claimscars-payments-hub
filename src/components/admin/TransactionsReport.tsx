@@ -349,7 +349,8 @@ export const TransactionsReport = () => {
                         <Badge variant="outline">{payment.payment_method || 'Cash'}</Badge>
                       </TableCell>
                       <TableCell>
-                        {payment.created_by && payment.account_user_id && payment.created_by === payment.account_user_id ? (
+                        {payment.payment_method?.toLowerCase().includes('online') || 
+                         (payment.created_by && payment.account_user_id && payment.created_by === payment.account_user_id) ? (
                           <Badge variant="secondary" className="bg-blue-100 text-blue-800">Portal</Badge>
                         ) : (
                           <Badge variant="outline">Manual</Badge>
