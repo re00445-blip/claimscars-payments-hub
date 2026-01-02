@@ -10,6 +10,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { YearEndStatementHelper } from "@/components/admin/YearEndStatementHelper";
 import { ExpensesTracker } from "@/components/admin/ExpensesTracker";
 import { DigitalReceipts } from "@/components/admin/DigitalReceipts";
+import { AccountsReceivable } from "@/components/admin/AccountsReceivable";
+import { AccountsPayable } from "@/components/admin/AccountsPayable";
 import { useToast } from "@/hooks/use-toast";
 import { TransactionsReport } from "@/components/admin/TransactionsReport";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -888,6 +890,10 @@ const Dashboard = () => {
 
             <TabsContent value="accounting" className="space-y-6">
               <div className="grid gap-6">
+                <div className="grid md:grid-cols-2 gap-6">
+                  <AccountsReceivable />
+                  <AccountsPayable />
+                </div>
                 <div>
                   <h2 className="text-xl font-semibold mb-4">Revenue Summary</h2>
                   <YearEndStatementHelper />
