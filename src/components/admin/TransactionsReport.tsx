@@ -33,6 +33,7 @@ interface Payment {
   late_fee_paid: number | null;
   notes: string | null;
   payment_method: string | null;
+  created_by: string | null;
   profile?: {
     full_name: string | null;
     email: string;
@@ -42,6 +43,7 @@ interface Payment {
     make: string;
     model: string;
   };
+  account_user_id?: string;
 }
 
 type TimeFilter = "day" | "week" | "month";
@@ -119,7 +121,7 @@ export const TransactionsReport = () => {
             vehicle = vehicleData;
           }
 
-          return { ...payment, profile, vehicle };
+          return { ...payment, profile, vehicle, account_user_id: account?.user_id };
         })
       );
       setPayments(paymentsWithDetails);
@@ -321,6 +323,7 @@ export const TransactionsReport = () => {
                     <TableHead>Vehicle</TableHead>
                     <TableHead className="text-right">Amount</TableHead>
                     <TableHead>Method</TableHead>
+                    <TableHead>Source</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -344,6 +347,13 @@ export const TransactionsReport = () => {
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline">{payment.payment_method || 'Cash'}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        {payment.created_by && payment.account_user_id && payment.created_by === payment.account_user_id ? (
+                          <Badge variant="secondary" className="bg-blue-100 text-blue-800">Portal</Badge>
+                        ) : (
+                          <Badge variant="outline">Manual</Badge>
+                        )}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
