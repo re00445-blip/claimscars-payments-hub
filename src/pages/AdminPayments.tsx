@@ -533,6 +533,7 @@ const AdminPayments = () => {
                         <SelectItem value="zelle">Zelle</SelectItem>
                         <SelectItem value="cashapp">Cash App</SelectItem>
                         <SelectItem value="venmo">Venmo</SelectItem>
+                        <SelectItem value="apple_pay">Apple Pay</SelectItem>
                         <SelectItem value="money_order">Money Order</SelectItem>
                         <SelectItem value="other">Other</SelectItem>
                       </SelectContent>
