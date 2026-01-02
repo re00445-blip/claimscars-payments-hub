@@ -41,6 +41,11 @@ interface CustomerAccount {
   principal_amount: number;
   current_balance: number;
   interest_rate: number;
+  /**
+   * "percentage" => APR (%), "flat_fee" => flat monthly fee ($/mo)
+   * Stored on the account so we can render correctly in the table.
+   */
+  interest_rate_type?: "percentage" | "flat_fee" | string | null;
   payment_amount: number;
   next_payment_date: string;
   late_fee_amount: number | null;
@@ -201,17 +206,23 @@ const AdminAccounts = () => {
 
   const handleEdit = (account: CustomerAccount) => {
     setEditingAccount(account);
-    
-    // Determine interest type based on the stored interest_rate value
-    // If it's a whole number >= 10, it's likely a flat fee dollar amount
-    // If it's a small number (< 30), it's likely a percentage
-    // We also check if the payment calculation matches flat fee pattern
-    const storedRate = account.interest_rate;
-    const principal = account.principal_amount;
-    const months = 36;
-    const expectedFlatFeePayment = (principal / months) + storedRate;
-    const isFlatFee = storedRate >= 10 && Math.abs(account.payment_amount - expectedFlatFeePayment) < 1;
-    
+
+    const storedRate = Number(account.interest_rate) || 0;
+    const storedType =
+      account.interest_rate_type === "flat_fee" || account.interest_rate_type === "percentage"
+        ? (account.interest_rate_type as "flat_fee" | "percentage")
+        : null;
+
+    // Prefer the explicit stored type; fall back to legacy heuristic if missing.
+    const isFlatFee = storedType
+      ? storedType === "flat_fee"
+      : (() => {
+          const principal = account.principal_amount;
+          const months = 36;
+          const expectedFlatFeePayment = principal / months + storedRate;
+          return storedRate >= 10 && Math.abs(account.payment_amount - expectedFlatFeePayment) < 1;
+        })();
+
     setFormData({
       customer_name: account.profile?.full_name || "",
       customer_email: account.profile?.email || "",
@@ -225,8 +236,8 @@ const AdminAccounts = () => {
       down_payment: 0,
       flat_fee_amount: isFlatFee ? storedRate : 0,
       current_balance: account.current_balance,
-      interest_rate: isFlatFee ? 18 : storedRate, // Default percentage if flat fee
-      interest_rate_type: isFlatFee ? "flat_fee" : (storedRate === 0 ? "flat_fee" : "percentage"),
+      interest_rate: isFlatFee ? 18 : storedRate,
+      interest_rate_type: isFlatFee ? "flat_fee" : "percentage",
       payment_amount: account.payment_amount,
       next_payment_date: account.next_payment_date,
       late_fee_amount: account.late_fee_amount || 25,
@@ -297,6 +308,7 @@ const AdminAccounts = () => {
               current_balance: formData.current_balance,
               // For flat fee, store the flat fee amount in interest_rate field
               interest_rate: formData.interest_rate_type === "flat_fee" ? formData.flat_fee_amount : formData.interest_rate,
+              interest_rate_type: formData.interest_rate_type,
               payment_amount: formData.payment_amount,
               next_payment_date: formData.next_payment_date,
               late_fee_amount: formData.late_fee_amount,
@@ -400,6 +412,7 @@ const AdminAccounts = () => {
           current_balance: formData.current_balance,
           // For flat fee, store the flat fee amount in interest_rate field
           interest_rate: formData.interest_rate_type === "flat_fee" ? formData.flat_fee_amount : formData.interest_rate,
+          interest_rate_type: formData.interest_rate_type,
           payment_amount: formData.payment_amount,
           next_payment_date: formData.next_payment_date,
           late_fee_amount: formData.late_fee_amount,
@@ -888,14 +901,23 @@ const AdminAccounts = () => {
                         <TableCell>{formatCurrency(account.current_balance)}</TableCell>
                         <TableCell>
                           {(() => {
-                            const storedRate = account.interest_rate;
-                            const principal = account.principal_amount;
-                            const months = 36;
-                            const expectedFlatFeePayment = (principal / months) + storedRate;
-                            const isFlatFee = storedRate >= 10 && Math.abs(account.payment_amount - expectedFlatFeePayment) < 1;
-                            return isFlatFee 
-                              ? `${formatCurrency(storedRate)}/mo` 
-                              : `${storedRate}%`;
+                            const storedRate = Number(account.interest_rate) || 0;
+                            const type = account.interest_rate_type;
+
+                            const isFlatFee =
+                              type === "flat_fee"
+                                ? true
+                                : type === "percentage"
+                                  ? false
+                                  : (() => {
+                                      // Legacy fallback (in case older records are missing the field)
+                                      const principal = account.principal_amount;
+                                      const months = 36;
+                                      const expectedFlatFeePayment = principal / months + storedRate;
+                                      return storedRate >= 10 && Math.abs(account.payment_amount - expectedFlatFeePayment) < 1;
+                                    })();
+
+                            return isFlatFee ? `${formatCurrency(storedRate)}/mo` : `${storedRate}%`;
                           })()}
                         </TableCell>
                         <TableCell>{formatCurrency(account.payment_amount)}</TableCell>

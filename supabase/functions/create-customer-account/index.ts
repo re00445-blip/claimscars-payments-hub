@@ -61,12 +61,16 @@ serve(async (req) => {
       principal_amount,
       current_balance,
       interest_rate,
+      interest_rate_type,
       payment_amount,
       next_payment_date,
       late_fee_amount,
       status,
       payment_frequency
     } = body;
+
+    const normalizedInterestRateType =
+      interest_rate_type === "flat_fee" ? "flat_fee" : "percentage";
 
     // Generate email if not provided (use phone-based placeholder)
     const email = customer_email || `${customer_phone.replace(/\D/g, '')}@customer.local`;
@@ -189,6 +193,7 @@ serve(async (req) => {
         principal_amount,
         current_balance,
         interest_rate,
+        interest_rate_type: normalizedInterestRateType,
         payment_amount,
         next_payment_date,
         late_fee_amount,
