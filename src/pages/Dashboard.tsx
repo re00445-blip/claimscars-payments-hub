@@ -61,7 +61,7 @@ interface ClaimNote {
 const Dashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
@@ -435,21 +435,33 @@ const Dashboard = () => {
         {!isAdmin && !isAffiliate && customerAccount && (
           <Card className="mb-8 border-2 border-primary bg-gradient-to-br from-primary/5 to-accent/5">
             <CardHeader className="pb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center">
-                  <DollarSign className="h-6 w-6 text-primary-foreground" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <CardTitle className="text-2xl text-primary">{t("dashboard.yourBhphAccount")}</CardTitle>
-                    {customerAccount.vehicles && (
-                      <span className="text-xl font-semibold text-muted-foreground">
-                        — {customerAccount.vehicles.year} {customerAccount.vehicles.make} {customerAccount.vehicles.model}
-                      </span>
-                    )}
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center">
+                    <DollarSign className="h-6 w-6 text-primary-foreground" />
                   </div>
-                  <CardDescription>{t("dashboard.bhphFinancing")}</CardDescription>
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <CardTitle className="text-2xl text-primary">{t("dashboard.yourBhphAccount")}</CardTitle>
+                      {customerAccount.vehicles && (
+                        <span className="text-xl font-semibold text-muted-foreground">
+                          — {customerAccount.vehicles.year} {customerAccount.vehicles.make} {customerAccount.vehicles.model}
+                        </span>
+                      )}
+                    </div>
+                    <CardDescription>{t("dashboard.bhphFinancing")}</CardDescription>
+                  </div>
                 </div>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate("/payments?tab=documents")}
+                  className="shrink-0"
+                >
+                  <FileText className="mr-2 h-4 w-4" />
+                  {language === "es" ? "Documentos" : "Documents"}
+                </Button>
               </div>
             </CardHeader>
             <CardContent>
