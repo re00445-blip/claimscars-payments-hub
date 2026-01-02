@@ -134,6 +134,7 @@ export type Database = {
           current_balance: number
           id: string
           interest_rate: number
+          interest_rate_type: string
           late_fee_amount: number | null
           next_payment_date: string
           payment_amount: number
@@ -149,6 +150,7 @@ export type Database = {
           current_balance: number
           id?: string
           interest_rate: number
+          interest_rate_type?: string
           late_fee_amount?: number | null
           next_payment_date: string
           payment_amount: number
@@ -164,6 +166,7 @@ export type Database = {
           current_balance?: number
           id?: string
           interest_rate?: number
+          interest_rate_type?: string
           late_fee_amount?: number | null
           next_payment_date?: string
           payment_amount?: number
