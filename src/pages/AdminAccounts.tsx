@@ -70,7 +70,7 @@ const AdminAccounts = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState<CustomerAccount | null>(null);
   const [saving, setSaving] = useState(false);
-  const [interestViewType, setInterestViewType] = useState<"percentage" | "dollar">("percentage");
+  
   
   // Email change dialog state
   const [emailChangeDialogOpen, setEmailChangeDialogOpen] = useState(false);
@@ -867,15 +867,7 @@ const AdminAccounts = () => {
                       <TableHead>Customer</TableHead>
                       <TableHead>Vehicle</TableHead>
                       <TableHead>Balance</TableHead>
-                      <TableHead>
-                        <button 
-                          onClick={() => setInterestViewType(prev => prev === "percentage" ? "dollar" : "percentage")}
-                          className="flex items-center gap-1 hover:text-primary transition-colors"
-                        >
-                          Interest ({interestViewType === "percentage" ? "%" : "$/mo"})
-                          <span className="text-xs text-muted-foreground">↔</span>
-                        </button>
-                      </TableHead>
+                      <TableHead>Rate / Flat Fee</TableHead>
                       <TableHead>Payment</TableHead>
                       <TableHead>Next Due</TableHead>
                       <TableHead>Status</TableHead>
@@ -902,10 +894,16 @@ const AdminAccounts = () => {
                         </TableCell>
                         <TableCell>{formatCurrency(account.current_balance)}</TableCell>
                         <TableCell>
-                          {interestViewType === "percentage" 
-                            ? `${account.interest_rate}%`
-                            : formatCurrency(account.interest_rate)
-                          }
+                          {(() => {
+                            const storedRate = account.interest_rate;
+                            const principal = account.principal_amount;
+                            const months = 36;
+                            const expectedFlatFeePayment = (principal / months) + storedRate;
+                            const isFlatFee = storedRate >= 10 && Math.abs(account.payment_amount - expectedFlatFeePayment) < 1;
+                            return isFlatFee 
+                              ? `${formatCurrency(storedRate)}/mo` 
+                              : `${storedRate}%`;
+                          })()}
                         </TableCell>
                         <TableCell>{formatCurrency(account.payment_amount)}</TableCell>
                         <TableCell>{new Date(account.next_payment_date + 'T00:00:00').toLocaleDateString()}</TableCell>
