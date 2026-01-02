@@ -28,7 +28,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Plus, ArrowLeft, DollarSign, Printer, CreditCard, Calendar, TrendingDown } from "lucide-react";
+import { Loader2, Plus, ArrowLeft, DollarSign, Printer, CreditCard, Calendar, TrendingDown, Gift, Percent, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { RaceTrackProgress } from "@/components/RaceTrackProgress";
 
@@ -45,6 +45,8 @@ interface CustomerAccount {
   late_fee_amount: number | null;
   status: string | null;
   payment_frequency: string | null;
+  waived_late_fees?: number | null;
+  waived_interest?: number | null;
   profile?: {
     full_name: string | null;
     email: string;
@@ -85,8 +87,15 @@ export const AccountDetailView = ({ account, open, onOpenChange, onPaymentRecord
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loadingPayments, setLoadingPayments] = useState(true);
   const [showPaymentForm, setShowPaymentForm] = useState(false);
+  const [showWaiverForm, setShowWaiverForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [totalPaid, setTotalPaid] = useState(0);
+  
+  const [waiverForm, setWaiverForm] = useState({
+    waive_late_fees: 0,
+    waive_interest: 0,
+    notes: "",
+  });
 
   const [paymentForm, setPaymentForm] = useState({
     amount: 0,
@@ -168,6 +177,48 @@ export const AccountDetailView = ({ account, open, onOpenChange, onPaymentRecord
   const handleOpenPaymentForm = () => {
     resetPaymentForm();
     setShowPaymentForm(true);
+  };
+
+  const handleOpenWaiverForm = () => {
+    setWaiverForm({
+      waive_late_fees: calculateLateFees(),
+      waive_interest: 0,
+      notes: "",
+    });
+    setShowWaiverForm(true);
+  };
+
+  const handleSubmitWaiver = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+
+    const currentWaivedLateFees = (account as any).waived_late_fees || 0;
+    const currentWaivedInterest = (account as any).waived_interest || 0;
+
+    const { error } = await supabase
+      .from("customer_accounts")
+      .update({
+        waived_late_fees: currentWaivedLateFees + waiverForm.waive_late_fees,
+        waived_interest: currentWaivedInterest + waiverForm.waive_interest,
+      })
+      .eq("id", account.id);
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to save waiver",
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Success",
+        description: `Waived ${formatCurrency(waiverForm.waive_late_fees)} in late fees and ${formatCurrency(waiverForm.waive_interest)} in interest`,
+      });
+      setShowWaiverForm(false);
+      onPaymentRecorded(); // Refresh parent data
+    }
+
+    setSaving(false);
   };
 
   const generateInvoiceNumber = (paymentId: string, date: string) => {
@@ -488,16 +539,125 @@ export const AccountDetailView = ({ account, open, onOpenChange, onPaymentRecord
                   <span>Late Fee: {formatCurrency(account.late_fee_amount || 25)}/day</span>
                 </div>
               </div>
+
+              {/* Waiver Summary Display */}
+              {((account.waived_late_fees || 0) > 0 || (account.waived_interest || 0) > 0) && (
+                <div className="mt-4 p-3 rounded-lg bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800">
+                  <div className="flex items-center gap-2 text-green-700 dark:text-green-400 font-medium mb-2">
+                    <Gift className="h-4 w-4" />
+                    <span>Waivers Applied</span>
+                  </div>
+                  <div className="grid md:grid-cols-2 gap-2 text-sm">
+                    {(account.waived_late_fees || 0) > 0 && (
+                      <div className="text-green-600 dark:text-green-400">
+                        Late Fees Waived: {formatCurrency(account.waived_late_fees || 0)}
+                      </div>
+                    )}
+                    {(account.waived_interest || 0) > 0 && (
+                      <div className="text-green-600 dark:text-green-400">
+                        Interest Waived: {formatCurrency(account.waived_interest || 0)}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Current Late Fees Display */}
+              {calculateLateFees() > 0 && (
+                <div className="mt-4 p-3 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-red-700 dark:text-red-400 font-medium">
+                      <AlertCircle className="h-4 w-4" />
+                      <span>Current Late Fees: {formatCurrency(calculateLateFees())}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
-          {/* Record Payment Button */}
-          <div className="flex justify-end">
+          {/* Action Buttons */}
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={handleOpenWaiverForm}>
+              <Gift className="h-4 w-4 mr-2" />
+              Waive Fees
+            </Button>
             <Button onClick={handleOpenPaymentForm}>
               <Plus className="h-4 w-4 mr-2" />
               Record Payment
             </Button>
           </div>
+
+          {/* Waiver Form */}
+          {showWaiverForm && (
+            <Card className="border-green-500/50 bg-green-50/50 dark:bg-green-950/20">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Gift className="h-5 w-5 text-green-600" />
+                  Waive Fees
+                </CardTitle>
+                <CardDescription>Waive late fees and/or interest for this account</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleSubmitWaiver} className="space-y-4">
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="waive_late_fees">Waive Late Fees ($)</Label>
+                      <Input
+                        id="waive_late_fees"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={waiverForm.waive_late_fees}
+                        onChange={(e) => setWaiverForm(prev => ({ ...prev, waive_late_fees: parseFloat(e.target.value) || 0 }))}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Current late fees: {formatCurrency(calculateLateFees())}
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="waive_interest">Waive Interest ($)</Label>
+                      <Input
+                        id="waive_interest"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={waiverForm.waive_interest}
+                        onChange={(e) => setWaiverForm(prev => ({ ...prev, waive_interest: parseFloat(e.target.value) || 0 }))}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Monthly interest: {account.interest_rate_type === "flat_fee" 
+                          ? formatCurrency(account.interest_rate)
+                          : formatCurrency((account.current_balance * (account.interest_rate / 100)) / 12)
+                        }
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="waiver_notes">Notes (Optional)</Label>
+                    <Textarea
+                      id="waiver_notes"
+                      value={waiverForm.notes}
+                      onChange={(e) => setWaiverForm(prev => ({ ...prev, notes: e.target.value }))}
+                      placeholder="Reason for waiver..."
+                      rows={2}
+                    />
+                  </div>
+
+                  <div className="flex justify-end gap-2">
+                    <Button type="button" variant="outline" onClick={() => setShowWaiverForm(false)}>
+                      Cancel
+                    </Button>
+                    <Button type="submit" disabled={saving} className="bg-green-600 hover:bg-green-700">
+                      {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                      Apply Waiver
+                    </Button>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Payment Form */}
           {showPaymentForm && (

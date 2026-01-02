@@ -144,6 +144,8 @@ export type Database = {
           updated_at: string | null
           user_id: string
           vehicle_id: string | null
+          waived_interest: number | null
+          waived_late_fees: number | null
         }
         Insert: {
           created_at?: string | null
@@ -160,6 +162,8 @@ export type Database = {
           updated_at?: string | null
           user_id: string
           vehicle_id?: string | null
+          waived_interest?: number | null
+          waived_late_fees?: number | null
         }
         Update: {
           created_at?: string | null
@@ -176,6 +180,8 @@ export type Database = {
           updated_at?: string | null
           user_id?: string
           vehicle_id?: string | null
+          waived_interest?: number | null
+          waived_late_fees?: number | null
         }
         Relationships: [
           {
