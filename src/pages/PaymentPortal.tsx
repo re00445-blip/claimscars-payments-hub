@@ -342,6 +342,12 @@ const PaymentPortal = () => {
 
   const paymentStatus = getPaymentStatus();
 
+  const initialTab = (() => {
+    const tab = searchParams.get("tab");
+    if (tab === "overview" || tab === "documents" || tab === "history" || tab === "calculator") return tab;
+    return "overview";
+  })();
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -365,7 +371,7 @@ const PaymentPortal = () => {
             </CardContent>
           </Card>
         ) : (
-          <Tabs defaultValue="overview" className="space-y-6">
+          <Tabs defaultValue={initialTab} className="space-y-6">
             <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
               <TabsTrigger value="overview" className="gap-2">
                 <DollarSign className="h-4 w-4" />
