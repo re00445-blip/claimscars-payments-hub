@@ -119,7 +119,22 @@ export const AccountDetailView = ({ account, open, onOpenChange, onPaymentRecord
     setLoadingPayments(false);
   };
 
+  const calculateLateFees = () => {
+    const today = new Date();
+    const nextPaymentDue = new Date(account.next_payment_date + 'T00:00:00');
+    const dailyLateFee = account.late_fee_amount || 20; // Default $20/day
+    
+    if (today > nextPaymentDue) {
+      const daysLate = Math.floor((today.getTime() - nextPaymentDue.getTime()) / (1000 * 60 * 60 * 24));
+      return daysLate * dailyLateFee;
+    }
+    return 0;
+  };
+
   const resetPaymentForm = () => {
+    // Calculate late fees first
+    const lateFees = calculateLateFees();
+    
     // Auto-calculate suggested payment breakdown based on interest type
     let suggestedPrincipal = 0;
     let suggestedInterest = 0;
@@ -135,13 +150,18 @@ export const AccountDetailView = ({ account, open, onOpenChange, onPaymentRecord
       suggestedPrincipal = account.payment_amount - suggestedInterest;
     }
 
+    // Adjust for late fees - they come off principal if included in same payment amount
+    if (lateFees > 0) {
+      suggestedPrincipal = Math.max(0, suggestedPrincipal - lateFees);
+    }
+
     setPaymentForm({
-      amount: account.payment_amount,
+      amount: account.payment_amount + lateFees,
       principal_paid: Math.max(0, Math.round(suggestedPrincipal * 100) / 100),
       interest_paid: suggestedInterest,
-      late_fee_paid: 0,
+      late_fee_paid: lateFees,
       payment_method: "cash",
-      notes: "",
+      notes: lateFees > 0 ? `Includes $${lateFees.toFixed(2)} in late fees` : "",
     });
   };
 
@@ -189,14 +209,32 @@ export const AccountDetailView = ({ account, open, onOpenChange, onPaymentRecord
     } else {
       // Update account balance
       const newBalance = account.current_balance - paymentForm.principal_paid;
-      const nextPaymentDate = new Date(account.next_payment_date);
-      nextPaymentDate.setMonth(nextPaymentDate.getMonth() + 1);
+      
+      // Calculate next payment date based on payment frequency
+      const calculateNextPaymentDate = (currentDate: string, frequency: string | null): string => {
+        const date = new Date(currentDate + 'T00:00:00');
+        switch (frequency) {
+          case 'weekly':
+            date.setDate(date.getDate() + 7);
+            break;
+          case 'bi-weekly':
+            date.setDate(date.getDate() + 14);
+            break;
+          case 'monthly':
+          default:
+            date.setMonth(date.getMonth() + 1);
+            break;
+        }
+        return date.toISOString().split('T')[0];
+      };
+
+      const nextPaymentDate = calculateNextPaymentDate(account.next_payment_date, account.payment_frequency);
 
       await supabase
         .from("customer_accounts")
         .update({
           current_balance: Math.max(0, newBalance),
-          next_payment_date: nextPaymentDate.toISOString().split('T')[0],
+          next_payment_date: nextPaymentDate,
         })
         .eq("id", account.id);
 
