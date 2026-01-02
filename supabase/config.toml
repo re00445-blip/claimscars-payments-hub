@@ -53,3 +53,6 @@ verify_jwt = true
 
 [functions.generate-email-content]
 verify_jwt = true
+
+[functions.send-custom-email]
+verify_jwt = false
