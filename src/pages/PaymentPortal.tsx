@@ -11,11 +11,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Calculator, CreditCard, History, DollarSign, Calendar, AlertCircle, CheckCircle, Gift } from "lucide-react";
+import { Calculator, CreditCard, History, DollarSign, Calendar, AlertCircle, CheckCircle, Gift, FileText } from "lucide-react";
 import { toast } from "sonner";
 import type { User, Session } from "@supabase/supabase-js";
 import { PaymentMethodsSection } from "@/components/PaymentMethodsSection";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { AccountDocuments } from "@/components/AccountDocuments";
 
 interface CustomerAccount {
   id: string;
@@ -365,10 +366,14 @@ const PaymentPortal = () => {
           </Card>
         ) : (
           <Tabs defaultValue="overview" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:inline-grid">
+            <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
               <TabsTrigger value="overview" className="gap-2">
                 <DollarSign className="h-4 w-4" />
                 {t("portal.overview")}
+              </TabsTrigger>
+              <TabsTrigger value="documents" className="gap-2">
+                <FileText className="h-4 w-4" />
+                {language === 'es' ? 'Documentos' : 'Documents'}
               </TabsTrigger>
               <TabsTrigger value="history" className="gap-2">
                 <History className="h-4 w-4" />
@@ -502,6 +507,14 @@ const PaymentPortal = () => {
                 currentBalance={account.current_balance}
                 paymentAmount={account.payment_amount}
                 onPaymentSuccess={fetchAccountData}
+              />
+            </TabsContent>
+
+            <TabsContent value="documents">
+              <AccountDocuments 
+                accountId={account.id} 
+                userRole="customer" 
+                userId={user.id} 
               />
             </TabsContent>
 
