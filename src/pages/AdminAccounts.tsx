@@ -31,7 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Plus, ArrowLeft, Edit, Trash2, Mail, Eye } from "lucide-react";
+import { Loader2, Plus, ArrowLeft, Edit, Trash2, Mail, Eye, Users, DollarSign } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { AccountDetailView } from "@/components/admin/AccountDetailView";
 
@@ -866,6 +866,40 @@ const AdminAccounts = () => {
             </DialogContent>
           </Dialog>
         </div>
+
+        {/* Summary Statistics - excluding Jonathan Lowe (test account) */}
+        {(() => {
+          const filteredAccounts = accounts.filter(
+            (account) => account.profile?.full_name?.toLowerCase() !== "jonathan lowe"
+          );
+          const totalCustomers = filteredAccounts.length;
+          const totalBalance = filteredAccounts.reduce((sum, acc) => sum + acc.current_balance, 0);
+          
+          return (
+            <div className="grid gap-4 md:grid-cols-2 mb-6">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Total Customers</CardTitle>
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{totalCustomers}</div>
+                  <p className="text-xs text-muted-foreground">Active BHPH accounts</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Total Outstanding Balance</CardTitle>
+                  <DollarSign className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{formatCurrency(totalBalance)}</div>
+                  <p className="text-xs text-muted-foreground">Combined balance across all accounts</p>
+                </CardContent>
+              </Card>
+            </div>
+          );
+        })()}
 
         <Card>
           <CardHeader>
