@@ -201,6 +201,17 @@ const AdminAccounts = () => {
 
   const handleEdit = (account: CustomerAccount) => {
     setEditingAccount(account);
+    
+    // Determine interest type based on the stored interest_rate value
+    // If it's a whole number >= 10, it's likely a flat fee dollar amount
+    // If it's a small number (< 30), it's likely a percentage
+    // We also check if the payment calculation matches flat fee pattern
+    const storedRate = account.interest_rate;
+    const principal = account.principal_amount;
+    const months = 36;
+    const expectedFlatFeePayment = (principal / months) + storedRate;
+    const isFlatFee = storedRate >= 10 && Math.abs(account.payment_amount - expectedFlatFeePayment) < 1;
+    
     setFormData({
       customer_name: account.profile?.full_name || "",
       customer_email: account.profile?.email || "",
@@ -212,10 +223,10 @@ const AdminAccounts = () => {
       vehicle_vin: account.vehicle?.vin || "",
       principal_amount: account.principal_amount,
       down_payment: 0,
-      flat_fee_amount: 0,
+      flat_fee_amount: isFlatFee ? storedRate : 0,
       current_balance: account.current_balance,
-      interest_rate: account.interest_rate,
-      interest_rate_type: account.interest_rate === 0 ? "flat_fee" : "percentage",
+      interest_rate: isFlatFee ? 18 : storedRate, // Default percentage if flat fee
+      interest_rate_type: isFlatFee ? "flat_fee" : (storedRate === 0 ? "flat_fee" : "percentage"),
       payment_amount: account.payment_amount,
       next_payment_date: account.next_payment_date,
       late_fee_amount: account.late_fee_amount || 25,
@@ -288,7 +299,8 @@ const AdminAccounts = () => {
               vehicle_vin: formData.vehicle_vin,
               principal_amount: formData.principal_amount,
               current_balance: formData.current_balance,
-              interest_rate: formData.interest_rate,
+              // For flat fee, store the flat fee amount in interest_rate field
+              interest_rate: formData.interest_rate_type === "flat_fee" ? formData.flat_fee_amount : formData.interest_rate,
               payment_amount: formData.payment_amount,
               next_payment_date: formData.next_payment_date,
               late_fee_amount: formData.late_fee_amount,
@@ -390,7 +402,8 @@ const AdminAccounts = () => {
         const accountData = {
           principal_amount: formData.principal_amount,
           current_balance: formData.current_balance,
-          interest_rate: formData.interest_rate,
+          // For flat fee, store the flat fee amount in interest_rate field
+          interest_rate: formData.interest_rate_type === "flat_fee" ? formData.flat_fee_amount : formData.interest_rate,
           payment_amount: formData.payment_amount,
           next_payment_date: formData.next_payment_date,
           late_fee_amount: formData.late_fee_amount,
