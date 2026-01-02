@@ -203,20 +203,51 @@ const AdminPayments = () => {
     });
   };
 
+  const calculateLateFees = (account: CustomerAccount) => {
+    const today = new Date();
+    const nextPaymentDue = new Date(account.next_payment_date + 'T00:00:00');
+    const dailyLateFee = account.late_fee_amount || 20; // Default $20/day
+    
+    if (today > nextPaymentDue) {
+      const daysLate = Math.floor((today.getTime() - nextPaymentDue.getTime()) / (1000 * 60 * 60 * 24));
+      return daysLate * dailyLateFee;
+    }
+    return 0;
+  };
+
   const handleAccountSelect = (accountId: string) => {
     const account = accounts.find(a => a.id === accountId);
     if (account) {
-      // Auto-calculate suggested payment breakdown
-      const monthlyInterest = (account.current_balance * (account.interest_rate / 100)) / 12;
-      const suggestedPrincipal = account.payment_amount - monthlyInterest;
+      // Calculate late fees
+      const lateFees = calculateLateFees(account);
+      
+      // Auto-calculate suggested payment breakdown based on interest type
+      let suggestedPrincipal = 0;
+      let suggestedInterest = 0;
+      
+      if ((account as any).interest_rate_type === "flat_fee") {
+        // For flat fee: interest is the flat fee amount
+        suggestedInterest = account.interest_rate;
+        suggestedPrincipal = account.payment_amount - suggestedInterest;
+      } else {
+        // For percentage: calculate monthly interest
+        const monthlyInterest = (account.current_balance * (account.interest_rate / 100)) / 12;
+        suggestedInterest = Math.round(monthlyInterest * 100) / 100;
+        suggestedPrincipal = account.payment_amount - suggestedInterest;
+      }
+
+      // Adjust for late fees
+      if (lateFees > 0) {
+        suggestedPrincipal = Math.max(0, suggestedPrincipal - lateFees);
+      }
       
       setFormData(prev => ({
         ...prev,
         account_id: accountId,
-        amount: account.payment_amount,
+        amount: account.payment_amount + lateFees,
         principal_paid: Math.max(0, suggestedPrincipal),
-        interest_paid: monthlyInterest,
-        late_fee_paid: 0,
+        interest_paid: suggestedInterest,
+        late_fee_paid: lateFees,
       }));
     }
   };
@@ -262,14 +293,32 @@ const AdminPayments = () => {
       const account = accounts.find(a => a.id === formData.account_id);
       if (account) {
         const newBalance = account.current_balance - formData.principal_paid;
-        const nextPaymentDate = new Date(account.next_payment_date);
-        nextPaymentDate.setMonth(nextPaymentDate.getMonth() + 1);
+        
+        // Calculate next payment date based on payment frequency
+        const calculateNextPaymentDate = (currentDate: string, frequency: string | null): string => {
+          const date = new Date(currentDate + 'T00:00:00');
+          switch (frequency) {
+            case 'weekly':
+              date.setDate(date.getDate() + 7);
+              break;
+            case 'bi-weekly':
+              date.setDate(date.getDate() + 14);
+              break;
+            case 'monthly':
+            default:
+              date.setMonth(date.getMonth() + 1);
+              break;
+          }
+          return date.toISOString().split('T')[0];
+        };
+
+        const nextPaymentDate = calculateNextPaymentDate(account.next_payment_date, account.payment_frequency);
 
         await supabase
           .from("customer_accounts")
           .update({
             current_balance: Math.max(0, newBalance),
-            next_payment_date: nextPaymentDate.toISOString().split('T')[0],
+            next_payment_date: nextPaymentDate,
           })
           .eq("id", account.id);
 

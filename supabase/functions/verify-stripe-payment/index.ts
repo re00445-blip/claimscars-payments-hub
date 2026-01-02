@@ -168,10 +168,46 @@ serve(async (req) => {
     const customerEmail = profile?.email;
     logStep("Customer info", { customerName, customerEmail });
 
-    // Calculate payment breakdown (simple split - 80% principal, 20% interest for online payments)
-    const principalPaid = amount * 0.8;
-    const interestPaid = amount * 0.2;
+    // Calculate late fees if payment is overdue
+    let lateFeeAmount = 0;
+    const today = new Date();
+    const nextPaymentDue = new Date(account.next_payment_date + 'T00:00:00');
+    const dailyLateFee = account.late_fee_amount || 20; // Default $20/day
+    
+    if (today > nextPaymentDue) {
+      const daysLate = Math.floor((today.getTime() - nextPaymentDue.getTime()) / (1000 * 60 * 60 * 24));
+      lateFeeAmount = daysLate * dailyLateFee;
+      logStep("Late fee calculated", { daysLate, dailyLateFee, totalLateFee: lateFeeAmount });
+    }
+
+    // Calculate payment breakdown based on account interest type
+    let principalPaid = 0;
+    let interestPaid = 0;
+    let lateFeePaid = 0;
+    
+    // First, pay off any late fees
+    let remainingPayment = amount;
+    if (lateFeeAmount > 0 && remainingPayment > 0) {
+      lateFeePaid = Math.min(lateFeeAmount, remainingPayment);
+      remainingPayment -= lateFeePaid;
+    }
+    
+    // Then, handle interest based on account type
+    if (account.interest_rate_type === "flat_fee") {
+      // For flat fee: interest is the flat fee amount
+      interestPaid = Math.min(account.interest_rate, remainingPayment);
+      remainingPayment -= interestPaid;
+      principalPaid = remainingPayment;
+    } else {
+      // For percentage: calculate monthly interest
+      const monthlyInterest = (account.current_balance * (account.interest_rate / 100)) / 12;
+      interestPaid = Math.min(monthlyInterest, remainingPayment);
+      remainingPayment -= interestPaid;
+      principalPaid = remainingPayment;
+    }
+    
     const newBalance = Math.max(0, account.current_balance - principalPaid);
+    logStep("Payment breakdown", { principalPaid, interestPaid, lateFeePaid, newBalance });
 
     // Generate invoice number
     const now = new Date();
@@ -185,10 +221,10 @@ serve(async (req) => {
         amount: amount,
         principal_paid: principalPaid,
         interest_paid: interestPaid,
-        late_fee_paid: 0,
+        late_fee_paid: lateFeePaid,
         payment_method: "Card (Online)",
         receipt_url: sessionId, // Store session ID to prevent duplicates
-        notes: "Online payment via Stripe",
+        notes: lateFeePaid > 0 ? `Online payment via Stripe (includes $${lateFeePaid.toFixed(2)} late fees)` : "Online payment via Stripe",
         payment_date: now.toISOString(),
       })
       .select()
@@ -200,16 +236,38 @@ serve(async (req) => {
     }
     logStep("Payment recorded", { paymentId: newPayment.id });
 
-    // Update account balance
+    // Calculate next payment date based on payment frequency
+    const calculateNextPaymentDate = (currentDate: string, frequency: string | null): string => {
+      const date = new Date(currentDate + 'T00:00:00');
+      switch (frequency) {
+        case 'weekly':
+          date.setDate(date.getDate() + 7);
+          break;
+        case 'bi-weekly':
+          date.setDate(date.getDate() + 14);
+          break;
+        case 'monthly':
+        default:
+          date.setMonth(date.getMonth() + 1);
+          break;
+      }
+      return date.toISOString().split('T')[0];
+    };
+
+    // Update account balance and next payment date
+    const nextPaymentDate = calculateNextPaymentDate(account.next_payment_date, account.payment_frequency);
     const { error: updateError } = await supabaseClient
       .from("customer_accounts")
-      .update({ current_balance: newBalance })
+      .update({ 
+        current_balance: newBalance,
+        next_payment_date: nextPaymentDate
+      })
       .eq("id", accountId);
 
     if (updateError) {
       logStep("Balance update error", { error: updateError.message });
     } else {
-      logStep("Balance updated", { newBalance });
+      logStep("Balance and next payment date updated", { newBalance, nextPaymentDate });
     }
 
     // Prepare vehicle info
