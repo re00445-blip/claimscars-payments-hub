@@ -95,7 +95,7 @@ const AdminAccounts = () => {
     flat_fee_amount: 0,
     current_balance: 0,
     interest_rate: 18,
-    interest_rate_type: "percentage" as "percentage" | "fixed" | "flat_fee", // percentage, fixed dollar, or flat fee (no interest)
+    interest_rate_type: "percentage" as "percentage" | "flat_fee", // percentage APR, or flat fee ($/mo)
     payment_amount: 0,
     next_payment_date: "",
     late_fee_amount: 25,
@@ -239,24 +239,20 @@ const AdminAccounts = () => {
   const calculateMonthlyPayment = () => {
     const principal = formData.principal_amount;
     const months = 36;
-    
+
     if (formData.interest_rate_type === "flat_fee") {
       // Flat fee - add flat fee per month to principal divided by months
       const principalPerMonth = principal / months;
       const payment = principalPerMonth + formData.flat_fee_amount;
       setFormData(prev => ({ ...prev, payment_amount: Math.round(payment * 100) / 100 }));
-    } else if (formData.interest_rate_type === "fixed") {
-      // Fixed dollar amount per month - just add to principal and divide
-      const totalInterest = formData.interest_rate * months;
-      const payment = (principal + totalInterest) / months;
+      return;
+    }
+
+    // Percentage rate calculation
+    const rate = formData.interest_rate / 100 / 12;
+    if (principal > 0 && rate > 0) {
+      const payment = (principal * rate * Math.pow(1 + rate, months)) / (Math.pow(1 + rate, months) - 1);
       setFormData(prev => ({ ...prev, payment_amount: Math.round(payment * 100) / 100 }));
-    } else {
-      // Percentage rate calculation
-      const rate = formData.interest_rate / 100 / 12;
-      if (principal > 0 && rate > 0) {
-        const payment = (principal * rate * Math.pow(1 + rate, months)) / (Math.pow(1 + rate, months) - 1);
-        setFormData(prev => ({ ...prev, payment_amount: Math.round(payment * 100) / 100 }));
-      }
     }
   };
 
@@ -719,7 +715,7 @@ const AdminAccounts = () => {
                       <Label htmlFor="interest_type">Interest Type *</Label>
                       <Select
                         value={formData.interest_rate_type}
-                        onValueChange={(value: "percentage" | "fixed" | "flat_fee") => {
+                        onValueChange={(value: "percentage" | "flat_fee") => {
                           setFormData(prev => ({ 
                             ...prev, 
                             interest_rate_type: value,
@@ -731,9 +727,8 @@ const AdminAccounts = () => {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="percentage">% per Year</SelectItem>
-                          <SelectItem value="fixed">$ per Month</SelectItem>
-                          <SelectItem value="flat_fee">Flat Fee (No Interest)</SelectItem>
+                          <SelectItem value="percentage">APR (% per year)</SelectItem>
+                          <SelectItem value="flat_fee">Flat Fee ($/mo)</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -749,9 +744,7 @@ const AdminAccounts = () => {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="interest">
-                        {formData.interest_rate_type === "percentage" ? "Interest Rate (%)" : formData.interest_rate_type === "fixed" ? "Interest ($/mo)" : "Interest"} *
-                      </Label>
+                      <Label htmlFor="interest">APR (%) *</Label>
                       <Input
                         id="interest"
                         type="number"
