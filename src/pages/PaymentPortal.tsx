@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Calculator, CreditCard, History, DollarSign, Calendar, AlertCircle, CheckCircle } from "lucide-react";
+import { Calculator, CreditCard, History, DollarSign, Calendar, AlertCircle, CheckCircle, Gift } from "lucide-react";
 import { toast } from "sonner";
 import type { User, Session } from "@supabase/supabase-js";
 import { PaymentMethodsSection } from "@/components/PaymentMethodsSection";
@@ -27,6 +27,8 @@ interface CustomerAccount {
   late_fee_amount: number;
   status: string;
   payment_frequency: string;
+  waived_late_fees?: number | null;
+  waived_interest?: number | null;
   vehicles: {
     year: number;
     make: string;
@@ -430,6 +432,42 @@ const PaymentPortal = () => {
                     </div>
                     <div className="text-sm text-muted-foreground mt-1">
                       {t("portal.originalAmount")}: {formatCurrency(account.principal_amount)}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Waivers Applied */}
+              {((account.waived_late_fees || 0) > 0 || (account.waived_interest || 0) > 0) && (
+                <Card className="border-green-500 bg-green-50 dark:bg-green-950/20">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-lg flex items-center gap-2 text-green-700 dark:text-green-400">
+                      <Gift className="h-5 w-5" />
+                      {language === 'es' ? 'Exenciones Aplicadas' : 'Waivers Applied'}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 gap-4">
+                      {(account.waived_late_fees || 0) > 0 && (
+                        <div>
+                          <p className="text-sm text-muted-foreground">
+                            {language === 'es' ? 'Cargos por Mora Exentos' : 'Late Fees Waived'}
+                          </p>
+                          <p className="text-xl font-semibold text-green-600">
+                            {formatCurrency(account.waived_late_fees || 0)}
+                          </p>
+                        </div>
+                      )}
+                      {(account.waived_interest || 0) > 0 && (
+                        <div>
+                          <p className="text-sm text-muted-foreground">
+                            {language === 'es' ? 'Interés Exento' : 'Interest Waived'}
+                          </p>
+                          <p className="text-xl font-semibold text-green-600">
+                            {formatCurrency(account.waived_interest || 0)}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
