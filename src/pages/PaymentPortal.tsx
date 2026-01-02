@@ -205,7 +205,9 @@ const PaymentPortal = () => {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
+    // Add T00:00:00 to prevent timezone offset issues with date-only strings
+    const dateStr = dateString.includes('T') ? dateString : dateString + 'T00:00:00';
+    return new Date(dateStr).toLocaleDateString("en-US", {
       year: "numeric",
       month: "short",
       day: "numeric",
@@ -214,7 +216,7 @@ const PaymentPortal = () => {
 
   const getPaymentStatus = () => {
     if (!account) return null;
-    const nextPayment = new Date(account.next_payment_date);
+    const nextPayment = new Date(account.next_payment_date + 'T00:00:00');
     const today = new Date();
     const daysUntil = Math.ceil((nextPayment.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 
