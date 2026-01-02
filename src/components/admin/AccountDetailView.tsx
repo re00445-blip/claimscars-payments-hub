@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { AccountDocuments } from "@/components/AccountDocuments";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -781,6 +782,13 @@ export const AccountDetailView = ({ account, open, onOpenChange, onPaymentRecord
               </CardContent>
             </Card>
           )}
+
+          {/* Account Documents */}
+          <AccountDocuments 
+            accountId={account.id} 
+            userRole="admin" 
+            userId={account.user_id} 
+          />
 
           {/* Payment History */}
           <Card>

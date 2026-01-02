@@ -14,6 +14,50 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_documents: {
+        Row: {
+          account_id: string
+          created_at: string
+          description: string | null
+          file_name: string
+          file_type: string | null
+          file_url: string
+          id: string
+          uploaded_by: string
+          uploaded_by_role: string
+        }
+        Insert: {
+          account_id: string
+          created_at?: string
+          description?: string | null
+          file_name: string
+          file_type?: string | null
+          file_url: string
+          id?: string
+          uploaded_by: string
+          uploaded_by_role: string
+        }
+        Update: {
+          account_id?: string
+          created_at?: string
+          description?: string | null
+          file_name?: string
+          file_type?: string | null
+          file_url?: string
+          id?: string
+          uploaded_by?: string
+          uploaded_by_role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_documents_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "customer_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       accounts_payable: {
         Row: {
           amount: number
