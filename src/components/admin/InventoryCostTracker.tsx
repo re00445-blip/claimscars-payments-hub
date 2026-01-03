@@ -513,17 +513,16 @@ export const InventoryCostTracker = () => {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Inventory Cost vs Listing Price</CardTitle>
-          {deletedVehicles.length > 0 && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => document.getElementById('recently-deleted-section')?.scrollIntoView({ behavior: 'smooth' })}
-              className="text-orange-600 border-orange-300 hover:bg-orange-50"
-            >
-              <Undo2 className="h-4 w-4 mr-1" />
-              Restore ({deletedVehicles.length})
-            </Button>
-          )}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => document.getElementById('recently-deleted-section')?.scrollIntoView({ behavior: 'smooth' })}
+            className={`${deletedVehicles.length > 0 ? 'text-orange-600 border-orange-300 hover:bg-orange-50' : 'text-muted-foreground'}`}
+            disabled={deletedVehicles.length === 0}
+          >
+            <Undo2 className="h-4 w-4 mr-1" />
+            Restore ({deletedVehicles.length})
+          </Button>
         </CardHeader>
         <CardContent className="space-y-4">
           {vehicles.map((vehicle) => {
