@@ -44,7 +44,7 @@ serve(async (req) => {
     if (!user?.email) throw new Error("User not authenticated or email not available");
     logStep("User authenticated", { userId: user.id, email: user.email });
 
-    const { amount, accountId, accountBalance } = await req.json();
+    const { amount, convenienceFee, totalCharge, accountId, accountBalance } = await req.json();
     
     if (!amount || amount <= 0) {
       throw new Error("Invalid payment amount");
@@ -55,7 +55,12 @@ serve(async (req) => {
     if (!accountId) {
       throw new Error("Account ID is required");
     }
-    logStep("Request parsed", { amount, accountId });
+    
+    // Use totalCharge if provided (includes convenience fee), otherwise just the base amount
+    const chargeAmount = totalCharge || amount;
+    const fee = convenienceFee || 0;
+    
+    logStep("Request parsed", { amount, convenienceFee: fee, totalCharge: chargeAmount, accountId });
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
 
@@ -69,23 +74,41 @@ serve(async (req) => {
 
     const origin = req.headers.get("origin") || "https://carsnandclaims.lovable.app";
 
+    // Build line items - include convenience fee as separate line item for transparency
+    const lineItems = [
+      {
+        price_data: {
+          currency: "usd",
+          product_data: {
+            name: "BHPH Account Payment",
+            description: `Payment for your Cars & Claims account. Current balance: $${accountBalance?.toFixed(2) || 'N/A'}`,
+          },
+          unit_amount: Math.round(amount * 100), // Convert to cents
+        },
+        quantity: 1,
+      },
+    ];
+
+    // Add convenience fee as separate line item if present
+    if (fee > 0) {
+      lineItems.push({
+        price_data: {
+          currency: "usd",
+          product_data: {
+            name: "Convenience Fee",
+            description: "5% processing fee for card payments",
+          },
+          unit_amount: Math.round(fee * 100),
+        },
+        quantity: 1,
+      });
+    }
+
     // Create a one-time payment session
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
-      line_items: [
-        {
-          price_data: {
-            currency: "usd",
-            product_data: {
-              name: "BHPH Account Payment",
-              description: `Payment for your Cars & Claims account. Current balance: $${accountBalance?.toFixed(2) || 'N/A'}`,
-            },
-            unit_amount: Math.round(amount * 100), // Convert to cents
-          },
-          quantity: 1,
-        },
-      ],
+      line_items: lineItems,
       mode: "payment",
       success_url: `${origin}/payments?success=true&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/payments?canceled=true`,
@@ -93,6 +116,8 @@ serve(async (req) => {
         accountId: accountId,
         userId: user.id,
         paymentType: "bhph_payment",
+        baseAmount: amount.toString(),
+        convenienceFee: fee.toString(),
       },
     });
 

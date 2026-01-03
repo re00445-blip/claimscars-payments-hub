@@ -38,6 +38,17 @@ export const PaymentMethodsSection = ({
   const [customAmount, setCustomAmount] = useState(paymentAmount.toString());
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
+  const CONVENIENCE_FEE_PERCENT = 0.05; // 5% convenience fee for card payments
+  
+  const calculateFees = (amount: number) => {
+    const fee = amount * CONVENIENCE_FEE_PERCENT;
+    return {
+      baseAmount: amount,
+      convenienceFee: fee,
+      totalCharge: amount + fee,
+    };
+  };
+
   useEffect(() => {
     fetchPaymentSettings();
   }, []);
@@ -80,6 +91,8 @@ export const PaymentMethodsSection = ({
       return;
     }
 
+    const fees = calculateFees(amount);
+
     setProcessingStripe(true);
     try {
       // Force refresh the session to ensure it's valid on the server
@@ -92,7 +105,9 @@ export const PaymentMethodsSection = ({
 
       const { data, error } = await supabase.functions.invoke("create-bhph-payment", {
         body: {
-          amount,
+          amount: fees.baseAmount,
+          convenienceFee: fees.convenienceFee,
+          totalCharge: fees.totalCharge,
           accountId,
           accountBalance: currentBalance,
         },
@@ -200,35 +215,56 @@ export const PaymentMethodsSection = ({
         <Separator />
 
         {/* Stripe/Card Payment */}
-        {stripeEnabled && (
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <CreditCard className="h-5 w-5 text-primary" />
-              <span className="font-medium">{t("portal.creditDebit")}</span>
-              <Badge variant="secondary" className="ml-auto">{t("portal.recommended")}</Badge>
+        {stripeEnabled && (() => {
+          const fees = calculateFees(parseFloat(customAmount) || 0);
+          return (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <CreditCard className="h-5 w-5 text-primary" />
+                <span className="font-medium">{t("portal.creditDebit")}</span>
+                <Badge variant="secondary" className="ml-auto">{t("portal.recommended")}</Badge>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {getSetting("stripe_enabled")?.instructions || "Pay securely with your credit or debit card"}
+              </p>
+              
+              {/* Fee Breakdown */}
+              <div className="bg-muted/50 rounded-lg p-3 space-y-1 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Payment Amount:</span>
+                  <span>{formatCurrency(fees.baseAmount)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Convenience Fee (5%):</span>
+                  <span>{formatCurrency(fees.convenienceFee)}</span>
+                </div>
+                <Separator className="my-2" />
+                <div className="flex justify-between font-semibold">
+                  <span>Total Charge:</span>
+                  <span>{formatCurrency(fees.totalCharge)}</span>
+                </div>
+              </div>
+              
+              <Button 
+                onClick={handleStripePayment} 
+                disabled={processingStripe}
+                className="w-full"
+              >
+                {processingStripe ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {t("portal.processing")}
+                  </>
+                ) : (
+                  <>
+                    <CreditCard className="mr-2 h-4 w-4" />
+                    Pay {formatCurrency(fees.totalCharge)}
+                  </>
+                )}
+              </Button>
             </div>
-            <p className="text-sm text-muted-foreground">
-              {getSetting("stripe_enabled")?.instructions || "Pay securely with your credit or debit card"}
-            </p>
-            <Button 
-              onClick={handleStripePayment} 
-              disabled={processingStripe}
-              className="w-full"
-            >
-              {processingStripe ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {t("portal.processing")}
-                </>
-              ) : (
-                <>
-                  <CreditCard className="mr-2 h-4 w-4" />
-                  {t("portal.payWithCard").replace("{amount}", formatCurrency(parseFloat(customAmount) || 0))}
-                </>
-              )}
-            </Button>
-          </div>
-        )}
+          );
+        })()}
 
         {stripeEnabled && (cashAppTag?.is_enabled || zelleContact?.is_enabled) && (
           <Separator />
