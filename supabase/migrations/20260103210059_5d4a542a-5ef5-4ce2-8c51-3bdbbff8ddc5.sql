@@ -1,0 +1,10 @@
+-- Add new columns to admin_notes table
+ALTER TABLE public.admin_notes
+ADD COLUMN IF NOT EXISTS subject TEXT,
+ADD COLUMN IF NOT EXISTS assignee_id UUID REFERENCES auth.users(id),
+ADD COLUMN IF NOT EXISTS due_date DATE,
+ADD COLUMN IF NOT EXISTS response_time_hours INTEGER,
+ADD COLUMN IF NOT EXISTS attachments TEXT[] DEFAULT '{}',
+ADD COLUMN IF NOT EXISTS tags TEXT[] DEFAULT '{}',
+ADD COLUMN IF NOT EXISTS time_entries JSONB DEFAULT '[]',
+ADD COLUMN IF NOT EXISTS notified_at TIMESTAMP WITH TIME ZONE;
