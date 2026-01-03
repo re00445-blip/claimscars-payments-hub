@@ -54,6 +54,7 @@ const COST_CATEGORIES = [
 
 export const InventoryCostTracker = () => {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [bhphVehicleIds, setBhphVehicleIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [editingPrices, setEditingPrices] = useState<Record<string, string>>({});
   const [savingId, setSavingId] = useState<string | null>(null);
@@ -73,8 +74,24 @@ export const InventoryCostTracker = () => {
 
   useEffect(() => {
     fetchVehicles();
+    fetchBhphVehicleIds();
     checkUserEmail();
   }, []);
+
+  const fetchBhphVehicleIds = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('customer_accounts')
+        .select('vehicle_id')
+        .not('vehicle_id', 'is', null);
+
+      if (error) throw error;
+      const ids = new Set((data || []).map(d => d.vehicle_id).filter(Boolean) as string[]);
+      setBhphVehicleIds(ids);
+    } catch (error) {
+      console.error('Error fetching BHPH vehicle IDs:', error);
+    }
+  };
 
   const checkUserEmail = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -466,9 +483,220 @@ export const InventoryCostTracker = () => {
   const totalCostPrice = vehicles.reduce((sum, v) => sum + (Number(v.cost_price) || 0), 0);
   const totalProfit = totalListPrice - totalCostPrice;
 
+  const renderVehicleRow = (vehicle: Vehicle) => {
+    const profit = calculateProfit(Number(vehicle.price), vehicle.cost_price);
+    const margin = calculateMargin(Number(vehicle.price), vehicle.cost_price);
+    const isExpanded = expandedVehicle === vehicle.id;
+    const breakdowns = costBreakdowns[vehicle.id] || [];
+    const documents = costDocuments[vehicle.id] || [];
+    const isBhph = bhphVehicleIds.has(vehicle.id);
+    
+    return (
+      <Collapsible key={vehicle.id} open={isExpanded} onOpenChange={() => handleExpandVehicle(vehicle.id)}>
+        <div className="border rounded-lg">
+          <div className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" size="sm">
+                    {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  </Button>
+                </CollapsibleTrigger>
+                <div>
+                  <span className="font-medium">{vehicle.year} {vehicle.make} {vehicle.model}</span>
+                  <span className={`ml-3 px-2 py-1 rounded text-xs ${
+                    isBhph ? 'bg-purple-100 text-purple-800' :
+                    vehicle.status === 'active' ? 'bg-green-100 text-green-800' :
+                    vehicle.status === 'sold' ? 'bg-blue-100 text-blue-800' :
+                    'bg-gray-100 text-gray-800'
+                  }`}>
+                    {isBhph ? 'BHPH' : vehicle.status}
+                  </span>
+                </div>
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="text-right">
+                  <div className="text-sm text-muted-foreground">List Price</div>
+                  {isRamon ? (
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        value={editingPrices[vehicle.id] || ''}
+                        onChange={(e) => setEditingPrices(prev => ({
+                          ...prev,
+                          [vehicle.id]: e.target.value
+                        }))}
+                        className="w-28 text-right"
+                      />
+                      <Button size="sm" onClick={() => handleSavePrice(vehicle.id)} disabled={savingId === vehicle.id}>
+                        <Save className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="font-medium">${Number(vehicle.price).toLocaleString()}</div>
+                  )}
+                </div>
+                <div className="text-right">
+                  <div className="text-sm text-muted-foreground">Total Cost</div>
+                  <div className="font-medium">${Number(vehicle.cost_price || 0).toLocaleString()}</div>
+                </div>
+                <div className="text-right">
+                  <div className="text-sm text-muted-foreground">Profit</div>
+                  <div className={`font-medium ${profit !== null && profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {profit !== null ? `$${profit.toLocaleString()}` : '—'}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-sm text-muted-foreground">Margin</div>
+                  <div className={`font-medium ${margin !== null && margin >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {margin !== null ? `${margin.toFixed(1)}%` : '—'}
+                  </div>
+                </div>
+                <Button variant="outline" size="sm" onClick={() => handlePrint(vehicle.id)}>
+                  <Printer className="h-4 w-4" />
+                </Button>
+                {isRamon && (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button size="sm" variant="destructive">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Vehicle</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Are you sure you want to delete {vehicle.year} {vehicle.make} {vehicle.model}? This action cannot be undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => handleDelete(vehicle.id)}>Delete</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <CollapsibleContent>
+            <div className="border-t p-4 space-y-4">
+              {/* Cost Breakdown Table */}
+              <div>
+                <h4 className="font-medium mb-2">Cost Breakdown</h4>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Category</TableHead>
+                      <TableHead>Description</TableHead>
+                      <TableHead className="text-right">Amount</TableHead>
+                      <TableHead></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {breakdowns.map((breakdown) => (
+                      <TableRow key={breakdown.id}>
+                        <TableCell>{breakdown.category}</TableCell>
+                        <TableCell>{breakdown.description || '-'}</TableCell>
+                        <TableCell className="text-right">${Number(breakdown.amount).toLocaleString()}</TableCell>
+                        <TableCell>
+                          <Button variant="ghost" size="sm" onClick={() => handleDeleteBreakdown(vehicle.id, breakdown.id)}>
+                            <X className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    <TableRow>
+                      <TableCell>
+                        <Select value={newBreakdown.category} onValueChange={(v) => setNewBreakdown(prev => ({ ...prev, category: v }))}>
+                          <SelectTrigger className="w-40">
+                            <SelectValue placeholder="Category" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {COST_CATEGORIES.map(cat => (
+                              <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          placeholder="Description (optional)"
+                          value={newBreakdown.description}
+                          onChange={(e) => setNewBreakdown(prev => ({ ...prev, description: e.target.value }))}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          type="number"
+                          placeholder="Amount"
+                          value={newBreakdown.amount}
+                          onChange={(e) => setNewBreakdown(prev => ({ ...prev, amount: e.target.value }))}
+                          className="text-right"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Button size="sm" onClick={() => handleAddBreakdown(vehicle.id)}>
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Documents Section */}
+              <div>
+                <h4 className="font-medium mb-2">Invoices & Documents</h4>
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {documents.map((doc) => (
+                    <div key={doc.id} className="flex items-center gap-2 bg-muted px-3 py-2 rounded-lg">
+                      <FileText className="h-4 w-4" />
+                      <a href={doc.file_url} target="_blank" rel="noopener noreferrer" className="text-sm hover:underline">
+                        {doc.file_name}
+                      </a>
+                      <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => handleDeleteDocument(vehicle.id, doc.id, doc.file_url)}>
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+                <div>
+                  <Label htmlFor={`upload-${vehicle.id}`} className="cursor-pointer">
+                    <div className="flex items-center gap-2 text-sm text-primary hover:underline">
+                      <Upload className="h-4 w-4" />
+                      {uploadingDoc ? 'Uploading...' : 'Upload Invoice/Document'}
+                    </div>
+                  </Label>
+                  <input
+                    id={`upload-${vehicle.id}`}
+                    type="file"
+                    className="hidden"
+                    accept="image/*,.pdf,.doc,.docx"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleUploadDocument(vehicle.id, file);
+                      e.target.value = '';
+                    }}
+                    disabled={uploadingDoc}
+                  />
+                </div>
+              </div>
+            </div>
+          </CollapsibleContent>
+        </div>
+      </Collapsible>
+    );
+  };
+
   if (loading) {
     return <div className="p-4">Loading vehicles...</div>;
   }
+
+  const forSaleVehicles = vehicles.filter(v => v.status === 'active');
+  const bhphVehicles = vehicles.filter(v => bhphVehicleIds.has(v.id));
+  const soldVehicles = vehicles.filter(v => v.status === 'sold' && !bhphVehicleIds.has(v.id));
 
   return (
     <div className="space-y-6">
@@ -524,211 +752,39 @@ export const InventoryCostTracker = () => {
             Restore ({deletedVehicles.length})
           </Button>
         </CardHeader>
-        <CardContent className="space-y-4">
-          {vehicles.map((vehicle) => {
-            const profit = calculateProfit(Number(vehicle.price), vehicle.cost_price);
-            const margin = calculateMargin(Number(vehicle.price), vehicle.cost_price);
-            const isExpanded = expandedVehicle === vehicle.id;
-            const breakdowns = costBreakdowns[vehicle.id] || [];
-            const documents = costDocuments[vehicle.id] || [];
-            
-            return (
-              <Collapsible key={vehicle.id} open={isExpanded} onOpenChange={() => handleExpandVehicle(vehicle.id)}>
-                <div className="border rounded-lg">
-                  <div className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <CollapsibleTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                          </Button>
-                        </CollapsibleTrigger>
-                        <div>
-                          <span className="font-medium">{vehicle.year} {vehicle.make} {vehicle.model}</span>
-                          <span className={`ml-3 px-2 py-1 rounded text-xs ${
-                            vehicle.status === 'active' ? 'bg-green-100 text-green-800' :
-                            vehicle.status === 'sold' ? 'bg-blue-100 text-blue-800' :
-                            'bg-gray-100 text-gray-800'
-                          }`}>
-                            {vehicle.status}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <div className="text-right">
-                          <div className="text-sm text-muted-foreground">List Price</div>
-                          {isRamon ? (
-                            <div className="flex items-center gap-2">
-                              <Input
-                                type="number"
-                                value={editingPrices[vehicle.id] || ''}
-                                onChange={(e) => setEditingPrices(prev => ({
-                                  ...prev,
-                                  [vehicle.id]: e.target.value
-                                }))}
-                                className="w-28 text-right"
-                              />
-                              <Button size="sm" onClick={() => handleSavePrice(vehicle.id)} disabled={savingId === vehicle.id}>
-                                <Save className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          ) : (
-                            <div className="font-medium">${Number(vehicle.price).toLocaleString()}</div>
-                          )}
-                        </div>
-                        <div className="text-right">
-                          <div className="text-sm text-muted-foreground">Total Cost</div>
-                          <div className="font-medium">${Number(vehicle.cost_price || 0).toLocaleString()}</div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-sm text-muted-foreground">Profit</div>
-                          <div className={`font-medium ${profit !== null && profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {profit !== null ? `$${profit.toLocaleString()}` : '—'}
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-sm text-muted-foreground">Margin</div>
-                          <div className={`font-medium ${margin !== null && margin >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {margin !== null ? `${margin.toFixed(1)}%` : '—'}
-                          </div>
-                        </div>
-                        <Button variant="outline" size="sm" onClick={() => handlePrint(vehicle.id)}>
-                          <Printer className="h-4 w-4" />
-                        </Button>
-                        {isRamon && (
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button size="sm" variant="destructive">
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Delete Vehicle</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Are you sure you want to delete {vehicle.year} {vehicle.make} {vehicle.model}? This action cannot be undone.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleDelete(vehicle.id)}>Delete</AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        )}
-                      </div>
-                    </div>
-                  </div>
+        <CardContent className="space-y-6">
+          {/* For Sale Section */}
+          {forSaleVehicles.length > 0 && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <div className="h-3 w-3 rounded-full bg-green-500" />
+                <h3 className="font-semibold text-lg">For Sale ({forSaleVehicles.length})</h3>
+              </div>
+              {forSaleVehicles.map((vehicle) => renderVehicleRow(vehicle))}
+            </div>
+          )}
 
-                  <CollapsibleContent>
-                    <div className="border-t p-4 space-y-4">
-                      {/* Cost Breakdown Table */}
-                      <div>
-                        <h4 className="font-medium mb-2">Cost Breakdown</h4>
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>Category</TableHead>
-                              <TableHead>Description</TableHead>
-                              <TableHead className="text-right">Amount</TableHead>
-                              <TableHead></TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {breakdowns.map((breakdown) => (
-                              <TableRow key={breakdown.id}>
-                                <TableCell>{breakdown.category}</TableCell>
-                                <TableCell>{breakdown.description || '-'}</TableCell>
-                                <TableCell className="text-right">${Number(breakdown.amount).toLocaleString()}</TableCell>
-                                <TableCell>
-                                  <Button variant="ghost" size="sm" onClick={() => handleDeleteBreakdown(vehicle.id, breakdown.id)}>
-                                    <X className="h-4 w-4 text-destructive" />
-                                  </Button>
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                            <TableRow>
-                              <TableCell>
-                                <Select value={newBreakdown.category} onValueChange={(v) => setNewBreakdown(prev => ({ ...prev, category: v }))}>
-                                  <SelectTrigger className="w-40">
-                                    <SelectValue placeholder="Category" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {COST_CATEGORIES.map(cat => (
-                                      <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </TableCell>
-                              <TableCell>
-                                <Input
-                                  placeholder="Description (optional)"
-                                  value={newBreakdown.description}
-                                  onChange={(e) => setNewBreakdown(prev => ({ ...prev, description: e.target.value }))}
-                                />
-                              </TableCell>
-                              <TableCell>
-                                <Input
-                                  type="number"
-                                  placeholder="Amount"
-                                  value={newBreakdown.amount}
-                                  onChange={(e) => setNewBreakdown(prev => ({ ...prev, amount: e.target.value }))}
-                                  className="text-right"
-                                />
-                              </TableCell>
-                              <TableCell>
-                                <Button size="sm" onClick={() => handleAddBreakdown(vehicle.id)}>
-                                  <Plus className="h-4 w-4" />
-                                </Button>
-                              </TableCell>
-                            </TableRow>
-                          </TableBody>
-                        </Table>
-                      </div>
+          {/* BHPH Section */}
+          {bhphVehicles.length > 0 && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <div className="h-3 w-3 rounded-full bg-purple-500" />
+                <h3 className="font-semibold text-lg">BHPH - Financed ({bhphVehicles.length})</h3>
+              </div>
+              {bhphVehicles.map((vehicle) => renderVehicleRow(vehicle))}
+            </div>
+          )}
 
-                      {/* Documents Section */}
-                      <div>
-                        <h4 className="font-medium mb-2">Invoices & Documents</h4>
-                        <div className="flex flex-wrap gap-2 mb-3">
-                          {documents.map((doc) => (
-                            <div key={doc.id} className="flex items-center gap-2 bg-muted px-3 py-2 rounded-lg">
-                              <FileText className="h-4 w-4" />
-                              <a href={doc.file_url} target="_blank" rel="noopener noreferrer" className="text-sm hover:underline">
-                                {doc.file_name}
-                              </a>
-                              <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => handleDeleteDocument(vehicle.id, doc.id, doc.file_url)}>
-                                <X className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          ))}
-                        </div>
-                        <div>
-                          <Label htmlFor={`upload-${vehicle.id}`} className="cursor-pointer">
-                            <div className="flex items-center gap-2 text-sm text-primary hover:underline">
-                              <Upload className="h-4 w-4" />
-                              {uploadingDoc ? 'Uploading...' : 'Upload Invoice/Document'}
-                            </div>
-                          </Label>
-                          <input
-                            id={`upload-${vehicle.id}`}
-                            type="file"
-                            className="hidden"
-                            accept="image/*,.pdf,.doc,.docx"
-                            onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (file) handleUploadDocument(vehicle.id, file);
-                              e.target.value = '';
-                            }}
-                            disabled={uploadingDoc}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </CollapsibleContent>
-                </div>
-              </Collapsible>
-            );
-          })}
+          {/* Sold Section (not BHPH) */}
+          {soldVehicles.length > 0 && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <div className="h-3 w-3 rounded-full bg-blue-500" />
+                <h3 className="font-semibold text-lg">Sold ({soldVehicles.length})</h3>
+              </div>
+              {soldVehicles.map((vehicle) => renderVehicleRow(vehicle))}
+            </div>
+          )}
         </CardContent>
       </Card>
 
