@@ -5,7 +5,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { Save, DollarSign, TrendingUp, TrendingDown } from 'lucide-react';
+import { Save, DollarSign, TrendingUp, TrendingDown, Trash2 } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 interface Vehicle {
   id: string;
@@ -21,11 +22,21 @@ export const InventoryCostTracker = () => {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingCosts, setEditingCosts] = useState<Record<string, string>>({});
+  const [editingPrices, setEditingPrices] = useState<Record<string, string>>({});
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [isRamon, setIsRamon] = useState(false);
 
   useEffect(() => {
     fetchVehicles();
+    checkUserEmail();
   }, []);
+
+  const checkUserEmail = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user?.email === 'ramon@carsandclaims.com') {
+      setIsRamon(true);
+    }
+  };
 
   const fetchVehicles = async () => {
     try {
@@ -37,12 +48,15 @@ export const InventoryCostTracker = () => {
       if (error) throw error;
       setVehicles(data || []);
       
-      // Initialize editing costs with current values
+      // Initialize editing costs and prices with current values
       const costs: Record<string, string> = {};
+      const prices: Record<string, string> = {};
       data?.forEach(v => {
         costs[v.id] = v.cost_price?.toString() || '';
+        prices[v.id] = v.price?.toString() || '';
       });
       setEditingCosts(costs);
+      setEditingPrices(prices);
     } catch (error) {
       console.error('Error fetching vehicles:', error);
       toast.error('Failed to load vehicles');
@@ -51,33 +65,62 @@ export const InventoryCostTracker = () => {
     }
   };
 
-  const handleSaveCost = async (vehicleId: string) => {
+  const handleSave = async (vehicleId: string) => {
     const costValue = editingCosts[vehicleId];
+    const priceValue = editingPrices[vehicleId];
     const numericCost = costValue ? parseFloat(costValue) : 0;
+    const numericPrice = priceValue ? parseFloat(priceValue) : 0;
 
     if (isNaN(numericCost) || numericCost < 0) {
       toast.error('Please enter a valid cost');
       return;
     }
 
+    if (isRamon && (isNaN(numericPrice) || numericPrice < 0)) {
+      toast.error('Please enter a valid list price');
+      return;
+    }
+
     setSavingId(vehicleId);
     try {
+      const updateData: { cost_price: number; price?: number } = { cost_price: numericCost };
+      if (isRamon) {
+        updateData.price = numericPrice;
+      }
+
       const { error } = await supabase
         .from('vehicles')
-        .update({ cost_price: numericCost })
+        .update(updateData)
         .eq('id', vehicleId);
 
       if (error) throw error;
       
       setVehicles(prev => prev.map(v => 
-        v.id === vehicleId ? { ...v, cost_price: numericCost } : v
+        v.id === vehicleId ? { ...v, cost_price: numericCost, ...(isRamon ? { price: numericPrice } : {}) } : v
       ));
-      toast.success('Cost updated successfully');
+      toast.success('Updated successfully');
     } catch (error) {
-      console.error('Error updating cost:', error);
-      toast.error('Failed to update cost');
+      console.error('Error updating:', error);
+      toast.error('Failed to update');
     } finally {
       setSavingId(null);
+    }
+  };
+
+  const handleDelete = async (vehicleId: string) => {
+    try {
+      const { error } = await supabase
+        .from('vehicles')
+        .delete()
+        .eq('id', vehicleId);
+
+      if (error) throw error;
+      
+      setVehicles(prev => prev.filter(v => v.id !== vehicleId));
+      toast.success('Vehicle deleted');
+    } catch (error) {
+      console.error('Error deleting:', error);
+      toast.error('Failed to delete vehicle');
     }
   };
 
@@ -176,7 +219,20 @@ export const InventoryCostTracker = () => {
                       </span>
                     </TableCell>
                     <TableCell className="text-right">
-                      ${Number(vehicle.price).toLocaleString()}
+                      {isRamon ? (
+                        <Input
+                          type="number"
+                          value={editingPrices[vehicle.id] || ''}
+                          onChange={(e) => setEditingPrices(prev => ({
+                            ...prev,
+                            [vehicle.id]: e.target.value
+                          }))}
+                          placeholder="List price"
+                          className="w-28 text-right"
+                        />
+                      ) : (
+                        `$${Number(vehicle.price).toLocaleString()}`
+                      )}
                     </TableCell>
                     <TableCell className="text-right">
                       <Input
@@ -209,13 +265,38 @@ export const InventoryCostTracker = () => {
                       )}
                     </TableCell>
                     <TableCell>
-                      <Button
-                        size="sm"
-                        onClick={() => handleSaveCost(vehicle.id)}
-                        disabled={savingId === vehicle.id}
-                      >
-                        <Save className="h-4 w-4" />
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          onClick={() => handleSave(vehicle.id)}
+                          disabled={savingId === vehicle.id}
+                        >
+                          <Save className="h-4 w-4" />
+                        </Button>
+                        {isRamon && (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button size="sm" variant="destructive">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete Vehicle</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to delete {vehicle.year} {vehicle.make} {vehicle.model}? This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDelete(vehicle.id)}>
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 );
