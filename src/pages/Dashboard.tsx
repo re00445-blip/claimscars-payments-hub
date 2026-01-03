@@ -5,7 +5,7 @@ import { User, Session } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Navbar } from "@/components/Navbar";
-import { Loader2, DollarSign, Car, FileText, Users, ClipboardList, Settings, UserPlus, Sparkles, CreditCard, Share2, Plus, Printer, Mail, MessageSquare, Send, Calculator, Key, StickyNote } from "lucide-react";
+import { Loader2, DollarSign, Car, FileText, Users, ClipboardList, Settings, UserPlus, Sparkles, CreditCard, Share2, Plus, Printer, Mail, MessageSquare, Send, Calculator, Key, StickyNote, Receipt } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { YearEndStatementHelper } from "@/components/admin/YearEndStatementHelper";
 import { ExpensesTracker } from "@/components/admin/ExpensesTracker";
@@ -27,6 +27,7 @@ import { AccountDocuments } from "@/components/AccountDocuments";
 import { PasswordsManager } from "@/components/admin/PasswordsManager";
 import { NotesManager } from "@/components/admin/NotesManager";
 import SubscriptionsManager from "@/components/admin/SubscriptionsManager";
+import { InventoryCostTracker } from "@/components/admin/InventoryCostTracker";
 
 interface Affiliate {
   id: string;
@@ -870,11 +871,14 @@ const Dashboard = () => {
                   </CardTitle>
                   <CardDescription>{t("dashboard.vehicleManagementDesc")}</CardDescription>
                 </CardHeader>
-                <CardContent className="flex flex-wrap gap-4">
-                  <Button onClick={() => navigate("/admin/vehicles")}>
-                    <Car className="mr-2 h-4 w-4" />
-                    {t("dashboard.manageVehicles")}
-                  </Button>
+                <CardContent className="space-y-4">
+                  <div className="flex flex-wrap gap-4">
+                    <Button onClick={() => navigate("/admin/vehicles")}>
+                      <Car className="mr-2 h-4 w-4" />
+                      {t("dashboard.manageVehicles")}
+                    </Button>
+                  </div>
+                  <InventoryCostTracker />
                 </CardContent>
               </Card>
 
