@@ -314,7 +314,7 @@ const SubscriptionsManager = () => {
                 <TableRow key={sub.id} className={!sub.is_active ? 'opacity-50' : ''}>
                   <TableCell className="font-medium">{sub.name}</TableCell>
                   <TableCell>${Number(sub.cost).toFixed(2)}</TableCell>
-                  <TableCell>{format(new Date(sub.due_date), 'MMM d, yyyy')}</TableCell>
+                  <TableCell>{format(new Date(sub.due_date + 'T00:00:00'), 'MMM d, yyyy')}</TableCell>
                   <TableCell>{getPaymentLabel(sub.payment_type)}</TableCell>
                   <TableCell>
                     <Switch
