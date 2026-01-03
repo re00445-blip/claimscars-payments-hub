@@ -96,7 +96,7 @@ serve(async (req) => {
           currency: "usd",
           product_data: {
             name: "Convenience Fee",
-            description: "5% processing fee for card payments",
+            description: "3% processing fee for card payments",
           },
           unit_amount: Math.round(fee * 100),
         },
