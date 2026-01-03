@@ -41,16 +41,17 @@ interface Profile {
   department: string | null;
 }
 
-type Department = 'customer' | 'manager' | 'accounting' | 'team_member';
+type Department = 'customer' | 'manager' | 'accounting' | 'team_member' | 'marketing_affiliate';
 
 const DEPARTMENT_LABELS: Record<Department, string> = {
   customer: 'Customers',
   manager: 'Managers',
   accounting: 'Accounting',
   team_member: 'Team Members',
+  marketing_affiliate: 'Marketing Affiliates',
 };
 
-const DEPARTMENT_ORDER: Department[] = ['manager', 'accounting', 'team_member', 'customer'];
+const DEPARTMENT_ORDER: Department[] = ['manager', 'accounting', 'team_member', 'marketing_affiliate', 'customer'];
 
 const RESPONSE_TIME_OPTIONS = [
   { value: "1", label: "1 hour" },
@@ -109,6 +110,7 @@ export const NotesManager = () => {
       manager: [],
       accounting: [],
       team_member: [],
+      marketing_affiliate: [],
     };
 
     profiles.forEach(profile => {
