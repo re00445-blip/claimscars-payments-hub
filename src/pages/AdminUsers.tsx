@@ -20,7 +20,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-type Department = 'customer' | 'manager' | 'accounting' | 'team_member';
+type Department = 'customer' | 'manager' | 'accounting' | 'team_member' | 'marketing_affiliate';
 
 interface UserProfile {
   id: string;
@@ -40,6 +40,7 @@ const DEPARTMENT_OPTIONS: { value: Department; label: string }[] = [
   { value: 'manager', label: 'Manager' },
   { value: 'accounting', label: 'Accounting' },
   { value: 'team_member', label: 'Team Member' },
+  { value: 'marketing_affiliate', label: 'Marketing Affiliate' },
 ];
 
 const AdminUsers = () => {
