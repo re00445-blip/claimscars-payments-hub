@@ -130,6 +130,36 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_notes: {
+        Row: {
+          content: string
+          created_at: string
+          created_by: string | null
+          id: string
+          is_archived: boolean
+          note_date: string
+          updated_at: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_archived?: boolean
+          note_date?: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_archived?: boolean
+          note_date?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       affiliate_notes: {
         Row: {
           affiliate_id: string

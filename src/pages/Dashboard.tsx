@@ -5,7 +5,7 @@ import { User, Session } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Navbar } from "@/components/Navbar";
-import { Loader2, DollarSign, Car, FileText, Users, ClipboardList, Settings, UserPlus, Sparkles, CreditCard, Share2, Plus, Printer, Mail, MessageSquare, Send, Calculator, Key } from "lucide-react";
+import { Loader2, DollarSign, Car, FileText, Users, ClipboardList, Settings, UserPlus, Sparkles, CreditCard, Share2, Plus, Printer, Mail, MessageSquare, Send, Calculator, Key, StickyNote } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { YearEndStatementHelper } from "@/components/admin/YearEndStatementHelper";
 import { ExpensesTracker } from "@/components/admin/ExpensesTracker";
@@ -25,6 +25,7 @@ import { ClientProfileCard } from "@/components/ClientProfileCard";
 import { RaceTrackProgress } from "@/components/RaceTrackProgress";
 import { AccountDocuments } from "@/components/AccountDocuments";
 import { PasswordsManager } from "@/components/admin/PasswordsManager";
+import { NotesManager } from "@/components/admin/NotesManager";
 
 interface Affiliate {
   id: string;
@@ -827,6 +828,12 @@ const Dashboard = () => {
                   Passwords
                 </TabsTrigger>
               )}
+              {hasPasswordsAccess && (
+                <TabsTrigger value="notes" className="flex items-center gap-2">
+                  <StickyNote className="h-4 w-4" />
+                  Notes
+                </TabsTrigger>
+              )}
             </TabsList>
 
             <TabsContent value="management" className="space-y-6">
@@ -987,6 +994,11 @@ const Dashboard = () => {
             {hasPasswordsAccess && (
               <TabsContent value="passwords" className="space-y-6">
                 <PasswordsManager />
+              </TabsContent>
+            )}
+            {hasPasswordsAccess && (
+              <TabsContent value="notes" className="space-y-6">
+                <NotesManager />
               </TabsContent>
             )}
           </Tabs>
