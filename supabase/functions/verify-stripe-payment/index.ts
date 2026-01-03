@@ -18,6 +18,9 @@ const generateReceiptHTML = (data: {
   vehicleInfo: string;
   paymentDate: string;
   invoiceNumber: string;
+  principalPaid: number;
+  interestPaid: number;
+  lateFeePaid: number;
   totalAmount: number;
   paymentMethod: string;
   remainingBalance: number;
@@ -48,6 +51,26 @@ const generateReceiptHTML = (data: {
           <h3 style="color: #333; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 5px;">Customer Information</h3>
           <p style="margin: 5px 0;"><strong>Name:</strong> ${data.customerName}</p>
           <p style="margin: 5px 0;"><strong>Vehicle:</strong> ${data.vehicleInfo}</p>
+        </div>
+        
+        <div style="margin-bottom: 20px;">
+          <h3 style="color: #333; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 5px;">Payment Breakdown</h3>
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr style="background: #f9f9f9;">
+              <td style="padding: 10px; border-bottom: 1px solid #eee;">Principal Payment</td>
+              <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">$${data.principalPaid.toFixed(2)}</td>
+            </tr>
+            <tr>
+              <td style="padding: 10px; border-bottom: 1px solid #eee;">Interest Payment</td>
+              <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">$${data.interestPaid.toFixed(2)}</td>
+            </tr>
+            ${data.lateFeePaid > 0 ? `
+            <tr style="background: #f9f9f9;">
+              <td style="padding: 10px; border-bottom: 1px solid #eee;">Late Fee</td>
+              <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">$${data.lateFeePaid.toFixed(2)}</td>
+            </tr>
+            ` : ''}
+          </table>
         </div>
         
         <div style="background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); color: white; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
@@ -281,6 +304,9 @@ serve(async (req) => {
       vehicleInfo,
       paymentDate: now.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }),
       invoiceNumber,
+      principalPaid,
+      interestPaid,
+      lateFeePaid,
       totalAmount: amount,
       paymentMethod: "Credit/Debit Card (Online)",
       remainingBalance: newBalance,
