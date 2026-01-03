@@ -14,6 +14,7 @@ import { AccountsReceivable } from "@/components/admin/AccountsReceivable";
 import { AccountsPayable } from "@/components/admin/AccountsPayable";
 import { useToast } from "@/hooks/use-toast";
 import { TransactionsReport } from "@/components/admin/TransactionsReport";
+import { BHPHCollectionsSummary } from "@/components/admin/BHPHCollectionsSummary";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { UserAvatar } from "@/components/UserAvatar";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -932,6 +933,9 @@ const Dashboard = () => {
 
             <TabsContent value="accounting" className="space-y-6">
               <div className="grid gap-6">
+                {/* BHPH Collections Summary - Interest & Late Fees */}
+                <BHPHCollectionsSummary />
+                
                 <div className="grid md:grid-cols-2 gap-6">
                   <AccountsReceivable />
                   <AccountsPayable />
