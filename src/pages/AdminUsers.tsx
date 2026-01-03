@@ -6,7 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Navbar } from "@/components/Navbar";
-import { Loader2, ArrowLeft, Shield, User, Users, Trash2, Calculator, Key } from "lucide-react";
+import { Loader2, ArrowLeft, Shield, User, Users, Trash2, Calculator, Key, Building2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -19,6 +20,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+type Department = 'customer' | 'manager' | 'accounting' | 'team_member';
+
 interface UserProfile {
   id: string;
   email: string;
@@ -29,7 +32,15 @@ interface UserProfile {
   isAffiliate: boolean;
   hasAccountingAccess: boolean;
   hasPasswordsAccess: boolean;
+  department: Department;
 }
+
+const DEPARTMENT_OPTIONS: { value: Department; label: string }[] = [
+  { value: 'customer', label: 'Customer' },
+  { value: 'manager', label: 'Manager' },
+  { value: 'accounting', label: 'Accounting' },
+  { value: 'team_member', label: 'Team Member' },
+];
 
 const AdminUsers = () => {
   const navigate = useNavigate();
@@ -128,6 +139,7 @@ const AdminUsers = () => {
       isAffiliate: affiliateUserIds.has(profile.id),
       hasAccountingAccess: accountingAccessIds.has(profile.id),
       hasPasswordsAccess: passwordsAccessIds.has(profile.id),
+      department: (profile.department as Department) || 'team_member',
     }));
 
     setUsers(usersWithRoles);
@@ -362,6 +374,37 @@ const AdminUsers = () => {
     }
   };
 
+  const updateDepartment = async (userId: string, department: Department) => {
+    setTogglingUserId(userId);
+
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ department })
+        .eq("id", userId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Department Updated",
+        description: `User assigned to ${DEPARTMENT_OPTIONS.find(d => d.value === department)?.label}.`,
+      });
+
+      setUsers(prev => prev.map(u => {
+        if (u.id !== userId) return u;
+        return { ...u, department };
+      }));
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update department.",
+        variant: "destructive",
+      });
+    } finally {
+      setTogglingUserId(null);
+    }
+  };
+
   const deleteUser = async (user: UserProfile) => {
     setDeletingUserId(user.id);
 
@@ -440,6 +483,7 @@ const AdminUsers = () => {
                     <TableHead className="text-center">Affiliate</TableHead>
                     <TableHead className="text-center">Accounting</TableHead>
                     <TableHead className="text-center">Passwords</TableHead>
+                    <TableHead className="text-center">Department</TableHead>
                     {canDelete && <TableHead className="text-center">Actions</TableHead>}
                   </TableRow>
                 </TableHeader>
@@ -513,6 +557,29 @@ const AdminUsers = () => {
                               checked={user.hasPasswordsAccess}
                               onCheckedChange={() => togglePasswordsAccess(user.id, user.hasPasswordsAccess)}
                             />
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <div className="flex items-center justify-center">
+                          {togglingUserId === user.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Select
+                              value={user.department}
+                              onValueChange={(value: Department) => updateDepartment(user.id, value)}
+                            >
+                              <SelectTrigger className="w-[130px]">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {DEPARTMENT_OPTIONS.map((opt) => (
+                                  <SelectItem key={opt.value} value={opt.value}>
+                                    {opt.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                           )}
                         </div>
                       </TableCell>

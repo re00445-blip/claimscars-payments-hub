@@ -38,7 +38,19 @@ interface Profile {
   id: string;
   full_name: string | null;
   email: string;
+  department: string | null;
 }
+
+type Department = 'customer' | 'manager' | 'accounting' | 'team_member';
+
+const DEPARTMENT_LABELS: Record<Department, string> = {
+  customer: 'Customers',
+  manager: 'Managers',
+  accounting: 'Accounting',
+  team_member: 'Team Members',
+};
+
+const DEPARTMENT_ORDER: Department[] = ['manager', 'accounting', 'team_member', 'customer'];
 
 const RESPONSE_TIME_OPTIONS = [
   { value: "1", label: "1 hour" },
@@ -82,13 +94,33 @@ export const NotesManager = () => {
     try {
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, full_name, email");
+        .select("id, full_name, email, department");
 
       if (error) throw error;
       setProfiles(data || []);
     } catch (error: any) {
       console.error("Error loading profiles:", error.message);
     }
+  };
+
+  const getGroupedProfiles = () => {
+    const grouped: Record<Department, Profile[]> = {
+      customer: [],
+      manager: [],
+      accounting: [],
+      team_member: [],
+    };
+
+    profiles.forEach(profile => {
+      const dept = (profile.department as Department) || 'team_member';
+      if (grouped[dept]) {
+        grouped[dept].push(profile);
+      } else {
+        grouped.team_member.push(profile);
+      }
+    });
+
+    return grouped;
   };
 
   const loadNotes = async () => {
@@ -449,11 +481,22 @@ export const NotesManager = () => {
                     <SelectValue placeholder="Select assignee..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {profiles.map((profile) => (
-                      <SelectItem key={profile.id} value={profile.id}>
-                        {profile.full_name || profile.email}
-                      </SelectItem>
-                    ))}
+                    {DEPARTMENT_ORDER.map((dept) => {
+                      const deptProfiles = getGroupedProfiles()[dept];
+                      if (deptProfiles.length === 0) return null;
+                      return (
+                        <div key={dept}>
+                          <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground bg-muted/50">
+                            {DEPARTMENT_LABELS[dept]}
+                          </div>
+                          {deptProfiles.map((profile) => (
+                            <SelectItem key={profile.id} value={profile.id}>
+                              {profile.full_name || profile.email}
+                            </SelectItem>
+                          ))}
+                        </div>
+                      );
+                    })}
                   </SelectContent>
                 </Select>
               </div>
