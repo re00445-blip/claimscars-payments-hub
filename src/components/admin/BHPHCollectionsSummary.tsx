@@ -46,23 +46,41 @@ export const BHPHCollectionsSummary = () => {
   }, [timeFilter, showByAccount, selectedAccountId]);
 
   const fetchAccounts = async () => {
-    const { data, error } = await supabase
+    // Fetch accounts first
+    const { data: accountsData, error: accountsError } = await supabase
       .from("customer_accounts")
-      .select(`
-        id,
-        profiles:user_id (full_name),
-        vehicles:vehicle_id (year, make, model)
-      `)
+      .select("id, user_id, vehicle_id")
       .eq("status", "active");
 
-    if (data && !error) {
-      const accountOptions: AccountOption[] = data.map((acc: any) => ({
-        id: acc.id,
-        customerName: acc.profiles?.full_name || "Unknown",
-        vehicleInfo: acc.vehicles ? `${acc.vehicles.year} ${acc.vehicles.make} ${acc.vehicles.model}` : "No vehicle",
-      }));
-      setAccounts(accountOptions);
+    if (accountsError || !accountsData) {
+      console.error("Error fetching accounts:", accountsError);
+      return;
     }
+
+    // Fetch profiles and vehicles separately
+    const userIds = [...new Set(accountsData.map(a => a.user_id))];
+    const vehicleIds = [...new Set(accountsData.filter(a => a.vehicle_id).map(a => a.vehicle_id))];
+
+    const [profilesRes, vehiclesRes] = await Promise.all([
+      supabase.from("profiles").select("id, full_name").in("id", userIds),
+      vehicleIds.length > 0 
+        ? supabase.from("vehicles").select("id, year, make, model").in("id", vehicleIds)
+        : Promise.resolve({ data: [] })
+    ]);
+
+    const profilesMap = new Map((profilesRes.data || []).map(p => [p.id, p]));
+    const vehiclesMap = new Map((vehiclesRes.data || []).map(v => [v.id, v]));
+
+    const accountOptions: AccountOption[] = accountsData.map((acc) => {
+      const profile = profilesMap.get(acc.user_id);
+      const vehicle = vehiclesMap.get(acc.vehicle_id);
+      return {
+        id: acc.id,
+        customerName: profile?.full_name || "Unknown",
+        vehicleInfo: vehicle ? `${vehicle.year} ${vehicle.make} ${vehicle.model}` : "No vehicle",
+      };
+    });
+    setAccounts(accountOptions);
   };
 
   const getDateRange = () => {
@@ -95,18 +113,7 @@ export const BHPHCollectionsSummary = () => {
     try {
       let query = supabase
         .from("payments")
-        .select(`
-          id,
-          account_id,
-          interest_paid,
-          late_fee_paid,
-          payment_date,
-          customer_accounts!inner (
-            id,
-            profiles:user_id (full_name),
-            vehicles:vehicle_id (year, make, model)
-          )
-        `)
+        .select("id, account_id, interest_paid, late_fee_paid, payment_date")
         .gte("payment_date", startDate.toISOString())
         .lte("payment_date", endDate.toISOString());
 
@@ -135,32 +142,59 @@ export const BHPHCollectionsSummary = () => {
 
         // Calculate breakdown by account if showing by account
         if (showByAccount && selectedAccountId === "all") {
-          const breakdownMap = new Map<string, { customerName: string; vehicleInfo: string; interest: number; lateFees: number; count: number }>();
+          // Get unique account IDs from payments
+          const accountIds = [...new Set(data.map(p => p.account_id))];
+          
+          // Fetch account details
+          const { data: accountsData } = await supabase
+            .from("customer_accounts")
+            .select("id, user_id, vehicle_id")
+            .in("id", accountIds);
 
-          data.forEach((p: any) => {
-            const accountId = p.account_id;
-            const existing = breakdownMap.get(accountId) || {
-              customerName: p.customer_accounts?.profiles?.full_name || "Unknown",
-              vehicleInfo: p.customer_accounts?.vehicles
-                ? `${p.customer_accounts.vehicles.year} ${p.customer_accounts.vehicles.make} ${p.customer_accounts.vehicles.model}`
-                : "No vehicle",
-              interest: 0,
-              lateFees: 0,
-              count: 0,
-            };
+          if (accountsData) {
+            const userIds = [...new Set(accountsData.map(a => a.user_id))];
+            const vehicleIds = [...new Set(accountsData.filter(a => a.vehicle_id).map(a => a.vehicle_id))];
 
-            existing.interest += Number(p.interest_paid) || 0;
-            existing.lateFees += Number(p.late_fee_paid) || 0;
-            existing.count += 1;
-            breakdownMap.set(accountId, existing);
-          });
+            const [profilesRes, vehiclesRes] = await Promise.all([
+              supabase.from("profiles").select("id, full_name").in("id", userIds),
+              vehicleIds.length > 0 
+                ? supabase.from("vehicles").select("id, year, make, model").in("id", vehicleIds)
+                : Promise.resolve({ data: [] })
+            ]);
 
-          setAccountBreakdown(
-            Array.from(breakdownMap.entries()).map(([accountId, data]) => ({
-              accountId,
-              ...data,
-            }))
-          );
+            const profilesMap = new Map((profilesRes.data || []).map(p => [p.id, p]));
+            const vehiclesMap = new Map((vehiclesRes.data || []).map(v => [v.id, v]));
+            const accountsMap = new Map(accountsData.map(a => [a.id, a]));
+
+            const breakdownMap = new Map<string, { customerName: string; vehicleInfo: string; interest: number; lateFees: number; count: number }>();
+
+            data.forEach((p) => {
+              const accountId = p.account_id;
+              const account = accountsMap.get(accountId);
+              const profile = account ? profilesMap.get(account.user_id) : null;
+              const vehicle = account?.vehicle_id ? vehiclesMap.get(account.vehicle_id) : null;
+
+              const existing = breakdownMap.get(accountId) || {
+                customerName: profile?.full_name || "Unknown",
+                vehicleInfo: vehicle ? `${vehicle.year} ${vehicle.make} ${vehicle.model}` : "No vehicle",
+                interest: 0,
+                lateFees: 0,
+                count: 0,
+              };
+
+              existing.interest += Number(p.interest_paid) || 0;
+              existing.lateFees += Number(p.late_fee_paid) || 0;
+              existing.count += 1;
+              breakdownMap.set(accountId, existing);
+            });
+
+            setAccountBreakdown(
+              Array.from(breakdownMap.entries()).map(([accountId, data]) => ({
+                accountId,
+                ...data,
+              }))
+            );
+          }
         } else {
           setAccountBreakdown([]);
         }
