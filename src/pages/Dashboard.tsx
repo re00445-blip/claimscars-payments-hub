@@ -26,6 +26,7 @@ import { RaceTrackProgress } from "@/components/RaceTrackProgress";
 import { AccountDocuments } from "@/components/AccountDocuments";
 import { PasswordsManager } from "@/components/admin/PasswordsManager";
 import { NotesManager } from "@/components/admin/NotesManager";
+import SubscriptionsManager from "@/components/admin/SubscriptionsManager";
 
 interface Affiliate {
   id: string;
@@ -834,6 +835,12 @@ const Dashboard = () => {
                   Notes
                 </TabsTrigger>
               )}
+              {hasPasswordsAccess && (
+                <TabsTrigger value="subscriptions" className="flex items-center gap-2">
+                  <CreditCard className="h-4 w-4" />
+                  Subscriptions
+                </TabsTrigger>
+              )}
             </TabsList>
 
             <TabsContent value="management" className="space-y-6">
@@ -999,6 +1006,11 @@ const Dashboard = () => {
             {hasPasswordsAccess && (
               <TabsContent value="notes" className="space-y-6">
                 <NotesManager />
+              </TabsContent>
+            )}
+            {hasPasswordsAccess && (
+              <TabsContent value="subscriptions" className="space-y-6">
+                <SubscriptionsManager />
               </TabsContent>
             )}
           </Tabs>

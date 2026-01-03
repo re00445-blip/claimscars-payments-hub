@@ -784,6 +784,42 @@ export type Database = {
           },
         ]
       }
+      subscriptions: {
+        Row: {
+          cost: number
+          created_at: string
+          due_date: string
+          id: string
+          is_active: boolean
+          name: string
+          notes: string | null
+          payment_type: string
+          updated_at: string
+        }
+        Insert: {
+          cost: number
+          created_at?: string
+          due_date: string
+          id?: string
+          is_active?: boolean
+          name: string
+          notes?: string | null
+          payment_type: string
+          updated_at?: string
+        }
+        Update: {
+          cost?: number
+          created_at?: string
+          due_date?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          notes?: string | null
+          payment_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_permissions: {
         Row: {
           created_at: string | null
