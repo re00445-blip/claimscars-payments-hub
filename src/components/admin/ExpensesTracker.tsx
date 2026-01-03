@@ -239,7 +239,7 @@ export const ExpensesTracker = () => {
         const parsedAmount = parseFloat(amount);
         if (isNaN(parsedAmount) || parsedAmount <= 0) continue;
 
-        const validTransactionTypes = ["revenue", "expenses", "taxes"];
+        const validTransactionTypes = ["revenue", "expenses", "taxes", "transfer"];
         const validCategories = ["business", "personal"];
         
         expenses.push({
@@ -634,6 +634,7 @@ export const ExpensesTracker = () => {
                     <SelectItem value="revenue">Revenue</SelectItem>
                     <SelectItem value="expenses">Expenses</SelectItem>
                     <SelectItem value="taxes">Taxes</SelectItem>
+                    <SelectItem value="transfer">Transfer</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -803,6 +804,7 @@ export const ExpensesTracker = () => {
                               <SelectItem value="revenue">Revenue</SelectItem>
                               <SelectItem value="expenses">Expenses</SelectItem>
                               <SelectItem value="taxes">Taxes</SelectItem>
+                              <SelectItem value="transfer">Transfer</SelectItem>
                             </SelectContent>
                           </Select>
                         </TableCell>
@@ -897,6 +899,8 @@ export const ExpensesTracker = () => {
                                 ? "bg-green-100 text-green-700"
                                 : expense.transaction_type === "taxes"
                                 ? "bg-orange-100 text-orange-700"
+                                : expense.transaction_type === "transfer"
+                                ? "bg-blue-100 text-blue-700"
                                 : "bg-red-100 text-red-700"
                             }`}
                           >
