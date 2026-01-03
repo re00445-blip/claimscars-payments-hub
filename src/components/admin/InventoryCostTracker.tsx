@@ -323,7 +323,7 @@ export const InventoryCostTracker = () => {
     }
   };
 
-  const [recentlyDeleted, setRecentlyDeleted] = useState<Vehicle | null>(null);
+  const [deletedVehicles, setDeletedVehicles] = useState<Vehicle[]>([]);
 
   const handleDelete = async (vehicleId: string) => {
     const vehicleToDelete = vehicles.find(v => v.id === vehicleId);
@@ -338,35 +338,15 @@ export const InventoryCostTracker = () => {
       if (error) throw error;
       
       setVehicles(prev => prev.filter(v => v.id !== vehicleId));
-      setRecentlyDeleted(vehicleToDelete);
-      
-      toast.success(
-        <div className="flex items-center gap-2">
-          <span>Vehicle deleted</span>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="h-7 ml-2"
-            onClick={() => handleUndo(vehicleToDelete)}
-          >
-            <Undo2 className="h-3 w-3 mr-1" />
-            Undo
-          </Button>
-        </div>,
-        { duration: 10000 }
-      );
-      
-      // Clear undo option after 10 seconds
-      setTimeout(() => {
-        setRecentlyDeleted(null);
-      }, 10000);
+      setDeletedVehicles(prev => [vehicleToDelete, ...prev]);
+      toast.success('Vehicle deleted - you can restore it from the Recently Deleted section below');
     } catch (error) {
       console.error('Error deleting:', error);
       toast.error('Failed to delete vehicle');
     }
   };
 
-  const handleUndo = async (vehicle: Vehicle) => {
+  const handleRestore = async (vehicle: Vehicle) => {
     try {
       const { error } = await supabase
         .from('vehicles')
@@ -384,13 +364,17 @@ export const InventoryCostTracker = () => {
       if (error) throw error;
       
       setVehicles(prev => [...prev, vehicle].sort((a, b) => b.year - a.year));
-      setRecentlyDeleted(null);
-      toast.dismiss();
+      setDeletedVehicles(prev => prev.filter(v => v.id !== vehicle.id));
       toast.success('Vehicle restored');
     } catch (error) {
       console.error('Error restoring vehicle:', error);
       toast.error('Failed to restore vehicle');
     }
+  };
+
+  const handlePermanentDelete = (vehicleId: string) => {
+    setDeletedVehicles(prev => prev.filter(v => v.id !== vehicleId));
+    toast.success('Vehicle permanently removed from deleted list');
   };
 
   const handlePrint = (vehicleId: string) => {
@@ -807,6 +791,69 @@ export const InventoryCostTracker = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Recently Deleted Section */}
+      {deletedVehicles.length > 0 && (
+        <Card className="border-orange-200 bg-orange-50">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-orange-700">
+              <Undo2 className="h-5 w-5" />
+              Recently Deleted ({deletedVehicles.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Vehicle</TableHead>
+                  <TableHead className="text-right">List Price</TableHead>
+                  <TableHead className="text-right">Cost</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {deletedVehicles.map((vehicle) => (
+                  <TableRow key={vehicle.id}>
+                    <TableCell className="font-medium">
+                      {vehicle.year} {vehicle.make} {vehicle.model}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      ${Number(vehicle.price).toLocaleString()}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      ${Number(vehicle.cost_price || 0).toLocaleString()}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex gap-2 justify-end">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleRestore(vehicle)}
+                          className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                        >
+                          <Undo2 className="h-4 w-4 mr-1" />
+                          Restore
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handlePermanentDelete(vehicle.id)}
+                          className="text-muted-foreground hover:text-destructive"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+            <p className="text-sm text-orange-600 mt-3">
+              These vehicles can be restored until you refresh the page or close the browser.
+            </p>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };
