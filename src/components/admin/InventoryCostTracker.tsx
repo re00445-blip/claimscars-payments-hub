@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { Save, DollarSign, TrendingUp, TrendingDown, Trash2, Plus, ChevronDown, ChevronUp, Printer, Upload, FileText, X } from 'lucide-react';
+import { Save, DollarSign, TrendingUp, TrendingDown, Trash2, Plus, ChevronDown, ChevronUp, Printer, Upload, FileText, X, Undo2 } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -20,6 +20,7 @@ interface Vehicle {
   price: number;
   cost_price: number | null;
   status: string;
+  vin?: string;
 }
 
 interface CostBreakdown {
@@ -86,7 +87,7 @@ export const InventoryCostTracker = () => {
     try {
       const { data, error } = await supabase
         .from('vehicles')
-        .select('id, make, model, year, price, cost_price, status')
+        .select('id, make, model, year, price, cost_price, status, vin')
         .order('year', { ascending: false });
 
       if (error) throw error;
@@ -322,7 +323,12 @@ export const InventoryCostTracker = () => {
     }
   };
 
+  const [recentlyDeleted, setRecentlyDeleted] = useState<Vehicle | null>(null);
+
   const handleDelete = async (vehicleId: string) => {
+    const vehicleToDelete = vehicles.find(v => v.id === vehicleId);
+    if (!vehicleToDelete) return;
+
     try {
       const { error } = await supabase
         .from('vehicles')
@@ -332,10 +338,58 @@ export const InventoryCostTracker = () => {
       if (error) throw error;
       
       setVehicles(prev => prev.filter(v => v.id !== vehicleId));
-      toast.success('Vehicle deleted');
+      setRecentlyDeleted(vehicleToDelete);
+      
+      toast.success(
+        <div className="flex items-center gap-2">
+          <span>Vehicle deleted</span>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="h-7 ml-2"
+            onClick={() => handleUndo(vehicleToDelete)}
+          >
+            <Undo2 className="h-3 w-3 mr-1" />
+            Undo
+          </Button>
+        </div>,
+        { duration: 10000 }
+      );
+      
+      // Clear undo option after 10 seconds
+      setTimeout(() => {
+        setRecentlyDeleted(null);
+      }, 10000);
     } catch (error) {
       console.error('Error deleting:', error);
       toast.error('Failed to delete vehicle');
+    }
+  };
+
+  const handleUndo = async (vehicle: Vehicle) => {
+    try {
+      const { error } = await supabase
+        .from('vehicles')
+        .insert([{
+          id: vehicle.id,
+          make: vehicle.make,
+          model: vehicle.model,
+          year: vehicle.year,
+          price: vehicle.price,
+          cost_price: vehicle.cost_price,
+          status: vehicle.status,
+          vin: vehicle.vin || `RESTORED-${vehicle.id.slice(0, 8)}`
+        }]);
+
+      if (error) throw error;
+      
+      setVehicles(prev => [...prev, vehicle].sort((a, b) => b.year - a.year));
+      setRecentlyDeleted(null);
+      toast.dismiss();
+      toast.success('Vehicle restored');
+    } catch (error) {
+      console.error('Error restoring vehicle:', error);
+      toast.error('Failed to restore vehicle');
     }
   };
 
