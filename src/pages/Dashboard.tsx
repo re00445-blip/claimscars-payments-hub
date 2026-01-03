@@ -5,7 +5,7 @@ import { User, Session } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Navbar } from "@/components/Navbar";
-import { Loader2, DollarSign, Car, FileText, Users, ClipboardList, Settings, UserPlus, Sparkles, CreditCard, Share2, Plus, Printer, Mail, MessageSquare, Send, Calculator } from "lucide-react";
+import { Loader2, DollarSign, Car, FileText, Users, ClipboardList, Settings, UserPlus, Sparkles, CreditCard, Share2, Plus, Printer, Mail, MessageSquare, Send, Calculator, Key } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { YearEndStatementHelper } from "@/components/admin/YearEndStatementHelper";
 import { ExpensesTracker } from "@/components/admin/ExpensesTracker";
@@ -24,6 +24,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ClientProfileCard } from "@/components/ClientProfileCard";
 import { RaceTrackProgress } from "@/components/RaceTrackProgress";
 import { AccountDocuments } from "@/components/AccountDocuments";
+import { PasswordsManager } from "@/components/admin/PasswordsManager";
 
 interface Affiliate {
   id: string;
@@ -86,6 +87,7 @@ const Dashboard = () => {
   const [quoteLoading, setQuoteLoading] = useState(true);
   const [customerAccount, setCustomerAccount] = useState<any>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [hasPasswordsAccess, setHasPasswordsAccess] = useState(false);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -127,6 +129,18 @@ const Dashboard = () => {
       .maybeSingle();
 
     setIsAdmin(!!adminData);
+
+    // Check passwords permission
+    if (adminData) {
+      const { data: passwordsPermission } = await supabase
+        .from("user_permissions")
+        .select("is_enabled")
+        .eq("user_id", userId)
+        .eq("permission_key", "passwords")
+        .maybeSingle();
+      
+      setHasPasswordsAccess(email === "ramon@carsandclaims.com" || !!passwordsPermission?.is_enabled);
+    }
 
     // Check affiliate role
     const { data: affiliateRole } = await supabase
@@ -807,6 +821,12 @@ const Dashboard = () => {
                 <Calculator className="h-4 w-4" />
                 Accounting
               </TabsTrigger>
+              {hasPasswordsAccess && (
+                <TabsTrigger value="passwords" className="flex items-center gap-2">
+                  <Key className="h-4 w-4" />
+                  Passwords
+                </TabsTrigger>
+              )}
             </TabsList>
 
             <TabsContent value="management" className="space-y-6">
@@ -963,6 +983,12 @@ const Dashboard = () => {
                 </div>
               </div>
             </TabsContent>
+
+            {hasPasswordsAccess && (
+              <TabsContent value="passwords" className="space-y-6">
+                <PasswordsManager />
+              </TabsContent>
+            )}
           </Tabs>
         )}
 
