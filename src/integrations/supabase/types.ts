@@ -871,6 +871,7 @@ export type Database = {
       vehicles: {
         Row: {
           color: string | null
+          cost_price: number | null
           created_at: string | null
           description: string | null
           id: string
@@ -886,6 +887,7 @@ export type Database = {
         }
         Insert: {
           color?: string | null
+          cost_price?: number | null
           created_at?: string | null
           description?: string | null
           id?: string
@@ -901,6 +903,7 @@ export type Database = {
         }
         Update: {
           color?: string | null
+          cost_price?: number | null
           created_at?: string | null
           description?: string | null
           id?: string
