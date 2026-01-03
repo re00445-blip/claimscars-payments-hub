@@ -38,7 +38,7 @@ export const PaymentMethodsSection = ({
   const [customAmount, setCustomAmount] = useState(paymentAmount.toString());
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
-  const CONVENIENCE_FEE_PERCENT = 0.03; // 5% convenience fee for card payments
+  const CONVENIENCE_FEE_PERCENT = 0.03; // 3% convenience fee for card payments
   
   const calculateFees = (amount: number) => {
     const fee = amount * CONVENIENCE_FEE_PERCENT;
@@ -235,7 +235,7 @@ export const PaymentMethodsSection = ({
                   <span>{formatCurrency(fees.baseAmount)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Convenience Fee (5%):</span>
+                  <span className="text-muted-foreground">Convenience Fee (3%):</span>
                   <span>{formatCurrency(fees.convenienceFee)}</span>
                 </div>
                 <Separator className="my-2" />
