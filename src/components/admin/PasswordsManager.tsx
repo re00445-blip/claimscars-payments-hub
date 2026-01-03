@@ -22,6 +22,7 @@ export const PasswordsManager = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
   const [canEdit, setCanEdit] = useState(false);
+  const [canDelete, setCanDelete] = useState(false);
   const [showPassword, setShowPassword] = useState<Record<string, boolean>>({});
   const [newEntry, setNewEntry] = useState({ account: "", login: "", password: "" });
   const [adding, setAdding] = useState(false);
@@ -35,6 +36,11 @@ export const PasswordsManager = () => {
     
     if (session?.user?.email === "ramon@carsandclaims.com") {
       setCanEdit(true);
+      setCanDelete(true);
+    } else {
+      // All users with access can add/edit
+      setCanEdit(true);
+      setCanDelete(false);
     }
 
     await loadPasswords();
@@ -249,14 +255,16 @@ export const PasswordsManager = () => {
                           <Save className="h-4 w-4" />
                         )}
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-destructive hover:text-destructive"
-                        onClick={() => deletePassword(password.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      {canDelete && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-destructive hover:text-destructive"
+                          onClick={() => deletePassword(password.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
                   </TableCell>
                 )}
