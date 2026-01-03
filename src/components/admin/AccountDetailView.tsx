@@ -136,14 +136,20 @@ export const AccountDetailView = ({ account, open, onOpenChange, onPaymentRecord
     
     if (today > nextPaymentDue) {
       const daysLate = Math.floor((today.getTime() - nextPaymentDue.getTime()) / (1000 * 60 * 60 * 24));
-      return daysLate * dailyLateFee;
+      const totalLateFees = daysLate * dailyLateFee;
+      // Subtract any waived late fees
+      const waivedLateFees = account.waived_late_fees || 0;
+      return Math.max(0, totalLateFees - waivedLateFees);
     }
     return 0;
   };
 
   const resetPaymentForm = () => {
-    // Calculate late fees first
+    // Calculate late fees first (already accounts for waived late fees)
     const lateFees = calculateLateFees();
+    
+    // Calculate waived interest that can be applied
+    const waivedInterest = account.waived_interest || 0;
     
     // Auto-calculate suggested payment breakdown based on interest type
     let suggestedPrincipal = 0;
@@ -151,13 +157,14 @@ export const AccountDetailView = ({ account, open, onOpenChange, onPaymentRecord
 
     if (account.interest_rate_type === "flat_fee") {
       // For flat fee: interest is the flat fee amount, principal is the rest
-      suggestedInterest = account.interest_rate;
-      suggestedPrincipal = account.payment_amount - suggestedInterest;
+      suggestedInterest = Math.max(0, account.interest_rate - waivedInterest);
+      suggestedPrincipal = account.payment_amount - account.interest_rate; // Use original interest for principal calc
     } else {
       // For percentage: calculate monthly interest
       const monthlyInterest = (account.current_balance * (account.interest_rate / 100)) / 12;
-      suggestedInterest = Math.round(monthlyInterest * 100) / 100;
-      suggestedPrincipal = account.payment_amount - suggestedInterest;
+      const calculatedInterest = Math.round(monthlyInterest * 100) / 100;
+      suggestedInterest = Math.max(0, calculatedInterest - waivedInterest);
+      suggestedPrincipal = account.payment_amount - calculatedInterest; // Use original interest for principal calc
     }
 
     // Adjust for late fees - they come off principal if included in same payment amount
@@ -165,13 +172,18 @@ export const AccountDetailView = ({ account, open, onOpenChange, onPaymentRecord
       suggestedPrincipal = Math.max(0, suggestedPrincipal - lateFees);
     }
 
+    // The total amount due is reduced by waived amounts
+    const totalDue = account.payment_amount + lateFees - waivedInterest;
+
     setPaymentForm({
-      amount: account.payment_amount + lateFees,
+      amount: Math.max(0, totalDue),
       principal_paid: Math.max(0, Math.round(suggestedPrincipal * 100) / 100),
-      interest_paid: suggestedInterest,
+      interest_paid: Math.max(0, suggestedInterest),
       late_fee_paid: lateFees,
       payment_method: "cash",
-      notes: lateFees > 0 ? `Includes $${lateFees.toFixed(2)} in late fees` : "",
+      notes: lateFees > 0 || waivedInterest > 0 
+        ? `${lateFees > 0 ? `Late fees: $${lateFees.toFixed(2)}` : ''}${lateFees > 0 && waivedInterest > 0 ? ' | ' : ''}${waivedInterest > 0 ? `Waived interest applied: $${waivedInterest.toFixed(2)}` : ''}`
+        : "",
     });
   };
 
