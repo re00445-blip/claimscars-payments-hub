@@ -132,30 +132,54 @@ export type Database = {
       }
       admin_notes: {
         Row: {
+          assignee_id: string | null
+          attachments: string[] | null
           content: string
           created_at: string
           created_by: string | null
+          due_date: string | null
           id: string
           is_archived: boolean
           note_date: string
+          notified_at: string | null
+          response_time_hours: number | null
+          subject: string | null
+          tags: string[] | null
+          time_entries: Json | null
           updated_at: string
         }
         Insert: {
+          assignee_id?: string | null
+          attachments?: string[] | null
           content: string
           created_at?: string
           created_by?: string | null
+          due_date?: string | null
           id?: string
           is_archived?: boolean
           note_date?: string
+          notified_at?: string | null
+          response_time_hours?: number | null
+          subject?: string | null
+          tags?: string[] | null
+          time_entries?: Json | null
           updated_at?: string
         }
         Update: {
+          assignee_id?: string | null
+          attachments?: string[] | null
           content?: string
           created_at?: string
           created_by?: string | null
+          due_date?: string | null
           id?: string
           is_archived?: boolean
           note_date?: string
+          notified_at?: string | null
+          response_time_hours?: number | null
+          subject?: string | null
+          tags?: string[] | null
+          time_entries?: Json | null
           updated_at?: string
         }
         Relationships: []
