@@ -5,7 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Plus, Trash2, Save, Eye, EyeOff, Key } from "lucide-react";
+import { Loader2, Plus, Trash2, Save, Eye, EyeOff, Key, ArrowUpAZ, ArrowDownAZ } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 interface Password {
   id: string;
@@ -26,6 +28,11 @@ export const PasswordsManager = () => {
   const [showPassword, setShowPassword] = useState<Record<string, boolean>>({});
   const [newEntry, setNewEntry] = useState({ account: "", login: "", password: "" });
   const [adding, setAdding] = useState(false);
+  const [sortAlphabetically, setSortAlphabetically] = useState(false);
+
+  const sortedPasswords = sortAlphabetically 
+    ? [...passwords].sort((a, b) => a.account.toLowerCase().localeCompare(b.account.toLowerCase()))
+    : passwords;
 
   useEffect(() => {
     checkPermissionsAndLoad();
@@ -180,6 +187,17 @@ export const PasswordsManager = () => {
         <CardDescription>
           Securely store and manage account credentials
         </CardDescription>
+        <div className="flex items-center gap-2 mt-4">
+          <Switch
+            id="sort-alpha"
+            checked={sortAlphabetically}
+            onCheckedChange={setSortAlphabetically}
+          />
+          <Label htmlFor="sort-alpha" className="flex items-center gap-1 cursor-pointer">
+            {sortAlphabetically ? <ArrowUpAZ className="h-4 w-4" /> : <ArrowDownAZ className="h-4 w-4" />}
+            Sort A-Z
+          </Label>
+        </div>
       </CardHeader>
       <CardContent>
         <Table>
@@ -192,7 +210,7 @@ export const PasswordsManager = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {passwords.map((password) => (
+            {sortedPasswords.map((password) => (
               <TableRow key={password.id}>
                 <TableCell>
                   {canEdit ? (
