@@ -511,8 +511,19 @@ export const InventoryCostTracker = () => {
 
       {/* Vehicles Table */}
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Inventory Cost vs Listing Price</CardTitle>
+          {deletedVehicles.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => document.getElementById('recently-deleted-section')?.scrollIntoView({ behavior: 'smooth' })}
+              className="text-orange-600 border-orange-300 hover:bg-orange-50"
+            >
+              <Undo2 className="h-4 w-4 mr-1" />
+              Restore ({deletedVehicles.length})
+            </Button>
+          )}
         </CardHeader>
         <CardContent className="space-y-4">
           {vehicles.map((vehicle) => {
@@ -794,7 +805,7 @@ export const InventoryCostTracker = () => {
 
       {/* Recently Deleted Section */}
       {deletedVehicles.length > 0 && (
-        <Card className="border-orange-200 bg-orange-50">
+        <Card id="recently-deleted-section" className="border-orange-200 bg-orange-50">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-orange-700">
               <Undo2 className="h-5 w-5" />
