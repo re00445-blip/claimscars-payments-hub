@@ -484,6 +484,36 @@ export type Database = {
           },
         ]
       }
+      passwords: {
+        Row: {
+          account: string
+          created_at: string
+          created_by: string | null
+          id: string
+          login: string
+          password: string
+          updated_at: string
+        }
+        Insert: {
+          account: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          login: string
+          password: string
+          updated_at?: string
+        }
+        Update: {
+          account?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          login?: string
+          password?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       payment_reminders: {
         Row: {
           account_id: string

@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Navbar } from "@/components/Navbar";
-import { Loader2, ArrowLeft, Shield, User, Users, Trash2, Calculator } from "lucide-react";
+import { Loader2, ArrowLeft, Shield, User, Users, Trash2, Calculator, Key } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -28,6 +28,7 @@ interface UserProfile {
   isAdmin: boolean;
   isAffiliate: boolean;
   hasAccountingAccess: boolean;
+  hasPasswordsAccess: boolean;
 }
 
 const AdminUsers = () => {
@@ -112,6 +113,10 @@ const AdminUsers = () => {
     const accountingAccessIds = new Set(
       userPermissions?.filter(p => p.permission_key === "accounting" && p.is_enabled).map(p => p.user_id) || []
     );
+    
+    const passwordsAccessIds = new Set(
+      userPermissions?.filter(p => p.permission_key === "passwords" && p.is_enabled).map(p => p.user_id) || []
+    );
 
     const usersWithRoles: UserProfile[] = (profiles || []).map(profile => ({
       id: profile.id,
@@ -122,6 +127,7 @@ const AdminUsers = () => {
       isAdmin: adminUserIds.has(profile.id),
       isAffiliate: affiliateUserIds.has(profile.id),
       hasAccountingAccess: accountingAccessIds.has(profile.id),
+      hasPasswordsAccess: passwordsAccessIds.has(profile.id),
     }));
 
     setUsers(usersWithRoles);
@@ -310,6 +316,52 @@ const AdminUsers = () => {
     }
   };
 
+  const togglePasswordsAccess = async (userId: string, currentlyHasAccess: boolean) => {
+    setTogglingUserId(userId);
+
+    try {
+      if (currentlyHasAccess) {
+        const { error } = await supabase
+          .from("user_permissions")
+          .update({ is_enabled: false })
+          .eq("user_id", userId)
+          .eq("permission_key", "passwords");
+
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("user_permissions")
+          .upsert({ 
+            user_id: userId, 
+            permission_key: "passwords", 
+            is_enabled: true 
+          }, { 
+            onConflict: "user_id,permission_key" 
+          });
+
+        if (error) throw error;
+      }
+
+      toast({
+        title: "Permission Updated",
+        description: currentlyHasAccess ? "Passwords access revoked." : "Passwords access granted.",
+      });
+
+      setUsers(prev => prev.map(u => {
+        if (u.id !== userId) return u;
+        return { ...u, hasPasswordsAccess: !currentlyHasAccess };
+      }));
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update permission.",
+        variant: "destructive",
+      });
+    } finally {
+      setTogglingUserId(null);
+    }
+  };
+
   const deleteUser = async (user: UserProfile) => {
     setDeletingUserId(user.id);
 
@@ -387,6 +439,7 @@ const AdminUsers = () => {
                     <TableHead className="text-center">Admin</TableHead>
                     <TableHead className="text-center">Affiliate</TableHead>
                     <TableHead className="text-center">Accounting</TableHead>
+                    <TableHead className="text-center">Passwords</TableHead>
                     {canDelete && <TableHead className="text-center">Actions</TableHead>}
                   </TableRow>
                 </TableHeader>
@@ -447,6 +500,18 @@ const AdminUsers = () => {
                             <Switch
                               checked={user.hasAccountingAccess}
                               onCheckedChange={() => toggleAccountingAccess(user.id, user.hasAccountingAccess)}
+                            />
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <div className="flex items-center justify-center">
+                          {togglingUserId === user.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Switch
+                              checked={user.hasPasswordsAccess}
+                              onCheckedChange={() => togglePasswordsAccess(user.id, user.hasPasswordsAccess)}
                             />
                           )}
                         </div>
