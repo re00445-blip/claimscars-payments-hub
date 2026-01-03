@@ -490,21 +490,30 @@ const Dashboard = () => {
                   if (nextPaymentDate && nextPaymentDate < today) {
                     const daysLate = Math.floor((today.getTime() - nextPaymentDate.getTime()) / (1000 * 60 * 60 * 24));
                     const lateFeePerDay = customerAccount.late_fee_amount || 25;
-                    const currentLateFees = daysLate * lateFeePerDay;
+                    const totalLateFees = daysLate * lateFeePerDay;
+                    // Subtract waived late fees
+                    const waivedLateFees = customerAccount.waived_late_fees || 0;
+                    const currentLateFees = Math.max(0, totalLateFees - waivedLateFees);
                     
-                    return (
-                      <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4 mb-4">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="text-sm font-medium text-destructive">Current Late Fees</p>
-                            <p className="text-xs text-muted-foreground">{daysLate} days overdue × ${lateFeePerDay}/day</p>
+                    // Only show if there are actual late fees after waivers
+                    if (currentLateFees > 0) {
+                      return (
+                        <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4 mb-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-sm font-medium text-destructive">Current Late Fees</p>
+                              <p className="text-xs text-muted-foreground">
+                                {daysLate} days overdue × ${lateFeePerDay}/day
+                                {waivedLateFees > 0 && ` ($${waivedLateFees.toFixed(2)} waived)`}
+                              </p>
+                            </div>
+                            <p className="text-2xl font-bold text-destructive">
+                              ${currentLateFees.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                            </p>
                           </div>
-                          <p className="text-2xl font-bold text-destructive">
-                            ${currentLateFees.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                          </p>
                         </div>
-                      </div>
-                    );
+                      );
+                    }
                   }
                   return null;
                 })()}
