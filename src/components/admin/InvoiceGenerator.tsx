@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { FileText, Send, Plus, Trash2, Loader2 } from "lucide-react";
+import { FileText, Send, Plus, Trash2, Loader2, User } from "lucide-react";
 
 interface LineItem {
   id: string;
@@ -15,6 +15,14 @@ interface LineItem {
   description: string;
   quantity: number;
   unitPrice: number;
+}
+
+interface Customer {
+  id: string;
+  name: string;
+  email: string;
+  phone: string | null;
+  vehicleInfo: string | null;
 }
 
 const PARTS_OPTIONS = [
@@ -76,12 +84,95 @@ const LABOR_OPTIONS = [
 
 export const InvoiceGenerator = () => {
   const { toast } = useToast();
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string>("");
   const [customerName, setCustomerName] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
   const [vehicleInfo, setVehicleInfo] = useState("");
   const [lineItems, setLineItems] = useState<LineItem[]>([]);
   const [notes, setNotes] = useState("");
   const [sending, setSending] = useState(false);
+  const [loadingCustomers, setLoadingCustomers] = useState(true);
+
+  useEffect(() => {
+    fetchCustomers();
+  }, []);
+
+  const fetchCustomers = async () => {
+    try {
+      // Fetch customer accounts with profile and vehicle info
+      const { data: accounts, error } = await supabase
+        .from("customer_accounts")
+        .select(`
+          id,
+          user_id,
+          vehicle_id,
+          vehicles (year, make, model)
+        `)
+        .eq("status", "active");
+
+      if (error) throw error;
+
+      // Get unique user IDs
+      const userIds = [...new Set(accounts?.map(a => a.user_id) || [])];
+
+      // Fetch profiles for those users
+      const { data: profiles, error: profileError } = await supabase
+        .from("profiles")
+        .select("id, full_name, email, phone")
+        .in("id", userIds);
+
+      if (profileError) throw profileError;
+
+      // Combine data
+      const customerList: Customer[] = [];
+      const seenUserIds = new Set<string>();
+
+      accounts?.forEach(account => {
+        if (seenUserIds.has(account.user_id)) return;
+        seenUserIds.add(account.user_id);
+
+        const profile = profiles?.find(p => p.id === account.user_id);
+        if (profile) {
+          const vehicle = account.vehicles as { year: number; make: string; model: string } | null;
+          customerList.push({
+            id: account.user_id,
+            name: profile.full_name || profile.email,
+            email: profile.email,
+            phone: profile.phone,
+            vehicleInfo: vehicle ? `${vehicle.year} ${vehicle.make} ${vehicle.model}` : null,
+          });
+        }
+      });
+
+      // Sort by name
+      customerList.sort((a, b) => a.name.localeCompare(b.name));
+      setCustomers(customerList);
+    } catch (error) {
+      console.error("Error fetching customers:", error);
+    } finally {
+      setLoadingCustomers(false);
+    }
+  };
+
+  const handleCustomerSelect = (customerId: string) => {
+    setSelectedCustomerId(customerId);
+    
+    if (customerId === "manual") {
+      // Clear fields for manual entry
+      setCustomerName("");
+      setCustomerEmail("");
+      setVehicleInfo("");
+      return;
+    }
+
+    const customer = customers.find(c => c.id === customerId);
+    if (customer) {
+      setCustomerName(customer.name);
+      setCustomerEmail(customer.email);
+      setVehicleInfo(customer.vehicleInfo || "");
+    }
+  };
 
   const addLineItem = (type: "parts" | "labor") => {
     setLineItems([
@@ -300,6 +391,7 @@ export const InvoiceGenerator = () => {
       });
 
       // Reset form
+      setSelectedCustomerId("");
       setCustomerName("");
       setCustomerEmail("");
       setVehicleInfo("");
@@ -329,6 +421,28 @@ export const InvoiceGenerator = () => {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* Customer Selection */}
+        <div className="space-y-2">
+          <Label className="flex items-center gap-2">
+            <User className="h-4 w-4" />
+            Select Customer
+          </Label>
+          <Select value={selectedCustomerId} onValueChange={handleCustomerSelect}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder={loadingCustomers ? "Loading customers..." : "Select a customer or enter manually..."} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="manual">✏️ Enter Manually</SelectItem>
+              {customers.map((customer) => (
+                <SelectItem key={customer.id} value={customer.id}>
+                  {customer.name} — {customer.email}
+                  {customer.vehicleInfo && ` (${customer.vehicleInfo})`}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
         {/* Customer Information */}
         <div className="grid md:grid-cols-3 gap-4">
           <div className="space-y-2">
@@ -338,6 +452,7 @@ export const InvoiceGenerator = () => {
               value={customerName}
               onChange={(e) => setCustomerName(e.target.value)}
               placeholder="John Doe"
+              disabled={selectedCustomerId !== "manual" && selectedCustomerId !== ""}
             />
           </div>
           <div className="space-y-2">
@@ -348,6 +463,7 @@ export const InvoiceGenerator = () => {
               value={customerEmail}
               onChange={(e) => setCustomerEmail(e.target.value)}
               placeholder="john@example.com"
+              disabled={selectedCustomerId !== "manual" && selectedCustomerId !== ""}
             />
           </div>
           <div className="space-y-2">
