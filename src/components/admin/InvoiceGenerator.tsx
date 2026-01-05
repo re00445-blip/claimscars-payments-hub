@@ -95,6 +95,7 @@ export const InvoiceGenerator = () => {
   const [sending, setSending] = useState(false);
   const [loadingCustomers, setLoadingCustomers] = useState(true);
   const [checkingGrammar, setCheckingGrammar] = useState<string | null>(null);
+  const [checkingNotesGrammar, setCheckingNotesGrammar] = useState(false);
 
   useEffect(() => {
     fetchCustomers();
@@ -230,6 +231,36 @@ export const InvoiceGenerator = () => {
       });
     } finally {
       setCheckingGrammar(null);
+    }
+  };
+
+  const handleNotesGrammarCheck = async () => {
+    if (!notes.trim()) return;
+
+    setCheckingNotesGrammar(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("grammar-check", {
+        body: { text: notes },
+      });
+
+      if (error) throw error;
+
+      if (data?.correctedText) {
+        setNotes(data.correctedText);
+        toast({
+          title: "Text Corrected",
+          description: "Spelling and grammar have been checked.",
+        });
+      }
+    } catch (error: any) {
+      console.error("Grammar check error:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to check grammar",
+        variant: "destructive",
+      });
+    } finally {
+      setCheckingNotesGrammar(false);
     }
   };
 
@@ -697,7 +728,25 @@ export const InvoiceGenerator = () => {
 
         {/* Notes */}
         <div className="space-y-2">
-          <Label htmlFor="notes">Notes (Optional)</Label>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="notes">Notes (Optional)</Label>
+            {notes.trim() && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleNotesGrammarCheck}
+                disabled={checkingNotesGrammar}
+                title="Check spelling & grammar"
+              >
+                {checkingNotesGrammar ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                ) : (
+                  <Wand2 className="h-4 w-4 mr-1" />
+                )}
+                Check Grammar
+              </Button>
+            )}
+          </div>
           <Textarea
             id="notes"
             value={notes}
