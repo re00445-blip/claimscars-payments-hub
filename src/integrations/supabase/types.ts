@@ -479,6 +479,68 @@ export type Database = {
           },
         ]
       }
+      invoices: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          customer_email: string
+          customer_id: string | null
+          customer_name: string
+          customer_phone: string | null
+          id: string
+          line_items: Json
+          notes: string | null
+          status: string
+          subtotal: number
+          tax: number
+          total: number
+          updated_at: string
+          vehicle_info: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          customer_email: string
+          customer_id?: string | null
+          customer_name: string
+          customer_phone?: string | null
+          id?: string
+          line_items?: Json
+          notes?: string | null
+          status?: string
+          subtotal: number
+          tax: number
+          total: number
+          updated_at?: string
+          vehicle_info?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          customer_email?: string
+          customer_id?: string | null
+          customer_name?: string
+          customer_phone?: string | null
+          id?: string
+          line_items?: Json
+          notes?: string | null
+          status?: string
+          subtotal?: number
+          tax?: number
+          total?: number
+          updated_at?: string
+          vehicle_info?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customer_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       marketing_affiliates: {
         Row: {
           contracts_sent: number
