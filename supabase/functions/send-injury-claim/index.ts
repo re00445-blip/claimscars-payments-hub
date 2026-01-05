@@ -11,12 +11,15 @@ const corsHeaders = {
 
 interface InjuryClaimRequest {
   name: string;
+  email: string;
   address: string;
   accidentDate: string;
   injuryArea: string;
   atFault: string;
   contactNumber: string;
   vehicleType: string;
+  hasHealthInsurance: string;
+  whatHappened: string;
   attachments?: string[];
   referralSource?: string;
   affiliateId?: string;
@@ -51,6 +54,9 @@ function validateInput(data: InjuryClaimRequest): { valid: boolean; error?: stri
   if (!data.name || typeof data.name !== 'string' || data.name.length < 2 || data.name.length > 100) {
     return { valid: false, error: "Name must be between 2 and 100 characters" };
   }
+  if (!data.email || typeof data.email !== 'string' || !data.email.includes('@')) {
+    return { valid: false, error: "Valid email is required" };
+  }
   if (!data.address || typeof data.address !== 'string' || data.address.length > 500) {
     return { valid: false, error: "Address is required and must be under 500 characters" };
   }
@@ -65,6 +71,12 @@ function validateInput(data: InjuryClaimRequest): { valid: boolean; error?: stri
   }
   if (!data.contactNumber || typeof data.contactNumber !== 'string' || data.contactNumber.length < 10 || data.contactNumber.length > 20) {
     return { valid: false, error: "Valid contact number is required" };
+  }
+  if (!data.hasHealthInsurance || typeof data.hasHealthInsurance !== 'string') {
+    return { valid: false, error: "Health insurance status is required" };
+  }
+  if (!data.whatHappened || typeof data.whatHappened !== 'string' || data.whatHappened.length < 10 || data.whatHappened.length > 2000) {
+    return { valid: false, error: "Description of what happened is required (10-2000 characters)" };
   }
   if (data.attachments && (!Array.isArray(data.attachments) || data.attachments.length > 10)) {
     return { valid: false, error: "Maximum 10 attachments allowed" };
@@ -89,9 +101,9 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const { name, address, accidentDate, injuryArea, atFault, contactNumber, vehicleType, attachments, referralSource, affiliateId } = data;
+    const { name, email, address, accidentDate, injuryArea, atFault, contactNumber, vehicleType, hasHealthInsurance, whatHappened, attachments, referralSource, affiliateId } = data;
 
-    console.log("Processing injury claim for:", escapeHtml(name), "Referral Source:", referralSource || "none", "Affiliate ID:", affiliateId || "none");
+    console.log("Processing injury claim for:", escapeHtml(name), "Email:", escapeHtml(email), "Referral Source:", referralSource || "none", "Affiliate ID:", affiliateId || "none");
 
     // Sanitize and validate attachment URLs
     const sanitizedAttachments = (attachments || [])
@@ -126,6 +138,7 @@ const handler = async (req: Request): Promise<Response> => {
       .from("injury_claims")
       .insert({
         full_name: name,
+        email: email,
         address: address,
         accident_date: accidentDate,
         injury_area: injuryArea,
@@ -136,6 +149,7 @@ const handler = async (req: Request): Promise<Response> => {
         referral_source: referralSource || null,
         affiliate_id: resolvedAffiliateId,
         status: "new",
+        notes: `Health Insurance: ${hasHealthInsurance}\n\nWhat Happened:\n${whatHappened}`,
       })
       .select()
       .single();
@@ -192,8 +206,10 @@ const handler = async (req: Request): Promise<Response> => {
           <p><strong>Prospect Information:</strong></p>
           <ul>
             <li><strong>Name:</strong> ${escapeHtml(name)}</li>
+            <li><strong>Email:</strong> ${escapeHtml(email)}</li>
             <li><strong>Address:</strong> ${escapeHtml(address)}</li>
             <li><strong>Best Contact Number:</strong> ${escapeHtml(contactNumber)}</li>
+            <li><strong>Has Health Insurance:</strong> ${escapeHtml(hasHealthInsurance)}</li>
             ${referralHtml}
           </ul>
           <p><strong>Accident Details:</strong></p>
@@ -203,6 +219,8 @@ const handler = async (req: Request): Promise<Response> => {
             <li><strong>Were They At Fault:</strong> ${escapeHtml(atFault)}</li>
             <li><strong>Government Entity/Commercial Vehicle:</strong> ${escapeHtml(vehicleType)}</li>
           </ul>
+          <h3>What Happened</h3>
+          <p style="white-space: pre-wrap;">${escapeHtml(whatHappened)}</p>
           ${attachmentsHtml}
         `,
       });

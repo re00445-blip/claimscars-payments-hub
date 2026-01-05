@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Scale, FileText, Clock, Shield } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -18,12 +19,15 @@ import { useLanguage } from "@/contexts/LanguageContext";
 
 const claimFormSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
+  email: z.string().email("Please enter a valid email address"),
   address: z.string().min(5, "Please enter a valid address"),
   accidentDate: z.string().min(1, "Please select the accident date"),
   injuryArea: z.string().min(2, "Please describe the area of injury"),
   atFault: z.string().min(1, "Please indicate if you were at fault"),
   contactNumber: z.string().min(10, "Please enter a valid phone number"),
   vehicleType: z.string().min(1, "Please select a vehicle type"),
+  hasHealthInsurance: z.string().min(1, "Please indicate if you have health insurance"),
+  whatHappened: z.string().min(10, "Please describe what happened"),
   referralSource: z.string().optional(),
 });
 
@@ -41,12 +45,15 @@ const Claims = () => {
     resolver: zodResolver(claimFormSchema),
     defaultValues: {
       name: "",
+      email: "",
       address: "",
       accidentDate: "",
       injuryArea: "",
       atFault: "",
       contactNumber: "",
       vehicleType: "",
+      hasHealthInsurance: "",
+      whatHappened: "",
       referralSource: referralCode || "",
     },
   });
@@ -207,6 +214,19 @@ const Claims = () => {
                 </div>
 
                 <div className="space-y-2">
+                  <Label htmlFor="email">Email *</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    {...form.register("email")}
+                    placeholder="john@example.com"
+                  />
+                  {form.formState.errors.email && (
+                    <p className="text-sm text-destructive">{form.formState.errors.email.message}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
                   <Label htmlFor="contactNumber">{t("claims.contactNumber")} *</Label>
                   <Input
                     id="contactNumber"
@@ -275,20 +295,51 @@ const Claims = () => {
                 )}
               </div>
 
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="vehicleType">{t("claims.vehicleType")} *</Label>
+                  <Select onValueChange={(value) => form.setValue("vehicleType", value)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder={t("claims.select")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="government">{t("claims.governmentEntity")}</SelectItem>
+                      <SelectItem value="commercial">{t("claims.commercialVehicle")}</SelectItem>
+                      <SelectItem value="neither">{t("claims.neither")}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {form.formState.errors.vehicleType && (
+                    <p className="text-sm text-destructive">{form.formState.errors.vehicleType.message}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="hasHealthInsurance">Do you have health insurance? *</Label>
+                  <Select onValueChange={(value) => form.setValue("hasHealthInsurance", value)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder={t("claims.select")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="yes">{t("claims.yes")}</SelectItem>
+                      <SelectItem value="no">{t("claims.no")}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {form.formState.errors.hasHealthInsurance && (
+                    <p className="text-sm text-destructive">{form.formState.errors.hasHealthInsurance.message}</p>
+                  )}
+                </div>
+              </div>
+
               <div className="space-y-2">
-                <Label htmlFor="vehicleType">{t("claims.vehicleType")} *</Label>
-                <Select onValueChange={(value) => form.setValue("vehicleType", value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder={t("claims.select")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="government">{t("claims.governmentEntity")}</SelectItem>
-                    <SelectItem value="commercial">{t("claims.commercialVehicle")}</SelectItem>
-                    <SelectItem value="neither">{t("claims.neither")}</SelectItem>
-                  </SelectContent>
-                </Select>
-                {form.formState.errors.vehicleType && (
-                  <p className="text-sm text-destructive">{form.formState.errors.vehicleType.message}</p>
+                <Label htmlFor="whatHappened">What happened? *</Label>
+                <Textarea
+                  id="whatHappened"
+                  {...form.register("whatHappened")}
+                  placeholder="Please describe the accident and circumstances in detail..."
+                  rows={4}
+                />
+                {form.formState.errors.whatHappened && (
+                  <p className="text-sm text-destructive">{form.formState.errors.whatHappened.message}</p>
                 )}
               </div>
 
