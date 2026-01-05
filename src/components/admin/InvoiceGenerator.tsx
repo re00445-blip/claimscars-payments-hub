@@ -25,6 +25,8 @@ interface Customer {
   email: string;
   phone: string | null;
   vehicleInfo: string | null;
+  accountId: string | null;
+  currentBalance: number | null;
 }
 
 const PARTS_OPTIONS = [
@@ -104,6 +106,8 @@ export const InvoiceGenerator = () => {
   const [showPreview, setShowPreview] = useState(false);
   const [shareableLink, setShareableLink] = useState<string | null>(null);
   const [generatingLink, setGeneratingLink] = useState(false);
+  const [addToPrincipal, setAddToPrincipal] = useState(false);
+  const [selectedCustomerAccount, setSelectedCustomerAccount] = useState<{ id: string; balance: number } | null>(null);
 
   useEffect(() => {
     fetchCustomers();
@@ -119,6 +123,7 @@ export const InvoiceGenerator = () => {
           id,
           user_id,
           vehicle_id,
+          current_balance,
           vehicles (year, make, model)
         `)
         .eq("status", "active");
@@ -153,6 +158,8 @@ export const InvoiceGenerator = () => {
             email: profile.email,
             phone: profile.phone,
             vehicleInfo: vehicle ? `${vehicle.year} ${vehicle.make} ${vehicle.model}` : null,
+            accountId: account.id,
+            currentBalance: (account as any).current_balance || null,
           });
         }
       });
@@ -322,6 +329,8 @@ export const InvoiceGenerator = () => {
     setLineItems([]);
     setNotes("");
     setShareableLink(null);
+    setAddToPrincipal(false);
+    setSelectedCustomerAccount(null);
   };
 
   const handleGenerateShareableLink = async () => {
@@ -433,12 +442,14 @@ export const InvoiceGenerator = () => {
 
   const handleCustomerSelect = (customerId: string) => {
     setSelectedCustomerId(customerId);
+    setAddToPrincipal(false);
     
     if (customerId === "manual") {
       // Clear fields for manual entry
       setCustomerName("");
       setCustomerEmail("");
       setVehicleInfo("");
+      setSelectedCustomerAccount(null);
       return;
     }
 
@@ -447,6 +458,14 @@ export const InvoiceGenerator = () => {
       setCustomerName(customer.name);
       setCustomerEmail(customer.email);
       setVehicleInfo(customer.vehicleInfo || "");
+      if (customer.accountId) {
+        setSelectedCustomerAccount({
+          id: customer.accountId,
+          balance: customer.currentBalance || 0
+        });
+      } else {
+        setSelectedCustomerAccount(null);
+      }
     }
   };
 
@@ -765,6 +784,33 @@ export const InvoiceGenerator = () => {
         // Continue to send email even if save fails
       }
 
+      // Add invoice total to customer's principal if option is selected
+      if (addToPrincipal && selectedCustomerAccount) {
+        const newBalance = selectedCustomerAccount.balance + total;
+        const { error: updateError } = await supabase
+          .from("customer_accounts")
+          .update({
+            current_balance: newBalance,
+            principal_amount: newBalance, // Also update principal since this is new debt
+            updated_at: new Date().toISOString()
+          })
+          .eq("id", selectedCustomerAccount.id);
+
+        if (updateError) {
+          console.error("Error updating account balance:", updateError);
+          toast({
+            title: "Warning",
+            description: "Invoice sent but failed to update account balance.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Account Updated",
+            description: `$${total.toFixed(2)} added to customer's account balance.`,
+          });
+        }
+      }
+
       // Send invoice email
       const { error } = await supabase.functions.invoke("send-custom-email", {
         body: {
@@ -922,7 +968,26 @@ export const InvoiceGenerator = () => {
           </div>
         </div>
 
-        {/* Add Line Items Buttons */}
+        {/* Add to BHPH Account Option */}
+        {selectedCustomerAccount && (
+          <div className="flex items-center gap-3 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+            <input
+              type="checkbox"
+              id="addToPrincipal"
+              checked={addToPrincipal}
+              onChange={(e) => setAddToPrincipal(e.target.checked)}
+              className="h-4 w-4 rounded border-amber-300 text-amber-600 focus:ring-amber-500"
+            />
+            <Label htmlFor="addToPrincipal" className="flex-1 cursor-pointer">
+              <span className="font-medium text-amber-800">Add invoice total to BHPH account balance</span>
+              <p className="text-sm text-amber-600 mt-0.5">
+                Current balance: ${selectedCustomerAccount.balance.toFixed(2)} → 
+                New balance: ${(selectedCustomerAccount.balance + calculateTotal()).toFixed(2)}
+              </p>
+            </Label>
+          </div>
+        )}
+
         <div className="flex gap-3">
           <Button variant="outline" onClick={() => addLineItem("parts")}>
             <Plus className="h-4 w-4 mr-2" />
