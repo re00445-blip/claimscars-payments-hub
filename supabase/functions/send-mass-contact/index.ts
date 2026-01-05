@@ -5,12 +5,19 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+interface EmailAttachment {
+  filename: string;
+  content: string; // base64 encoded
+  content_type: string;
+}
+
 interface MassContactRequest {
   type: "email" | "sms";
   to: string;
   subject?: string;
   message: string;
   customerName: string;
+  attachments?: EmailAttachment[];
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -20,13 +27,65 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { type, to, subject, message, customerName }: MassContactRequest = await req.json();
-    console.log(`Sending ${type} to ${to} for ${customerName}`);
+    const { type, to, subject, message, customerName, attachments }: MassContactRequest = await req.json();
+    console.log(`Sending ${type} to ${to} for ${customerName}${attachments?.length ? ` with ${attachments.length} attachments` : ""}`);
 
     if (type === "email") {
       const resendApiKey = Deno.env.get("RESEND_API_KEY");
       if (!resendApiKey) {
         throw new Error("RESEND_API_KEY not configured");
+      }
+
+      // Build email payload
+      const emailPayload: any = {
+        from: "Cars & Claims <notifications@carsandclaims.com>",
+        to: [to],
+        subject: subject || "Message from Cars & Claims",
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #333;">Hello ${customerName},</h2>
+            <div style="color: #555; line-height: 1.6;">
+              ${message.replace(/\n/g, "<br>")}
+            </div>
+            ${attachments?.length ? `
+              <div style="margin-top: 20px; padding: 15px; background-color: #f5f5f5; border-radius: 8px;">
+                <p style="margin: 0 0 10px 0; font-weight: bold; color: #333;">📎 Attachments (${attachments.length}):</p>
+                <ul style="margin: 0; padding-left: 20px; color: #555;">
+                  ${attachments.map(a => `<li>${a.filename}</li>`).join("")}
+                </ul>
+              </div>
+            ` : ""}
+            <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;" />
+            <div style="color: #666; font-size: 14px; margin-top: 20px;">
+              <p style="margin: 0; font-weight: bold;">Best regards,</p>
+              <p style="margin: 5px 0 0 0; font-weight: bold; color: #333;">Cars & Claims</p>
+            </div>
+            <div style="margin-top: 20px; padding: 20px; background-color: #1a1a1a; border-radius: 8px; text-align: center;">
+              <img src="https://kauqfglsnbmshlteegaf.supabase.co/storage/v1/object/public/email-assets/email-logo.jpg" alt="Cars & Claims Logo" style="max-width: 150px; height: auto; margin-bottom: 15px;" />
+              <div style="color: #c9a227; font-size: 12px;">
+                <p style="margin: 0;">📍 2500 W Broad Street, Suite 109</p>
+                <p style="margin: 3px 0;">Athens, GA 30606</p>
+                <p style="margin: 3px 0;">📞 (470) 519-6717</p>
+                <p style="margin: 3px 0;">✉️ info@carsandclaims.com</p>
+                <p style="margin: 8px 0 0 0;">
+                  <a href="https://carsandclaims.com" style="color: #4ade80; text-decoration: none; font-weight: bold;">CARSANDCLAIMS.COM</a>
+                </p>
+              </div>
+            </div>
+            <p style="color: #999; font-size: 11px; margin-top: 15px; text-align: center;">
+              This message was sent from Cars & Claims.
+            </p>
+          </div>
+        `,
+      };
+
+      // Add attachments if present
+      if (attachments && attachments.length > 0) {
+        emailPayload.attachments = attachments.map(att => ({
+          filename: att.filename,
+          content: att.content,
+          type: att.content_type,
+        }));
       }
 
       const emailResponse = await fetch("https://api.resend.com/emails", {
@@ -35,39 +94,7 @@ const handler = async (req: Request): Promise<Response> => {
           "Authorization": `Bearer ${resendApiKey}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          from: "Cars & Claims <notifications@carsandclaims.com>",
-          to: [to],
-          subject: subject || "Message from Cars & Claims",
-          html: `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-              <h2 style="color: #333;">Hello ${customerName},</h2>
-              <div style="color: #555; line-height: 1.6;">
-                ${message.replace(/\n/g, "<br>")}
-              </div>
-              <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;" />
-              <div style="color: #666; font-size: 14px; margin-top: 20px;">
-                <p style="margin: 0; font-weight: bold;">Best regards,</p>
-                <p style="margin: 5px 0 0 0; font-weight: bold; color: #333;">Cars & Claims</p>
-              </div>
-              <div style="margin-top: 20px; padding: 20px; background-color: #1a1a1a; border-radius: 8px; text-align: center;">
-                <img src="https://kauqfglsnbmshlteegaf.supabase.co/storage/v1/object/public/email-assets/email-logo.jpg" alt="Cars & Claims Logo" style="max-width: 150px; height: auto; margin-bottom: 15px;" />
-                <div style="color: #c9a227; font-size: 12px;">
-                  <p style="margin: 0;">📍 2500 W Broad Street, Suite 109</p>
-                  <p style="margin: 3px 0;">Athens, GA 30606</p>
-                  <p style="margin: 3px 0;">📞 (470) 519-6717</p>
-                  <p style="margin: 3px 0;">✉️ info@carsandclaims.com</p>
-                  <p style="margin: 8px 0 0 0;">
-                    <a href="https://carsandclaims.com" style="color: #4ade80; text-decoration: none; font-weight: bold;">CARSANDCLAIMS.COM</a>
-                  </p>
-                </div>
-              </div>
-              <p style="color: #999; font-size: 11px; margin-top: 15px; text-align: center;">
-                This message was sent from Cars & Claims.
-              </p>
-            </div>
-          `,
-        }),
+        body: JSON.stringify(emailPayload),
       });
 
       const emailResult = await emailResponse.json();
