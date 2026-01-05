@@ -45,7 +45,7 @@ const handler = async (req: Request): Promise<Response> => {
     `;
 
     const emailResponse = await resend.emails.send({
-      from: "Quality Foreign Domestic Autos <onboarding@resend.dev>",
+      from: "Quality Foreign Domestic Autos <invoices@carsandclaims.com>",
       to: [to],
       subject: subject,
       html: emailHtml,
