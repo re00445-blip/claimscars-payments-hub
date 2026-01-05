@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { FileText, Send, Plus, Trash2, Loader2, User } from "lucide-react";
+import { FileText, Send, Plus, Trash2, Loader2, User, Wand2 } from "lucide-react";
 
 interface LineItem {
   id: string;
@@ -94,6 +94,7 @@ export const InvoiceGenerator = () => {
   const [notes, setNotes] = useState("");
   const [sending, setSending] = useState(false);
   const [loadingCustomers, setLoadingCustomers] = useState(true);
+  const [checkingGrammar, setCheckingGrammar] = useState<string | null>(null);
 
   useEffect(() => {
     fetchCustomers();
@@ -199,6 +200,37 @@ export const InvoiceGenerator = () => {
 
   const removeLineItem = (id: string) => {
     setLineItems(lineItems.filter((item) => item.id !== id));
+  };
+
+  const handleGrammarCheck = async (itemId: string) => {
+    const item = lineItems.find(i => i.id === itemId);
+    if (!item || !item.customDescription.trim()) return;
+
+    setCheckingGrammar(itemId);
+    try {
+      const { data, error } = await supabase.functions.invoke("grammar-check", {
+        body: { text: item.customDescription },
+      });
+
+      if (error) throw error;
+
+      if (data?.correctedText) {
+        updateLineItem(itemId, "customDescription", data.correctedText);
+        toast({
+          title: "Text Corrected",
+          description: "Spelling and grammar have been checked.",
+        });
+      }
+    } catch (error: any) {
+      console.error("Grammar check error:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to check grammar",
+        variant: "destructive",
+      });
+    } finally {
+      setCheckingGrammar(null);
+    }
   };
 
   const calculateSubtotal = () => {
@@ -585,12 +617,29 @@ export const InvoiceGenerator = () => {
                   </SelectContent>
                 </Select>
                 {item.description === "Custom Entry" && (
-                  <Input
-                    value={item.customDescription}
-                    onChange={(e) => updateLineItem(item.id, "customDescription", e.target.value)}
-                    className="flex-1 bg-background"
-                    placeholder="Enter custom description..."
-                  />
+                  <div className="flex flex-1 gap-1">
+                    <Input
+                      value={item.customDescription}
+                      onChange={(e) => updateLineItem(item.id, "customDescription", e.target.value)}
+                      className="flex-1 bg-background"
+                      placeholder="Enter custom description..."
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => handleGrammarCheck(item.id)}
+                      disabled={checkingGrammar === item.id || !item.customDescription.trim()}
+                      title="Check spelling & grammar"
+                      className="shrink-0"
+                    >
+                      {checkingGrammar === item.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Wand2 className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
                 )}
                 <Input
                   type="number"

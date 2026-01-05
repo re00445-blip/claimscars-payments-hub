@@ -56,3 +56,6 @@ verify_jwt = true
 
 [functions.send-custom-email]
 verify_jwt = false
+
+[functions.grammar-check]
+verify_jwt = true
