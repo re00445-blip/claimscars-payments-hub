@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { FileText, Send, Plus, Trash2, Loader2, User, Wand2 } from "lucide-react";
+import { FileText, Send, Plus, Trash2, Loader2, User, Wand2, Save, FolderOpen } from "lucide-react";
 
 interface LineItem {
   id: string;
@@ -96,9 +96,14 @@ export const InvoiceGenerator = () => {
   const [loadingCustomers, setLoadingCustomers] = useState(true);
   const [checkingGrammar, setCheckingGrammar] = useState<string | null>(null);
   const [checkingNotesGrammar, setCheckingNotesGrammar] = useState(false);
+  const [savingDraft, setSavingDraft] = useState(false);
+  const [drafts, setDrafts] = useState<any[]>([]);
+  const [loadingDrafts, setLoadingDrafts] = useState(false);
+  const [currentDraftId, setCurrentDraftId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchCustomers();
+    fetchDrafts();
   }, []);
 
   const fetchCustomers = async () => {
@@ -156,6 +161,162 @@ export const InvoiceGenerator = () => {
     } finally {
       setLoadingCustomers(false);
     }
+  };
+
+  const fetchDrafts = async () => {
+    setLoadingDrafts(true);
+    try {
+      const { data, error } = await (supabase
+        .from("invoices" as any) as any)
+        .select("*")
+        .eq("status", "draft")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setDrafts(data || []);
+    } catch (error) {
+      console.error("Error fetching drafts:", error);
+    } finally {
+      setLoadingDrafts(false);
+    }
+  };
+
+  const handleSaveDraft = async () => {
+    if (!customerName.trim() && lineItems.length === 0) {
+      toast({
+        title: "Nothing to Save",
+        description: "Please add some information before saving.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setSavingDraft(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+
+      let customerAccountId = null;
+      if (selectedCustomerId && selectedCustomerId !== "manual") {
+        const { data: accountData } = await supabase
+          .from("customer_accounts")
+          .select("id")
+          .eq("user_id", selectedCustomerId)
+          .eq("status", "active")
+          .limit(1)
+          .single();
+        
+        if (accountData) {
+          customerAccountId = accountData.id;
+        }
+      }
+
+      const invoiceData = {
+        customer_id: customerAccountId,
+        customer_name: customerName || "Draft",
+        customer_email: customerEmail || "draft@placeholder.com",
+        customer_phone: customers.find(c => c.id === selectedCustomerId)?.phone || null,
+        vehicle_info: vehicleInfo || null,
+        line_items: lineItems,
+        subtotal: calculateSubtotal(),
+        tax: calculateTax(),
+        total: calculateTotal(),
+        notes: notes || null,
+        status: "draft",
+        created_by: user?.id || null,
+      };
+
+      if (currentDraftId) {
+        // Update existing draft
+        const { error } = await (supabase
+          .from("invoices" as any) as any)
+          .update(invoiceData)
+          .eq("id", currentDraftId);
+
+        if (error) throw error;
+        toast({
+          title: "Draft Updated",
+          description: "Your invoice draft has been saved.",
+        });
+      } else {
+        // Create new draft
+        const { data, error } = await (supabase
+          .from("invoices" as any) as any)
+          .insert(invoiceData)
+          .select()
+          .single();
+
+        if (error) throw error;
+        setCurrentDraftId(data.id);
+        toast({
+          title: "Draft Saved",
+          description: "Your invoice draft has been saved.",
+        });
+      }
+
+      fetchDrafts();
+    } catch (error: any) {
+      console.error("Error saving draft:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to save draft",
+        variant: "destructive",
+      });
+    } finally {
+      setSavingDraft(false);
+    }
+  };
+
+  const handleLoadDraft = (draft: any) => {
+    setCurrentDraftId(draft.id);
+    setCustomerName(draft.customer_name === "Draft" ? "" : draft.customer_name);
+    setCustomerEmail(draft.customer_email === "draft@placeholder.com" ? "" : draft.customer_email);
+    setVehicleInfo(draft.vehicle_info || "");
+    setNotes(draft.notes || "");
+    setLineItems(draft.line_items || []);
+    setSelectedCustomerId("");
+    
+    toast({
+      title: "Draft Loaded",
+      description: "Invoice draft has been loaded for editing.",
+    });
+  };
+
+  const handleDeleteDraft = async (draftId: string) => {
+    try {
+      const { error } = await (supabase
+        .from("invoices" as any) as any)
+        .delete()
+        .eq("id", draftId);
+
+      if (error) throw error;
+      
+      if (currentDraftId === draftId) {
+        setCurrentDraftId(null);
+      }
+      
+      fetchDrafts();
+      toast({
+        title: "Draft Deleted",
+        description: "The draft has been removed.",
+      });
+    } catch (error: any) {
+      console.error("Error deleting draft:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete draft",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleClearForm = () => {
+    setCurrentDraftId(null);
+    setSelectedCustomerId("");
+    setCustomerName("");
+    setCustomerEmail("");
+    setVehicleInfo("");
+    setLineItems([]);
+    setNotes("");
   };
 
   const handleCustomerSelect = (customerId: string) => {
@@ -509,13 +670,17 @@ export const InvoiceGenerator = () => {
         description: `Invoice sent successfully to ${customerEmail}`,
       });
 
+      // Delete draft if it was sent from a draft
+      if (currentDraftId) {
+        await (supabase
+          .from("invoices" as any) as any)
+          .delete()
+          .eq("id", currentDraftId);
+        fetchDrafts();
+      }
+
       // Reset form
-      setSelectedCustomerId("");
-      setCustomerName("");
-      setCustomerEmail("");
-      setVehicleInfo("");
-      setLineItems([]);
-      setNotes("");
+      handleClearForm();
     } catch (error: any) {
       console.error("Error sending invoice:", error);
       toast({
@@ -534,12 +699,61 @@ export const InvoiceGenerator = () => {
         <CardTitle className="flex items-center gap-2">
           <FileText className="h-5 w-5" />
           Invoice Generator
+          {currentDraftId && (
+            <span className="text-sm font-normal text-muted-foreground">(Editing Draft)</span>
+          )}
         </CardTitle>
         <CardDescription>
           Generate and send professional invoices for parts and labor
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* Drafts Section */}
+        {drafts.length > 0 && (
+          <div className="space-y-2 p-3 bg-muted/50 rounded-lg">
+            <Label className="flex items-center gap-2">
+              <FolderOpen className="h-4 w-4" />
+              Saved Drafts ({drafts.length})
+            </Label>
+            <div className="space-y-2 max-h-40 overflow-y-auto">
+              {drafts.map((draft) => (
+                <div
+                  key={draft.id}
+                  className={`flex items-center justify-between p-2 rounded border ${
+                    currentDraftId === draft.id ? "bg-primary/10 border-primary" : "bg-background"
+                  }`}
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">
+                      {draft.customer_name === "Draft" ? "Untitled Draft" : draft.customer_name}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      ${draft.total?.toFixed(2) || "0.00"} • {new Date(draft.created_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <div className="flex gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleLoadDraft(draft)}
+                      disabled={currentDraftId === draft.id}
+                    >
+                      Load
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDeleteDraft(draft.id)}
+                      className="text-destructive hover:text-destructive h-8 w-8"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         {/* Customer Selection */}
         <div className="space-y-2">
           <Label className="flex items-center gap-2">
@@ -756,7 +970,36 @@ export const InvoiceGenerator = () => {
           />
         </div>
 
-        {/* Send Button */}
+        {/* Action Buttons */}
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={handleSaveDraft}
+            disabled={savingDraft || (!customerName.trim() && lineItems.length === 0)}
+            className="flex-1"
+          >
+            {savingDraft ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <Save className="h-4 w-4 mr-2" />
+                {currentDraftId ? "Update Draft" : "Save as Draft"}
+              </>
+            )}
+          </Button>
+          {(currentDraftId || customerName || lineItems.length > 0) && (
+            <Button
+              variant="ghost"
+              onClick={handleClearForm}
+            >
+              Clear
+            </Button>
+          )}
+        </div>
+
         <Button
           onClick={handleSendInvoice}
           disabled={sending || lineItems.length === 0}
