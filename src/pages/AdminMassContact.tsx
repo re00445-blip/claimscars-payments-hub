@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Navbar } from "@/components/Navbar";
@@ -9,9 +9,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, ArrowLeft, Mail, MessageSquare, Send, Users, CheckCircle2, Sparkles } from "lucide-react";
+import { Loader2, ArrowLeft, Mail, MessageSquare, Send, Users, CheckCircle2, Sparkles, Paperclip, X, FileIcon } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+interface Attachment {
+  file: File;
+  name: string;
+  size: number;
+  type: string;
+}
 const occasionOptions = [
   { label: "🌸 Spring", value: "spring", group: "Seasons" },
   { label: "☀️ Summer", value: "summer", group: "Seasons" },
@@ -56,6 +63,9 @@ const AdminMassContact = () => {
   const [smsMessage, setSmsMessage] = useState("");
   const [activeTab, setActiveTab] = useState("email");
   const [generatingContent, setGeneratingContent] = useState(false);
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [uploadingAttachments, setUploadingAttachments] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     checkAdminAndFetchCustomers();
@@ -161,6 +171,70 @@ const AdminMassContact = () => {
     }
   };
 
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files) return;
+
+    const newAttachments: Attachment[] = [];
+    const maxSize = 10 * 1024 * 1024; // 10MB per file
+    const maxFiles = 5;
+
+    if (attachments.length + files.length > maxFiles) {
+      toast({
+        title: "Too many files",
+        description: `Maximum ${maxFiles} attachments allowed`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    for (const file of Array.from(files)) {
+      if (file.size > maxSize) {
+        toast({
+          title: "File too large",
+          description: `${file.name} exceeds 10MB limit`,
+          variant: "destructive",
+        });
+        continue;
+      }
+      newAttachments.push({
+        file,
+        name: file.name,
+        size: file.size,
+        type: file.type,
+      });
+    }
+
+    setAttachments([...attachments, ...newAttachments]);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const removeAttachment = (index: number) => {
+    setAttachments(attachments.filter((_, i) => i !== index));
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return bytes + " B";
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+    return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+  };
+
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        const result = reader.result as string;
+        // Remove the data:mime/type;base64, prefix
+        const base64 = result.split(",")[1];
+        resolve(base64);
+      };
+      reader.onerror = reject;
+    });
+  };
+
   const handleSendEmail = async () => {
     if (selectedCustomers.size === 0) {
       toast({ title: "No customers selected", variant: "destructive" });
@@ -174,6 +248,15 @@ const AdminMassContact = () => {
     setSending(true);
     let successCount = 0;
     let failCount = 0;
+
+    // Convert attachments to base64
+    const attachmentData = await Promise.all(
+      attachments.map(async (att) => ({
+        filename: att.name,
+        content: await fileToBase64(att.file),
+        content_type: att.type,
+      }))
+    );
 
     for (const customerId of selectedCustomers) {
       const customer = customers.find(c => c.id === customerId);
@@ -190,6 +273,7 @@ const AdminMassContact = () => {
             subject: emailSubject,
             message: emailBody,
             customerName: customer.profile.full_name || "Customer",
+            attachments: attachmentData,
           },
         });
 
@@ -204,6 +288,9 @@ const AdminMassContact = () => {
     }
 
     setSending(false);
+    if (successCount > 0) {
+      setAttachments([]); // Clear attachments after successful send
+    }
     toast({
       title: "Emails sent",
       description: `Successfully sent: ${successCount}, Failed: ${failCount}`,
@@ -419,6 +506,70 @@ const AdminMassContact = () => {
                       value={emailBody}
                       onChange={(e) => setEmailBody(e.target.value)}
                     />
+                  </div>
+
+                  {/* Attachments Section */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <Label className="flex items-center gap-2">
+                        <Paperclip className="h-4 w-4" />
+                        Attachments
+                      </Label>
+                      <span className="text-xs text-muted-foreground">
+                        {attachments.length}/5 files (max 10MB each)
+                      </span>
+                    </div>
+                    
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      multiple
+                      onChange={handleFileSelect}
+                      className="hidden"
+                      accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif,.txt"
+                    />
+                    
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={attachments.length >= 5}
+                      className="w-full border-dashed"
+                    >
+                      <Paperclip className="h-4 w-4 mr-2" />
+                      Add Attachments
+                    </Button>
+
+                    {attachments.length > 0 && (
+                      <div className="space-y-2">
+                        {attachments.map((att, index) => (
+                          <div
+                            key={index}
+                            className="flex items-center justify-between p-2 bg-muted/50 rounded-lg"
+                          >
+                            <div className="flex items-center gap-2 min-w-0">
+                              <FileIcon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                              <div className="min-w-0">
+                                <p className="text-sm font-medium truncate">{att.name}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {formatFileSize(att.size)}
+                                </p>
+                              </div>
+                            </div>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 flex-shrink-0"
+                              onClick={() => removeAttachment(index)}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                   <Button
                     className="w-full"
