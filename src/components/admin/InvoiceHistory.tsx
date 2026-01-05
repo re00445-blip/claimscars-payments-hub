@@ -131,28 +131,37 @@ export const InvoiceHistory = () => {
 
   const fetchCustomerAccounts = async () => {
     try {
-      const { data, error } = await supabase
+      // First fetch customer accounts
+      const { data: accounts, error } = await supabase
         .from("customer_accounts")
-        .select(`
-          id,
-          user_id,
-          current_balance,
-          principal_amount,
-          profiles:user_id (full_name, email)
-        `)
+        .select("id, user_id, current_balance, principal_amount")
         .eq("status", "active");
 
       if (error) throw error;
-      
-      const accounts = (data || []).map((acc: any) => ({
+      if (!accounts || accounts.length === 0) {
+        setCustomerAccounts([]);
+        return;
+      }
+
+      // Get unique user IDs and fetch profiles separately
+      const userIds = [...new Set(accounts.map(a => a.user_id))];
+      const { data: profiles, error: profileError } = await supabase
+        .from("profiles")
+        .select("id, full_name, email")
+        .in("id", userIds);
+
+      if (profileError) throw profileError;
+
+      // Combine the data
+      const combinedAccounts = accounts.map(acc => ({
         id: acc.id,
         user_id: acc.user_id,
         current_balance: acc.current_balance,
         principal_amount: acc.principal_amount,
-        profile: acc.profiles
+        profile: profiles?.find(p => p.id === acc.user_id) || undefined
       }));
       
-      setCustomerAccounts(accounts);
+      setCustomerAccounts(combinedAccounts);
     } catch (error) {
       console.error("Error fetching customer accounts:", error);
     }
