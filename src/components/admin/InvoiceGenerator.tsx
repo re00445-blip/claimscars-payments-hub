@@ -373,11 +373,59 @@ export const InvoiceGenerator = () => {
 
     try {
       const invoiceHTML = generateInvoiceHTML();
+      const subtotal = calculateSubtotal();
+      const tax = calculateTax();
+      const total = calculateTotal();
 
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+
+      // Find customer account ID if a customer was selected
+      let customerAccountId = null;
+      if (selectedCustomerId && selectedCustomerId !== "manual") {
+        const { data: accountData } = await supabase
+          .from("customer_accounts")
+          .select("id")
+          .eq("user_id", selectedCustomerId)
+          .eq("status", "active")
+          .limit(1)
+          .single();
+        
+        if (accountData) {
+          customerAccountId = accountData.id;
+        }
+      }
+
+      // Save invoice to database (table newly created, types will sync)
+      const invoiceData = {
+        customer_id: customerAccountId,
+        customer_name: customerName,
+        customer_email: customerEmail,
+        customer_phone: customers.find(c => c.id === selectedCustomerId)?.phone || null,
+        vehicle_info: vehicleInfo || null,
+        line_items: lineItems,
+        subtotal: subtotal,
+        tax: tax,
+        total: total,
+        notes: notes || null,
+        status: "sent",
+        created_by: user?.id || null,
+      };
+      
+      const { error: saveError } = await (supabase
+        .from("invoices" as any) as any)
+        .insert(invoiceData);
+
+      if (saveError) {
+        console.error("Error saving invoice:", saveError);
+        // Continue to send email even if save fails
+      }
+
+      // Send invoice email
       const { error } = await supabase.functions.invoke("send-custom-email", {
         body: {
           to: customerEmail,
-          subject: `Invoice from Quality Foreign Domestic Autos - $${calculateTotal().toFixed(2)}`,
+          subject: `Invoice from Quality Foreign Domestic Autos - $${total.toFixed(2)}`,
           customerName: customerName,
           bodyHtml: invoiceHTML,
         },
