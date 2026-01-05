@@ -1,8 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
-import { Loader2, FileText } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Loader2, FileText, Download } from "lucide-react";
+import html2pdf from "html2pdf.js";
 
 interface LineItem {
   id: string;
@@ -33,6 +35,8 @@ const InvoicePreview = () => {
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [downloading, setDownloading] = useState(false);
+  const invoiceRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const fetchInvoice = async () => {
@@ -71,6 +75,28 @@ const InvoicePreview = () => {
     return item.description;
   };
 
+  const handleDownloadPDF = async () => {
+    if (!invoiceRef.current || !invoice) return;
+    
+    setDownloading(true);
+    try {
+      const element = invoiceRef.current;
+      const opt = {
+        margin: [10, 10, 10, 10] as [number, number, number, number],
+        filename: `invoice-${invoice.customer_name.replace(/\s+/g, '-').toLowerCase()}-${new Date(invoice.created_at).toISOString().split('T')[0]}.pdf`,
+        image: { type: 'jpeg' as const, quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'mm' as const, format: 'a4' as const, orientation: 'portrait' as const }
+      };
+      
+      await html2pdf().set(opt).from(element).save();
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -102,15 +128,36 @@ const InvoicePreview = () => {
   return (
     <div className="min-h-screen bg-gray-100 py-8 px-4">
       <div className="max-w-3xl mx-auto">
+        {/* Download Button */}
+        <div className="mb-4 flex justify-end">
+          <Button
+            onClick={handleDownloadPDF}
+            disabled={downloading}
+            className="bg-primary hover:bg-primary/90"
+          >
+            {downloading ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Generating PDF...
+              </>
+            ) : (
+              <>
+                <Download className="h-4 w-4 mr-2" />
+                Download PDF
+              </>
+            )}
+          </Button>
+        </div>
+
         {/* Status Badge */}
         {invoice.status === "draft" && (
-          <div className="mb-4 p-3 bg-yellow-100 border border-yellow-300 rounded-lg text-center">
+          <div className="mb-4 p-3 bg-yellow-100 border border-yellow-300 rounded-lg text-center print:hidden">
             <span className="text-yellow-800 font-medium">📝 Draft Invoice - Preview Only</span>
           </div>
         )}
 
         {/* Invoice Content */}
-        <div className="bg-white rounded-lg shadow-lg p-8">
+        <div ref={invoiceRef} className="bg-white rounded-lg shadow-lg p-8">
           {/* Header */}
           <div className="text-center border-b pb-6 mb-6">
             <h1 className="text-2xl font-bold text-gray-800 mb-2">Quality Foreign Domestic Autos</h1>
