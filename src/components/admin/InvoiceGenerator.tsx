@@ -1,13 +1,14 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { FileText, Send, Plus, Trash2, Loader2, User, Wand2, Save, FolderOpen } from "lucide-react";
+import { FileText, Send, Plus, Trash2, Loader2, User, Wand2, Save, FolderOpen, Eye, Copy, ExternalLink } from "lucide-react";
 
 interface LineItem {
   id: string;
@@ -100,6 +101,9 @@ export const InvoiceGenerator = () => {
   const [drafts, setDrafts] = useState<any[]>([]);
   const [loadingDrafts, setLoadingDrafts] = useState(false);
   const [currentDraftId, setCurrentDraftId] = useState<string | null>(null);
+  const [showPreview, setShowPreview] = useState(false);
+  const [shareableLink, setShareableLink] = useState<string | null>(null);
+  const [generatingLink, setGeneratingLink] = useState(false);
 
   useEffect(() => {
     fetchCustomers();
@@ -317,6 +321,114 @@ export const InvoiceGenerator = () => {
     setVehicleInfo("");
     setLineItems([]);
     setNotes("");
+    setShareableLink(null);
+  };
+
+  const handleGenerateShareableLink = async () => {
+    // First save the draft to get an ID
+    if (!currentDraftId && (!customerName.trim() && lineItems.length === 0)) {
+      toast({
+        title: "Nothing to Share",
+        description: "Please add some information before generating a shareable link.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setGeneratingLink(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+
+      let customerAccountId = null;
+      if (selectedCustomerId && selectedCustomerId !== "manual") {
+        const { data: accountData } = await supabase
+          .from("customer_accounts")
+          .select("id")
+          .eq("user_id", selectedCustomerId)
+          .eq("status", "active")
+          .limit(1)
+          .single();
+        
+        if (accountData) {
+          customerAccountId = accountData.id;
+        }
+      }
+
+      const invoiceData = {
+        customer_id: customerAccountId,
+        customer_name: customerName || "Draft",
+        customer_email: customerEmail || "draft@placeholder.com",
+        customer_phone: customers.find(c => c.id === selectedCustomerId)?.phone || null,
+        vehicle_info: vehicleInfo || null,
+        line_items: lineItems,
+        subtotal: calculateSubtotal(),
+        tax: calculateTax(),
+        total: calculateTotal(),
+        notes: notes || null,
+        status: "draft",
+        created_by: user?.id || null,
+      };
+
+      let draftId = currentDraftId;
+      
+      if (currentDraftId) {
+        // Update existing draft
+        const { error } = await (supabase
+          .from("invoices" as any) as any)
+          .update(invoiceData)
+          .eq("id", currentDraftId);
+
+        if (error) throw error;
+      } else {
+        // Create new draft
+        const { data, error } = await (supabase
+          .from("invoices" as any) as any)
+          .insert(invoiceData)
+          .select()
+          .single();
+
+        if (error) throw error;
+        draftId = data.id;
+        setCurrentDraftId(data.id);
+      }
+
+      fetchDrafts();
+      
+      // Generate shareable link
+      const baseUrl = window.location.origin;
+      const link = `${baseUrl}/invoice-preview/${draftId}`;
+      setShareableLink(link);
+      
+      toast({
+        title: "Shareable Link Generated",
+        description: "You can now share this invoice preview.",
+      });
+    } catch (error: any) {
+      console.error("Error generating shareable link:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to generate shareable link",
+        variant: "destructive",
+      });
+    } finally {
+      setGeneratingLink(false);
+    }
+  };
+
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast({
+        title: "Copied!",
+        description: "Link copied to clipboard.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to copy link.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleCustomerSelect = (customerId: string) => {
@@ -971,12 +1083,12 @@ export const InvoiceGenerator = () => {
         </div>
 
         {/* Action Buttons */}
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Button
             variant="outline"
             onClick={handleSaveDraft}
             disabled={savingDraft || (!customerName.trim() && lineItems.length === 0)}
-            className="flex-1"
+            className="flex-1 min-w-[140px]"
           >
             {savingDraft ? (
               <>
@@ -990,6 +1102,15 @@ export const InvoiceGenerator = () => {
               </>
             )}
           </Button>
+          <Button
+            variant="outline"
+            onClick={() => setShowPreview(true)}
+            disabled={lineItems.length === 0}
+            className="flex-1 min-w-[140px]"
+          >
+            <Eye className="h-4 w-4 mr-2" />
+            Preview
+          </Button>
           {(currentDraftId || customerName || lineItems.length > 0) && (
             <Button
               variant="ghost"
@@ -999,6 +1120,53 @@ export const InvoiceGenerator = () => {
             </Button>
           )}
         </div>
+
+        {/* Shareable Link Section */}
+        {lineItems.length > 0 && (
+          <div className="space-y-2 p-3 bg-muted/50 rounded-lg">
+            <div className="flex items-center justify-between">
+              <Label className="text-sm">Shareable Preview Link</Label>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleGenerateShareableLink}
+                disabled={generatingLink}
+              >
+                {generatingLink ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <>
+                    <ExternalLink className="h-4 w-4 mr-1" />
+                    {shareableLink ? "Update Link" : "Generate Link"}
+                  </>
+                )}
+              </Button>
+            </div>
+            {shareableLink && (
+              <div className="flex gap-2">
+                <Input
+                  value={shareableLink}
+                  readOnly
+                  className="text-sm bg-background"
+                />
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => copyToClipboard(shareableLink)}
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => window.open(shareableLink, '_blank')}
+                >
+                  <ExternalLink className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
 
         <Button
           onClick={handleSendInvoice}
@@ -1018,6 +1186,34 @@ export const InvoiceGenerator = () => {
             </>
           )}
         </Button>
+
+        {/* Preview Dialog */}
+        <Dialog open={showPreview} onOpenChange={setShowPreview}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Invoice Preview</DialogTitle>
+              <DialogDescription>
+                This is how your invoice will appear when sent
+              </DialogDescription>
+            </DialogHeader>
+            <div 
+              className="border rounded-lg p-4 bg-white"
+              dangerouslySetInnerHTML={{ __html: generateInvoiceHTML() }}
+            />
+            <div className="flex gap-2 justify-end mt-4">
+              <Button variant="outline" onClick={() => setShowPreview(false)}>
+                Close
+              </Button>
+              <Button onClick={() => {
+                setShowPreview(false);
+                handleSendInvoice();
+              }} disabled={sending}>
+                <Send className="h-4 w-4 mr-2" />
+                Send Invoice
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   );
