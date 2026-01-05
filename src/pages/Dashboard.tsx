@@ -28,6 +28,7 @@ import { PasswordsManager } from "@/components/admin/PasswordsManager";
 import { NotesManager } from "@/components/admin/NotesManager";
 import SubscriptionsManager from "@/components/admin/SubscriptionsManager";
 import { InventoryCostTracker } from "@/components/admin/InventoryCostTracker";
+import { InvoiceGenerator } from "@/components/admin/InvoiceGenerator";
 
 interface Affiliate {
   id: string;
@@ -976,6 +977,9 @@ const Dashboard = () => {
 
               {/* Transactions Report */}
               <TransactionsReport />
+
+              {/* Invoice Generator */}
+              <InvoiceGenerator />
             </TabsContent>
 
             <TabsContent value="accounting" className="space-y-6">
