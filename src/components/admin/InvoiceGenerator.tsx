@@ -13,6 +13,7 @@ interface LineItem {
   id: string;
   type: "parts" | "labor";
   description: string;
+  customDescription: string;
   quantity: number;
   unitPrice: number;
 }
@@ -55,7 +56,7 @@ const PARTS_OPTIONS = [
   "Power Steering Fluid",
   "Windshield Wipers",
   "Headlight Bulb",
-  "Other Parts",
+  "Custom Entry",
 ];
 
 const LABOR_OPTIONS = [
@@ -79,7 +80,7 @@ const LABOR_OPTIONS = [
   "Fuel System Service",
   "Inspection",
   "Pre-Purchase Inspection",
-  "Other Labor",
+  "Custom Entry",
 ];
 
 export const InvoiceGenerator = () => {
@@ -181,6 +182,7 @@ export const InvoiceGenerator = () => {
         id: crypto.randomUUID(),
         type,
         description: "",
+        customDescription: "",
         quantity: 1,
         unitPrice: 0,
       },
@@ -209,6 +211,10 @@ export const InvoiceGenerator = () => {
 
   const calculateTotal = () => {
     return calculateSubtotal() + calculateTax();
+  };
+
+  const getItemDescription = (item: LineItem) => {
+    return item.description === "Custom Entry" ? item.customDescription : item.description;
   };
 
   const generateInvoiceHTML = () => {
@@ -259,7 +265,7 @@ export const InvoiceGenerator = () => {
               <tbody>
                 ${partsItems.map((item) => `
                   <tr>
-                    <td style="padding: 10px; border-bottom: 1px solid #e5e7eb;">${item.description}</td>
+                    <td style="padding: 10px; border-bottom: 1px solid #e5e7eb;">${getItemDescription(item)}</td>
                     <td style="text-align: center; padding: 10px; border-bottom: 1px solid #e5e7eb;">${item.quantity}</td>
                     <td style="text-align: right; padding: 10px; border-bottom: 1px solid #e5e7eb;">$${item.unitPrice.toFixed(2)}</td>
                     <td style="text-align: right; padding: 10px; border-bottom: 1px solid #e5e7eb;">$${(item.quantity * item.unitPrice).toFixed(2)}</td>
@@ -285,7 +291,7 @@ export const InvoiceGenerator = () => {
               <tbody>
                 ${laborItems.map((item) => `
                   <tr>
-                    <td style="padding: 10px; border-bottom: 1px solid #e5e7eb;">${item.description}</td>
+                    <td style="padding: 10px; border-bottom: 1px solid #e5e7eb;">${getItemDescription(item)}</td>
                     <td style="text-align: center; padding: 10px; border-bottom: 1px solid #e5e7eb;">${item.quantity}</td>
                     <td style="text-align: right; padding: 10px; border-bottom: 1px solid #e5e7eb;">$${item.unitPrice.toFixed(2)}</td>
                     <td style="text-align: right; padding: 10px; border-bottom: 1px solid #e5e7eb;">$${(item.quantity * item.unitPrice).toFixed(2)}</td>
@@ -359,11 +365,13 @@ export const InvoiceGenerator = () => {
       return;
     }
 
-    const invalidItems = lineItems.filter((item) => !item.description);
+    const invalidItems = lineItems.filter((item) => 
+      !item.description || (item.description === "Custom Entry" && !item.customDescription.trim())
+    );
     if (invalidItems.length > 0) {
       toast({
         title: "Incomplete Items",
-        description: "Please select a description for all line items.",
+        description: "Please select a description for all line items (or enter custom description).",
         variant: "destructive",
       });
       return;
@@ -558,12 +566,17 @@ export const InvoiceGenerator = () => {
                 </span>
                 <Select
                   value={item.description}
-                  onValueChange={(value) => updateLineItem(item.id, "description", value)}
+                  onValueChange={(value) => {
+                    updateLineItem(item.id, "description", value);
+                    if (value !== "Custom Entry") {
+                      updateLineItem(item.id, "customDescription", "");
+                    }
+                  }}
                 >
-                  <SelectTrigger className="flex-1 bg-background">
+                  <SelectTrigger className="w-40 bg-background">
                     <SelectValue placeholder={`Select ${item.type}...`} />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-background z-50">
                     {(item.type === "parts" ? PARTS_OPTIONS : LABOR_OPTIONS).map((option) => (
                       <SelectItem key={option} value={option}>
                         {option}
@@ -571,6 +584,14 @@ export const InvoiceGenerator = () => {
                     ))}
                   </SelectContent>
                 </Select>
+                {item.description === "Custom Entry" && (
+                  <Input
+                    value={item.customDescription}
+                    onChange={(e) => updateLineItem(item.id, "customDescription", e.target.value)}
+                    className="flex-1 bg-background"
+                    placeholder="Enter custom description..."
+                  />
+                )}
                 <Input
                   type="number"
                   min="1"
