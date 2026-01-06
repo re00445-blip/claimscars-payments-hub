@@ -406,21 +406,32 @@ const AffiliatePortal = () => {
                     size="sm"
                     onClick={async () => {
                       const shareUrl = `${window.location.origin}/claims?ref=${affiliate.referral_code}`;
-                      if (navigator.share) {
-                        try {
+                      try {
+                        if (navigator.share) {
                           await navigator.share({
                             title: "Submit an Injury Claim",
                             text: "Use my referral link to submit your injury claim",
                             url: shareUrl,
                           });
-                        } catch (err) {
-                          if ((err as Error).name !== "AbortError") {
-                            toast({ title: "Share failed", variant: "destructive" });
+                        } else {
+                          await navigator.clipboard.writeText(shareUrl);
+                          toast({ title: "Link copied!" });
+                        }
+                      } catch (err) {
+                        if ((err as Error).name !== "AbortError") {
+                          // Fallback: try to copy using older method
+                          try {
+                            const textArea = document.createElement("textarea");
+                            textArea.value = shareUrl;
+                            document.body.appendChild(textArea);
+                            textArea.select();
+                            document.execCommand("copy");
+                            document.body.removeChild(textArea);
+                            toast({ title: "Link copied!" });
+                          } catch {
+                            toast({ title: "Share failed - please copy manually", variant: "destructive" });
                           }
                         }
-                      } else {
-                        navigator.clipboard.writeText(shareUrl);
-                        toast({ title: "Link copied!" });
                       }
                     }}
                     className="h-6 px-2"
@@ -485,23 +496,32 @@ const AffiliatePortal = () => {
                 size="icon"
                 onClick={async () => {
                   const shareUrl = `${window.location.origin}/claims?ref=${affiliate.referral_code}`;
-                  if (navigator.share) {
-                    try {
+                  try {
+                    if (navigator.share) {
                       await navigator.share({
                         title: "Submit an Injury Claim",
                         text: "Use my referral link to submit your injury claim",
                         url: shareUrl,
                       });
-                    } catch (err) {
-                      // User cancelled or share failed
-                      if ((err as Error).name !== "AbortError") {
-                        toast({ title: "Share failed", variant: "destructive" });
+                    } else {
+                      await navigator.clipboard.writeText(shareUrl);
+                      toast({ title: "Link copied!" });
+                    }
+                  } catch (err) {
+                    if ((err as Error).name !== "AbortError") {
+                      // Fallback: try to copy using older method
+                      try {
+                        const textArea = document.createElement("textarea");
+                        textArea.value = shareUrl;
+                        document.body.appendChild(textArea);
+                        textArea.select();
+                        document.execCommand("copy");
+                        document.body.removeChild(textArea);
+                        toast({ title: "Link copied!" });
+                      } catch {
+                        toast({ title: "Share failed - please copy manually", variant: "destructive" });
                       }
                     }
-                  } else {
-                    // Fallback to copy
-                    navigator.clipboard.writeText(shareUrl);
-                    toast({ title: "Link copied!" });
                   }
                 }}
               >
