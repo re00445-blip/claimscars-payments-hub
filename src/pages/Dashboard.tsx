@@ -24,6 +24,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ClientProfileCard } from "@/components/ClientProfileCard";
 import { RaceTrackProgress } from "@/components/RaceTrackProgress";
 import { AccountDocuments } from "@/components/AccountDocuments";
+import { AccountInvoices } from "@/components/AccountInvoices";
 import { PasswordsManager } from "@/components/admin/PasswordsManager";
 import { NotesManager } from "@/components/admin/NotesManager";
 import SubscriptionsManager from "@/components/admin/SubscriptionsManager";
@@ -546,6 +547,14 @@ const Dashboard = () => {
                 </Button>
               </CardContent>
             </Card>
+
+            {/* Account Invoices Section */}
+            <div className="mb-8">
+              <AccountInvoices 
+                accountId={customerAccount.id} 
+                customerEmail={user?.email || ""} 
+              />
+            </div>
 
             {/* Account Documents Section */}
             <div className="mb-8">
