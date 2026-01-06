@@ -64,7 +64,7 @@ export const AccountInvoices = ({ accountId, customerEmail }: AccountInvoicesPro
   };
 
   const handleShare = async (invoiceId: string) => {
-    const shareUrl = `${window.location.origin}/invoice/${invoiceId}`;
+    const shareUrl = `${window.location.origin}/invoice-preview/${invoiceId}`;
     
     if (navigator.share) {
       try {
@@ -190,7 +190,7 @@ export const AccountInvoices = ({ accountId, customerEmail }: AccountInvoicesPro
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => navigate(`/invoice/${invoice.id}`)}
+                          onClick={() => navigate(`/invoice-preview/${invoice.id}`)}
                         >
                           <ExternalLink className="h-4 w-4" />
                         </Button>
