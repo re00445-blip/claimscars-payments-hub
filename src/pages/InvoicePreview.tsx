@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, FileText, Download } from "lucide-react";
+import { Loader2, FileText, Download, Share2, Copy, Check } from "lucide-react";
 import html2pdf from "html2pdf.js";
 
 interface LineItem {
@@ -36,6 +36,7 @@ const InvoicePreview = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [downloading, setDownloading] = useState(false);
+  const [copied, setCopied] = useState(false);
   const invoiceRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -97,6 +98,35 @@ const InvoicePreview = () => {
     }
   };
 
+  const handleShare = async () => {
+    const shareUrl = window.location.href;
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `Invoice - ${invoice?.customer_name}`,
+          text: `View invoice for ${invoice?.customer_name}`,
+          url: shareUrl,
+        });
+      } catch (err) {
+        // User cancelled or share failed, fall back to copy
+        copyToClipboard(shareUrl);
+      }
+    } else {
+      copyToClipboard(shareUrl);
+    }
+  };
+
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy:", err);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -128,8 +158,24 @@ const InvoicePreview = () => {
   return (
     <div className="min-h-screen bg-gray-100 py-8 px-4">
       <div className="max-w-3xl mx-auto">
-        {/* Download Button */}
-        <div className="mb-4 flex justify-end">
+        {/* Action Buttons */}
+        <div className="mb-4 flex justify-end gap-2">
+          <Button
+            variant="outline"
+            onClick={handleShare}
+          >
+            {copied ? (
+              <>
+                <Check className="h-4 w-4 mr-2 text-green-500" />
+                Link Copied!
+              </>
+            ) : (
+              <>
+                <Share2 className="h-4 w-4 mr-2" />
+                Share
+              </>
+            )}
+          </Button>
           <Button
             onClick={handleDownloadPDF}
             disabled={downloading}
