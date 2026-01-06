@@ -3,9 +3,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, FileText, ExternalLink } from "lucide-react";
+import { Loader2, FileText, ExternalLink, Share2, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 
 interface Invoice {
   id: string;
@@ -25,8 +26,10 @@ interface AccountInvoicesProps {
 
 export const AccountInvoices = ({ accountId, customerEmail }: AccountInvoicesProps) => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchInvoices();
@@ -58,6 +61,36 @@ export const AccountInvoices = ({ accountId, customerEmail }: AccountInvoicesPro
       day: 'numeric',
       year: 'numeric'
     });
+  };
+
+  const handleShare = async (invoiceId: string) => {
+    const shareUrl = `${window.location.origin}/invoice/${invoiceId}`;
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Invoice',
+          text: 'View invoice',
+          url: shareUrl,
+        });
+      } catch (err) {
+        // User cancelled or share failed, fall back to copy
+        copyToClipboard(invoiceId, shareUrl);
+      }
+    } else {
+      copyToClipboard(invoiceId, shareUrl);
+    }
+  };
+
+  const copyToClipboard = async (invoiceId: string, text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedId(invoiceId);
+      toast({ title: "Link copied to clipboard" });
+      setTimeout(() => setCopiedId(null), 2000);
+    } catch (err) {
+      console.error("Failed to copy:", err);
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -142,14 +175,26 @@ export const AccountInvoices = ({ accountId, customerEmail }: AccountInvoicesPro
                       {getStatusBadge(invoice.status)}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => navigate(`/invoice/${invoice.id}`)}
-                      >
-                        <ExternalLink className="h-4 w-4 mr-1" />
-                        View
-                      </Button>
+                      <div className="flex justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleShare(invoice.id)}
+                        >
+                          {copiedId === invoice.id ? (
+                            <Check className="h-4 w-4 text-green-500" />
+                          ) : (
+                            <Share2 className="h-4 w-4" />
+                          )}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => navigate(`/invoice/${invoice.id}`)}
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
