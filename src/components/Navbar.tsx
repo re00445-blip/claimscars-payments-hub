@@ -114,9 +114,22 @@ export const Navbar = () => {
                 {userName || t("nav.login")}
               </Button>
             </Link>
-            <Link to={userName ? "/dashboard" : "/auth"} className={userName ? "hidden md:block" : ""}>
-              <Button size="sm">{userName ? t("nav.dashboard") : t("nav.getStarted")}</Button>
-            </Link>
+            {userName ? (
+              <Button 
+                size="sm" 
+                className="hidden md:block"
+                onClick={async () => {
+                  await supabase.auth.signOut();
+                  window.location.href = "/";
+                }}
+              >
+                Sign Out
+              </Button>
+            ) : (
+              <Link to="/auth">
+                <Button size="sm">{t("nav.getStarted")}</Button>
+              </Link>
+            )}
           </div>
         </div>
       </div>
