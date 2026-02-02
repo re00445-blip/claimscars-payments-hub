@@ -32,7 +32,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Plus, ArrowLeft, Receipt, Printer, DollarSign, Eye, Pencil, Trash2 } from "lucide-react";
+import { Loader2, Plus, ArrowLeft, Receipt, Printer, DollarSign, Eye, Pencil, Trash2, History } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -633,6 +633,10 @@ const AdminPayments = () => {
             <Button variant="outline" onClick={() => navigate("/print-receipts")}>
               <Eye className="h-4 w-4 mr-2" />
               View Sample Receipt
+            </Button>
+            <Button variant="outline" onClick={() => navigate("/admin/payment-history")}>
+              <History className="h-4 w-4 mr-2" />
+              View Payment History
             </Button>
             <Button 
               variant="outline" 

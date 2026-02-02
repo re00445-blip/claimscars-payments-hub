@@ -14,6 +14,7 @@ import PaymentPortal from "./pages/PaymentPortal";
 import AdminVehicles from "./pages/AdminVehicles";
 import AdminReports from "./pages/AdminReports";
 import AdminPayments from "./pages/AdminPayments";
+import AdminPaymentHistory from "./pages/AdminPaymentHistory";
 import AdminAccounts from "./pages/AdminAccounts";
 import AdminClaims from "./pages/AdminClaims";
 import AdminUsers from "./pages/AdminUsers";
@@ -43,6 +44,7 @@ const App = () => (
             <Route path="/admin/vehicles" element={<AdminVehicles />} />
             <Route path="/admin/reports" element={<AdminReports />} />
             <Route path="/admin/payments" element={<AdminPayments />} />
+            <Route path="/admin/payment-history" element={<AdminPaymentHistory />} />
             <Route path="/admin/accounts" element={<AdminAccounts />} />
             <Route path="/admin/claims" element={<AdminClaims />} />
             <Route path="/admin/users" element={<AdminUsers />} />
