@@ -71,6 +71,12 @@ export const InventoryCostTracker = () => {
   const [printDialogOpen, setPrintDialogOpen] = useState(false);
   const [printVehicleId, setPrintVehicleId] = useState<string | null>(null);
   const printRef = useRef<HTMLDivElement>(null);
+  
+  // Collapsible states
+  const [summaryExpanded, setSummaryExpanded] = useState(true);
+  const [forSaleExpanded, setForSaleExpanded] = useState(true);
+  const [bhphExpanded, setBhphExpanded] = useState(true);
+  const [soldExpanded, setSoldExpanded] = useState(true);
 
   useEffect(() => {
     fetchVehicles();
@@ -700,42 +706,52 @@ export const InventoryCostTracker = () => {
 
   return (
     <div className="space-y-6">
-      {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
+      {/* Summary Cards - Collapsible */}
+      <Collapsible open={summaryExpanded} onOpenChange={setSummaryExpanded}>
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total List Price</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          <CardHeader className="pb-2">
+            <CollapsibleTrigger asChild>
+              <div className="flex items-center justify-between cursor-pointer hover:bg-muted/50 -mx-2 px-2 py-1 rounded">
+                <CardTitle className="text-lg">Summary Overview</CardTitle>
+                {summaryExpanded ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+              </div>
+            </CollapsibleTrigger>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">${totalListPrice.toLocaleString()}</div>
-          </CardContent>
+          <CollapsibleContent>
+            <CardContent>
+              <div className="grid gap-4 md:grid-cols-3">
+                <div className="p-4 border rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-muted-foreground">Total List Price</span>
+                    <DollarSign className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <div className="text-2xl font-bold">${totalListPrice.toLocaleString()}</div>
+                </div>
+                <div className="p-4 border rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-muted-foreground">Total Cost</span>
+                    <DollarSign className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <div className="text-2xl font-bold">${totalCostPrice.toLocaleString()}</div>
+                </div>
+                <div className="p-4 border rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-muted-foreground">Total Potential Profit</span>
+                    {totalProfit >= 0 ? (
+                      <TrendingUp className="h-4 w-4 text-green-500" />
+                    ) : (
+                      <TrendingDown className="h-4 w-4 text-red-500" />
+                    )}
+                  </div>
+                  <div className={`text-2xl font-bold ${totalProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    ${totalProfit.toLocaleString()}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </CollapsibleContent>
         </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Cost</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">${totalCostPrice.toLocaleString()}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Potential Profit</CardTitle>
-            {totalProfit >= 0 ? (
-              <TrendingUp className="h-4 w-4 text-green-500" />
-            ) : (
-              <TrendingDown className="h-4 w-4 text-red-500" />
-            )}
-          </CardHeader>
-          <CardContent>
-            <div className={`text-2xl font-bold ${totalProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              ${totalProfit.toLocaleString()}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      </Collapsible>
 
       {/* Vehicles Table */}
       <Card>
@@ -753,37 +769,64 @@ export const InventoryCostTracker = () => {
           </Button>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* For Sale Section */}
+          {/* For Sale Section - Collapsible */}
           {forSaleVehicles.length > 0 && (
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <div className="h-3 w-3 rounded-full bg-green-500" />
-                <h3 className="font-semibold text-lg">For Sale ({forSaleVehicles.length})</h3>
+            <Collapsible open={forSaleExpanded} onOpenChange={setForSaleExpanded}>
+              <div className="space-y-4">
+                <CollapsibleTrigger asChild>
+                  <div className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 -mx-2 px-2 py-1 rounded">
+                    <div className="h-3 w-3 rounded-full bg-green-500" />
+                    <h3 className="font-semibold text-lg flex-1">For Sale ({forSaleVehicles.length})</h3>
+                    {forSaleExpanded ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+                  </div>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <div className="space-y-2">
+                    {forSaleVehicles.map((vehicle) => renderVehicleRow(vehicle))}
+                  </div>
+                </CollapsibleContent>
               </div>
-              {forSaleVehicles.map((vehicle) => renderVehicleRow(vehicle))}
-            </div>
+            </Collapsible>
           )}
 
-          {/* BHPH Section */}
+          {/* BHPH Section - Collapsible */}
           {bhphVehicles.length > 0 && (
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <div className="h-3 w-3 rounded-full bg-purple-500" />
-                <h3 className="font-semibold text-lg">BHPH - Financed ({bhphVehicles.length})</h3>
+            <Collapsible open={bhphExpanded} onOpenChange={setBhphExpanded}>
+              <div className="space-y-4">
+                <CollapsibleTrigger asChild>
+                  <div className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 -mx-2 px-2 py-1 rounded">
+                    <div className="h-3 w-3 rounded-full bg-purple-500" />
+                    <h3 className="font-semibold text-lg flex-1">BHPH - Financed ({bhphVehicles.length})</h3>
+                    {bhphExpanded ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+                  </div>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <div className="space-y-2">
+                    {bhphVehicles.map((vehicle) => renderVehicleRow(vehicle))}
+                  </div>
+                </CollapsibleContent>
               </div>
-              {bhphVehicles.map((vehicle) => renderVehicleRow(vehicle))}
-            </div>
+            </Collapsible>
           )}
 
-          {/* Sold Section (not BHPH) */}
+          {/* Sold Section - Collapsible */}
           {soldVehicles.length > 0 && (
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <div className="h-3 w-3 rounded-full bg-blue-500" />
-                <h3 className="font-semibold text-lg">Sold ({soldVehicles.length})</h3>
+            <Collapsible open={soldExpanded} onOpenChange={setSoldExpanded}>
+              <div className="space-y-4">
+                <CollapsibleTrigger asChild>
+                  <div className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 -mx-2 px-2 py-1 rounded">
+                    <div className="h-3 w-3 rounded-full bg-blue-500" />
+                    <h3 className="font-semibold text-lg flex-1">Sold ({soldVehicles.length})</h3>
+                    {soldExpanded ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+                  </div>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <div className="space-y-2">
+                    {soldVehicles.map((vehicle) => renderVehicleRow(vehicle))}
+                  </div>
+                </CollapsibleContent>
               </div>
-              {soldVehicles.map((vehicle) => renderVehicleRow(vehicle))}
-            </div>
+            </Collapsible>
           )}
         </CardContent>
       </Card>
