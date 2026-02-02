@@ -29,7 +29,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Plus, ArrowLeft, DollarSign, Printer, CreditCard, Calendar, TrendingDown, Gift, Percent, AlertCircle } from "lucide-react";
+import { Loader2, Plus, ArrowLeft, DollarSign, Printer, CreditCard, Calendar, TrendingDown, Gift, Percent, AlertCircle, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { RaceTrackProgress } from "@/components/RaceTrackProgress";
 
@@ -90,6 +90,7 @@ export const AccountDetailView = ({ account, open, onOpenChange, onPaymentRecord
   const [showPaymentForm, setShowPaymentForm] = useState(false);
   const [showWaiverForm, setShowWaiverForm] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [syncingToStripe, setSyncingToStripe] = useState(false);
   const [totalPaid, setTotalPaid] = useState(0);
   
   const [waiverForm, setWaiverForm] = useState({
@@ -591,6 +592,50 @@ export const AccountDetailView = ({ account, open, onOpenChange, onPaymentRecord
 
           {/* Action Buttons */}
           <div className="flex justify-end gap-2">
+            <Button 
+              variant="outline" 
+              onClick={async () => {
+                if (!account.profile?.email) {
+                  toast({
+                    title: "Error",
+                    description: "Customer email is required to sync with Stripe",
+                    variant: "destructive",
+                  });
+                  return;
+                }
+                setSyncingToStripe(true);
+                try {
+                  const { data, error } = await supabase.functions.invoke('update-stripe-customer', {
+                    body: {
+                      email: account.profile.email,
+                      phone: account.profile.phone || null,
+                    },
+                  });
+                  if (error) throw error;
+                  if (data?.error) throw new Error(data.error);
+                  toast({
+                    title: "Success",
+                    description: `Phone number synced to Stripe${data?.newPhone ? `: ${data.newPhone}` : ''}`,
+                  });
+                } catch (err: any) {
+                  toast({
+                    title: "Sync Failed",
+                    description: err.message || "Failed to sync with Stripe",
+                    variant: "destructive",
+                  });
+                } finally {
+                  setSyncingToStripe(false);
+                }
+              }}
+              disabled={syncingToStripe}
+            >
+              {syncingToStripe ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4 mr-2" />
+              )}
+              Sync to Stripe
+            </Button>
             <Button variant="outline" onClick={handleOpenWaiverForm}>
               <Gift className="h-4 w-4 mr-2" />
               Waive Fees
