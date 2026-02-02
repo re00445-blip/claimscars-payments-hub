@@ -73,10 +73,10 @@ export const InventoryCostTracker = () => {
   const printRef = useRef<HTMLDivElement>(null);
   
   // Collapsible states
-  const [summaryExpanded, setSummaryExpanded] = useState(true);
-  const [forSaleExpanded, setForSaleExpanded] = useState(true);
-  const [bhphExpanded, setBhphExpanded] = useState(true);
-  const [soldExpanded, setSoldExpanded] = useState(true);
+  const [summaryExpanded, setSummaryExpanded] = useState(false);
+  const [forSaleExpanded, setForSaleExpanded] = useState(false);
+  const [bhphExpanded, setBhphExpanded] = useState(false);
+  const [soldExpanded, setSoldExpanded] = useState(false);
 
   useEffect(() => {
     fetchVehicles();
