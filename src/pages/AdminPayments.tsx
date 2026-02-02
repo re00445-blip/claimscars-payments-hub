@@ -32,7 +32,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Plus, ArrowLeft, Receipt, Printer, DollarSign, Eye } from "lucide-react";
+import { Loader2, Plus, ArrowLeft, Receipt, Printer, DollarSign, Eye, Pencil, Trash2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 
 interface CustomerAccount {
@@ -85,6 +95,10 @@ const AdminPayments = () => {
   const [saving, setSaving] = useState(false);
   const [selectedReceipt, setSelectedReceipt] = useState<Payment | null>(null);
   const [showReceipt, setShowReceipt] = useState(false);
+  const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [deletePaymentId, setDeletePaymentId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -376,6 +390,99 @@ const AdminPayments = () => {
     }
 
     setSaving(false);
+  };
+
+  const handleEditPayment = (payment: Payment) => {
+    setEditingPayment(payment);
+    setFormData({
+      account_id: payment.account_id,
+      amount: payment.amount,
+      principal_paid: payment.principal_paid,
+      interest_paid: payment.interest_paid,
+      late_fee_paid: payment.late_fee_paid || 0,
+      payment_method: payment.payment_method || "cash",
+      notes: payment.notes || "",
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleUpdatePayment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingPayment) return;
+    setSaving(true);
+
+    const { error } = await supabase
+      .from("payments")
+      .update({
+        amount: formData.amount,
+        principal_paid: formData.principal_paid,
+        interest_paid: formData.interest_paid,
+        late_fee_paid: formData.late_fee_paid || 0,
+        payment_method: formData.payment_method,
+        notes: formData.notes || null,
+      })
+      .eq("id", editingPayment.id);
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update payment",
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Success",
+        description: "Payment updated successfully",
+      });
+      fetchData();
+      setIsEditDialogOpen(false);
+      setEditingPayment(null);
+      resetForm();
+    }
+
+    setSaving(false);
+  };
+
+  const handleDeletePayment = async () => {
+    if (!deletePaymentId) return;
+    setDeleting(true);
+
+    const payment = payments.find(p => p.id === deletePaymentId);
+    
+    const { error } = await supabase
+      .from("payments")
+      .delete()
+      .eq("id", deletePaymentId);
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete payment",
+        variant: "destructive",
+      });
+    } else {
+      // Optionally restore the balance to the account
+      if (payment) {
+        const account = accounts.find(a => a.id === payment.account_id);
+        if (account) {
+          await supabase
+            .from("customer_accounts")
+            .update({
+              current_balance: account.current_balance + payment.principal_paid,
+            })
+            .eq("id", account.id);
+        }
+      }
+      
+      toast({
+        title: "Success",
+        description: "Payment deleted and balance restored",
+      });
+      fetchData();
+    }
+
+    setDeleting(false);
+    setDeletePaymentId(null);
   };
 
   const generateReceiptHTML = (payment: Payment) => {
@@ -743,14 +850,30 @@ const AdminPayments = () => {
                             </Badge>
                           </TableCell>
                           <TableCell className="text-right">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => printReceipt({ ...payment, account })}
-                            >
-                              <Printer className="h-4 w-4 mr-1" />
-                              Print
-                            </Button>
+                            <div className="flex justify-end gap-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => printReceipt({ ...payment, account })}
+                              >
+                                <Printer className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEditPayment(payment)}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setDeletePaymentId(payment.id)}
+                                className="text-destructive hover:text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       );
@@ -789,6 +912,140 @@ const AdminPayments = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Edit Payment Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={(open) => {
+        setIsEditDialogOpen(open);
+        if (!open) {
+          setEditingPayment(null);
+          resetForm();
+        }
+      }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Edit Payment</DialogTitle>
+            <DialogDescription>
+              Update the payment details
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleUpdatePayment} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-amount">Total Amount ($)</Label>
+                <Input
+                  id="edit-amount"
+                  type="number"
+                  step="0.01"
+                  value={formData.amount}
+                  onChange={(e) => setFormData(prev => ({ ...prev, amount: parseFloat(e.target.value) || 0 }))}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-payment_method">Payment Method</Label>
+                <Select
+                  value={formData.payment_method}
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, payment_method: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="cash">Cash</SelectItem>
+                    <SelectItem value="check">Check</SelectItem>
+                    <SelectItem value="card">Card</SelectItem>
+                    <SelectItem value="zelle">Zelle</SelectItem>
+                    <SelectItem value="cashapp">Cash App</SelectItem>
+                    <SelectItem value="venmo">Venmo</SelectItem>
+                    <SelectItem value="apple_pay">Apple Pay</SelectItem>
+                    <SelectItem value="money_order">Money Order</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-principal">Principal ($)</Label>
+                <Input
+                  id="edit-principal"
+                  type="number"
+                  step="0.01"
+                  value={formData.principal_paid}
+                  onChange={(e) => setFormData(prev => ({ ...prev, principal_paid: parseFloat(e.target.value) || 0 }))}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-interest">Interest ($)</Label>
+                <Input
+                  id="edit-interest"
+                  type="number"
+                  step="0.01"
+                  value={formData.interest_paid}
+                  onChange={(e) => setFormData(prev => ({ ...prev, interest_paid: parseFloat(e.target.value) || 0 }))}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-late_fee">Late Fee ($)</Label>
+                <Input
+                  id="edit-late_fee"
+                  type="number"
+                  step="0.01"
+                  value={formData.late_fee_paid}
+                  onChange={(e) => setFormData(prev => ({ ...prev, late_fee_paid: parseFloat(e.target.value) || 0 }))}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-notes">Notes</Label>
+              <Textarea
+                id="edit-notes"
+                value={formData.notes}
+                onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                placeholder="Optional notes about this payment..."
+                rows={2}
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-4">
+              <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={saving}>
+                {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                Update Payment
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deletePaymentId} onOpenChange={(open) => !open && setDeletePaymentId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Payment</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this payment? The principal amount will be restored to the account balance. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeletePayment}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
