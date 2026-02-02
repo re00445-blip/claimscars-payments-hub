@@ -99,6 +99,16 @@ const AdminPayments = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [deletePaymentId, setDeletePaymentId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [isPreviewDialogOpen, setIsPreviewDialogOpen] = useState(false);
+  const [previewData, setPreviewData] = useState({
+    account_id: "",
+    amount: 0,
+    principal_paid: 0,
+    interest_paid: 0,
+    late_fee_paid: 0,
+    payment_method: "cash",
+    notes: "",
+  });
 
   // Form state
   const [formData, setFormData] = useState({
@@ -624,6 +634,14 @@ const AdminPayments = () => {
               <Eye className="h-4 w-4 mr-2" />
               View Sample Receipt
             </Button>
+            <Button 
+              variant="outline" 
+              disabled={accounts.length === 0}
+              onClick={() => setIsPreviewDialogOpen(true)}
+            >
+              <DollarSign className="h-4 w-4 mr-2" />
+              Preview Balance
+            </Button>
             <Dialog open={isDialogOpen} onOpenChange={(open) => {
               setIsDialogOpen(open);
               if (!open) resetForm();
@@ -1046,6 +1064,161 @@ const AdminPayments = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Preview Balance Dialog */}
+      <Dialog open={isPreviewDialogOpen} onOpenChange={(open) => {
+        setIsPreviewDialogOpen(open);
+        if (!open) {
+          setPreviewData({
+            account_id: "",
+            amount: 0,
+            principal_paid: 0,
+            interest_paid: 0,
+            late_fee_paid: 0,
+            payment_method: "cash",
+            notes: "",
+          });
+        }
+      }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Preview Balance After Payment</DialogTitle>
+            <DialogDescription>
+              See what the customer's balance would be after this payment (no receipt sent)
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="preview-account">Customer Account</Label>
+              <Select
+                value={previewData.account_id}
+                onValueChange={(accountId) => {
+                  const account = accounts.find(a => a.id === accountId);
+                  if (account) {
+                    const lateFees = calculateLateFees(account);
+                    let suggestedPrincipal = 0;
+                    let suggestedInterest = 0;
+                    
+                    if ((account as any).interest_rate_type === "flat_fee") {
+                      suggestedInterest = account.interest_rate;
+                      suggestedPrincipal = account.payment_amount - suggestedInterest;
+                    } else {
+                      const monthlyInterest = (account.current_balance * (account.interest_rate / 100)) / 12;
+                      suggestedInterest = Math.round(monthlyInterest * 100) / 100;
+                      suggestedPrincipal = account.payment_amount - suggestedInterest;
+                    }
+
+                    if (lateFees > 0) {
+                      suggestedPrincipal = Math.max(0, suggestedPrincipal - lateFees);
+                    }
+                    
+                    setPreviewData(prev => ({
+                      ...prev,
+                      account_id: accountId,
+                      amount: account.payment_amount + lateFees,
+                      principal_paid: Math.max(0, suggestedPrincipal),
+                      interest_paid: suggestedInterest,
+                      late_fee_paid: lateFees,
+                    }));
+                  }
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select account" />
+                </SelectTrigger>
+                <SelectContent>
+                  {accounts.map((account) => (
+                    <SelectItem key={account.id} value={account.id}>
+                      {getAccountDisplay(account)} - ${account.current_balance.toLocaleString()}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="preview-principal">Principal ($)</Label>
+                <Input
+                  id="preview-principal"
+                  type="number"
+                  step="0.01"
+                  value={previewData.principal_paid}
+                  onChange={(e) => setPreviewData(prev => ({ ...prev, principal_paid: parseFloat(e.target.value) || 0 }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="preview-interest">Interest ($)</Label>
+                <Input
+                  id="preview-interest"
+                  type="number"
+                  step="0.01"
+                  value={previewData.interest_paid}
+                  onChange={(e) => setPreviewData(prev => ({ ...prev, interest_paid: parseFloat(e.target.value) || 0 }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="preview-late_fee">Late Fee ($)</Label>
+                <Input
+                  id="preview-late_fee"
+                  type="number"
+                  step="0.01"
+                  value={previewData.late_fee_paid}
+                  onChange={(e) => setPreviewData(prev => ({ ...prev, late_fee_paid: parseFloat(e.target.value) || 0 }))}
+                />
+              </div>
+            </div>
+
+            {previewData.account_id && (() => {
+              const account = accounts.find(a => a.id === previewData.account_id);
+              if (!account) return null;
+              const newBalance = Math.max(0, account.current_balance - previewData.principal_paid);
+              const totalPayment = previewData.principal_paid + previewData.interest_paid + previewData.late_fee_paid;
+              
+              return (
+                <Card className="bg-muted/50">
+                  <CardContent className="pt-4 space-y-3">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Current Balance:</span>
+                      <span className="font-medium">${account.current_balance.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Total Payment:</span>
+                      <span className="font-medium text-primary">${totalPayment.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground pl-4">- Principal:</span>
+                      <span>${previewData.principal_paid.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground pl-4">- Interest:</span>
+                      <span>${previewData.interest_paid.toLocaleString()}</span>
+                    </div>
+                    {previewData.late_fee_paid > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground pl-4">- Late Fee:</span>
+                        <span>${previewData.late_fee_paid.toLocaleString()}</span>
+                      </div>
+                    )}
+                    <div className="border-t pt-2 flex justify-between">
+                      <span className="font-semibold">New Balance:</span>
+                      <span className={`font-bold text-lg ${newBalance === 0 ? 'text-green-600' : ''}`}>
+                        ${newBalance.toLocaleString()}
+                      </span>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })()}
+
+            <div className="flex justify-end gap-2 pt-4">
+              <Button variant="outline" onClick={() => setIsPreviewDialogOpen(false)}>
+                Close
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
