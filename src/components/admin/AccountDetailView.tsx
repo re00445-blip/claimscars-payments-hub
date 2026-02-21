@@ -162,15 +162,18 @@ export const AccountDetailView = ({ account, open, onOpenChange, onPaymentRecord
     let suggestedInterest = 0;
 
     if (account.interest_rate_type === "flat_fee") {
-      // For flat fee: interest is the flat fee amount, principal is the rest
-      suggestedInterest = Math.max(0, account.interest_rate - waivedInterest);
-      suggestedPrincipal = account.payment_amount - account.interest_rate; // Use original interest for principal calc
+      // For flat fee: split evenly based on payment frequency
+      const periodsPerMonth = account.payment_frequency === 'weekly' ? (52 / 12) : 1;
+      const periodInterest = account.interest_rate / periodsPerMonth;
+      suggestedInterest = Math.max(0, Math.round((periodInterest - waivedInterest) * 100) / 100);
+      suggestedPrincipal = account.payment_amount - periodInterest;
     } else {
-      // For percentage: calculate monthly interest
-      const monthlyInterest = (account.current_balance * (account.interest_rate / 100)) / 12;
-      const calculatedInterest = Math.round(monthlyInterest * 100) / 100;
+      // For percentage: calculate interest per payment period
+      const periodsPerYear = account.payment_frequency === 'weekly' ? 52 : 12;
+      const periodInterest = (account.current_balance * (account.interest_rate / 100)) / periodsPerYear;
+      const calculatedInterest = Math.round(periodInterest * 100) / 100;
       suggestedInterest = Math.max(0, calculatedInterest - waivedInterest);
-      suggestedPrincipal = account.payment_amount - calculatedInterest; // Use original interest for principal calc
+      suggestedPrincipal = account.payment_amount - calculatedInterest;
     }
 
     // Adjust for late fees - they come off principal if included in same payment amount
