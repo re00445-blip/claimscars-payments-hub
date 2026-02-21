@@ -31,6 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, Plus, ArrowLeft, Edit, Trash2, Mail, Eye, Users, DollarSign } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { AccountDetailView } from "@/components/admin/AccountDetailView";
@@ -844,8 +845,7 @@ const AdminAccounts = () => {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="active">Active</SelectItem>
-                          <SelectItem value="paid_off">Paid Off</SelectItem>
-                          <SelectItem value="delinquent">Delinquent</SelectItem>
+                          <SelectItem value="completed">Completed</SelectItem>
                           <SelectItem value="repossessed">Repossessed</SelectItem>
                         </SelectContent>
                       </Select>
@@ -867,145 +867,190 @@ const AdminAccounts = () => {
           </Dialog>
         </div>
 
-        {/* Summary Statistics - excluding Jonathan Lowe (test account) */}
-        {(() => {
-          const isTestAccount = (name: string | null | undefined) => 
-            name?.toLowerCase().includes("jonathan") && name?.toLowerCase().includes("low");
-          const filteredAccounts = accounts.filter(
-            (account) => !isTestAccount(account.profile?.full_name)
-          );
-          const totalCustomers = filteredAccounts.length;
-          const totalBalance = filteredAccounts.reduce((sum, acc) => sum + acc.current_balance, 0);
-          
-          return (
-            <div className="grid gap-4 md:grid-cols-2 mb-6">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Customers</CardTitle>
-                  <Users className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{totalCustomers}</div>
-                  <p className="text-xs text-muted-foreground">Active BHPH accounts</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Outstanding Balance</CardTitle>
-                  <DollarSign className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{formatCurrency(totalBalance)}</div>
-                  <p className="text-xs text-muted-foreground">Combined balance across all accounts</p>
-                </CardContent>
-              </Card>
-            </div>
-          );
-        })()}
+        {/* Tabbed Account View */}
+        <Tabs defaultValue="active" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="active">Active</TabsTrigger>
+            <TabsTrigger value="completed">Complete</TabsTrigger>
+            <TabsTrigger value="repossessed">Repossessed</TabsTrigger>
+          </TabsList>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Customer Accounts</CardTitle>
-            <CardDescription>All BHPH financing accounts</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {accounts.length === 0 ? (
-              <p className="text-muted-foreground text-center py-8">No accounts found</p>
-            ) : (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Customer</TableHead>
-                      <TableHead>Vehicle</TableHead>
-                      <TableHead>Balance</TableHead>
-                      <TableHead>Rate / Flat Fee</TableHead>
-                      <TableHead>Payment</TableHead>
-                      <TableHead>Next Due</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {accounts.map((account) => {
-                      const isTest = account.profile?.full_name?.toLowerCase().includes("jonathan") && 
-                                     account.profile?.full_name?.toLowerCase().includes("low");
-                      return (
-                      <TableRow key={account.id} className={isTest ? "bg-muted/50" : ""}>
-                        <TableCell>
-                          <div>
-                            <div className="font-medium flex items-center gap-2">
-                              {account.profile?.full_name || "N/A"}
-                              {isTest && <Badge variant="outline" className="text-xs">Test Account</Badge>}
-                            </div>
-                            <div className="text-sm text-muted-foreground">{account.profile?.email}</div>
-                            {account.profile?.phone && (
-                              <div className="text-sm text-muted-foreground">{account.profile.phone}</div>
-                            )}
-                        </div>
-                        </TableCell>
-                        <TableCell>
-                          {account.vehicle 
-                            ? `${account.vehicle.year} ${account.vehicle.make} ${account.vehicle.model}`
-                            : "N/A"
-                          }
-                        </TableCell>
-                        <TableCell>{formatCurrency(account.current_balance)}</TableCell>
-                        <TableCell>
-                          {(() => {
-                            const storedRate = Number(account.interest_rate) || 0;
-                            const type = account.interest_rate_type;
+          {["active", "completed", "repossessed"].map((tabStatus) => {
+            const isTestAccount = (name: string | null | undefined) => 
+              name?.toLowerCase().includes("jonathan") && name?.toLowerCase().includes("low");
+            
+            const tabAccounts = accounts.filter((a) => {
+              const status = a.status || "active";
+              if (tabStatus === "active") return status === "active" || status === "delinquent" || status === "paid_off";
+              return status === tabStatus;
+            });
+            const nonTestAccounts = tabAccounts.filter((a) => !isTestAccount(a.profile?.full_name));
+            const totalCustomers = nonTestAccounts.length;
+            const totalBalance = nonTestAccounts.reduce((sum, acc) => sum + acc.current_balance, 0);
 
-                            const isFlatFee =
-                              type === "flat_fee"
-                                ? true
-                                : type === "percentage"
-                                  ? false
-                                  : (() => {
-                                      // Legacy fallback (in case older records are missing the field)
-                                      const principal = account.principal_amount;
-                                      const months = 36;
-                                      const expectedFlatFeePayment = principal / months + storedRate;
-                                      return storedRate >= 10 && Math.abs(account.payment_amount - expectedFlatFeePayment) < 1;
-                                    })();
+            const handleStatusChange = async (accountId: string, newStatus: string) => {
+              try {
+                const { error } = await supabase
+                  .from("customer_accounts")
+                  .update({ status: newStatus })
+                  .eq("id", accountId);
+                if (error) throw error;
+                toast({ title: "Success", description: `Account moved to ${newStatus}` });
+                await fetchData();
+              } catch (error: any) {
+                toast({ title: "Error", description: error.message, variant: "destructive" });
+              }
+            };
 
-                            return isFlatFee ? `${formatCurrency(storedRate)}/mo` : `${storedRate}%`;
-                          })()}
-                        </TableCell>
-                        <TableCell>{formatCurrency(account.payment_amount)}</TableCell>
-                        <TableCell>{new Date(account.next_payment_date + 'T00:00:00').toLocaleDateString()}</TableCell>
-                        <TableCell>
-                          <Badge variant={account.status === "active" ? "default" : "secondary"}>
-                            {account.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            <Button variant="ghost" size="sm" onClick={() => handleViewAccount(account)} title="View Account">
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            {isRamon && (
-                              <Button variant="ghost" size="sm" onClick={() => handleOpenEmailChange(account)} title="Change Email">
-                                <Mail className="h-4 w-4" />
-                              </Button>
-                            )}
-                            <Button variant="ghost" size="sm" onClick={() => handleEdit(account)}>
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="sm" onClick={() => handleDelete(account.id)}>
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+            return (
+              <TabsContent key={tabStatus} value={tabStatus} className="space-y-4">
+                {/* Summary Statistics */}
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">Total Customers</CardTitle>
+                      <Users className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">{totalCustomers}</div>
+                      <p className="text-xs text-muted-foreground capitalize">{tabStatus} BHPH accounts</p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">Total Outstanding Balance</CardTitle>
+                      <DollarSign className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">{formatCurrency(totalBalance)}</div>
+                      <p className="text-xs text-muted-foreground capitalize">Combined {tabStatus} balance</p>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="capitalize">{tabStatus} Accounts</CardTitle>
+                    <CardDescription>
+                      {tabStatus === "active" ? "Currently active financing accounts" : 
+                       tabStatus === "completed" ? "Fully paid off accounts" : "Repossessed vehicle accounts"}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {tabAccounts.length === 0 ? (
+                      <p className="text-muted-foreground text-center py-8">No {tabStatus} accounts found</p>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Customer</TableHead>
+                              <TableHead>Vehicle</TableHead>
+                              <TableHead>Balance</TableHead>
+                              <TableHead>Rate / Flat Fee</TableHead>
+                              <TableHead>Payment</TableHead>
+                              <TableHead>Next Due</TableHead>
+                              <TableHead>Status</TableHead>
+                              <TableHead className="text-right">Actions</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {tabAccounts.map((account) => {
+                              const isTest = account.profile?.full_name?.toLowerCase().includes("jonathan") && 
+                                             account.profile?.full_name?.toLowerCase().includes("low");
+                              return (
+                              <TableRow key={account.id} className={isTest ? "bg-muted/50" : ""}>
+                                <TableCell>
+                                  <div>
+                                    <div className="font-medium flex items-center gap-2">
+                                      {account.profile?.full_name || "N/A"}
+                                      {isTest && <Badge variant="outline" className="text-xs">Test Account</Badge>}
+                                    </div>
+                                    <div className="text-sm text-muted-foreground">{account.profile?.email}</div>
+                                    {account.profile?.phone && (
+                                      <div className="text-sm text-muted-foreground">{account.profile.phone}</div>
+                                    )}
+                                </div>
+                                </TableCell>
+                                <TableCell>
+                                  {account.vehicle 
+                                    ? `${account.vehicle.year} ${account.vehicle.make} ${account.vehicle.model}`
+                                    : "N/A"
+                                  }
+                                </TableCell>
+                                <TableCell>{formatCurrency(account.current_balance)}</TableCell>
+                                <TableCell>
+                                  {(() => {
+                                    const storedRate = Number(account.interest_rate) || 0;
+                                    const type = account.interest_rate_type;
+                                    const isFlatFee =
+                                      type === "flat_fee"
+                                        ? true
+                                        : type === "percentage"
+                                          ? false
+                                          : (() => {
+                                              const principal = account.principal_amount;
+                                              const months = 36;
+                                              const expectedFlatFeePayment = principal / months + storedRate;
+                                              return storedRate >= 10 && Math.abs(account.payment_amount - expectedFlatFeePayment) < 1;
+                                            })();
+                                    return isFlatFee ? `${formatCurrency(storedRate)}/mo` : `${storedRate}%`;
+                                  })()}
+                                </TableCell>
+                                <TableCell>{formatCurrency(account.payment_amount)}</TableCell>
+                                <TableCell>{new Date(account.next_payment_date + 'T00:00:00').toLocaleDateString()}</TableCell>
+                                <TableCell>
+                                  {tabStatus === "active" ? (
+                                    <Select
+                                      value={account.status || "active"}
+                                      onValueChange={(value) => handleStatusChange(account.id, value)}
+                                    >
+                                      <SelectTrigger className="w-[130px] h-8 text-xs">
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="active">Active</SelectItem>
+                                        <SelectItem value="completed">Completed</SelectItem>
+                                        <SelectItem value="repossessed">Repossessed</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  ) : (
+                                    <Badge variant="secondary" className="capitalize">
+                                      {account.status}
+                                    </Badge>
+                                  )}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  <div className="flex justify-end gap-2">
+                                    <Button variant="ghost" size="sm" onClick={() => handleViewAccount(account)} title="View Account">
+                                      <Eye className="h-4 w-4" />
+                                    </Button>
+                                    {isRamon && (
+                                      <Button variant="ghost" size="sm" onClick={() => handleOpenEmailChange(account)} title="Change Email">
+                                        <Mail className="h-4 w-4" />
+                                      </Button>
+                                    )}
+                                    <Button variant="ghost" size="sm" onClick={() => handleEdit(account)}>
+                                      <Edit className="h-4 w-4" />
+                                    </Button>
+                                    <Button variant="ghost" size="sm" onClick={() => handleDelete(account.id)}>
+                                      <Trash2 className="h-4 w-4 text-destructive" />
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                              );
+                            })}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            );
+          })}
+        </Tabs>
 
         {/* Email Change Dialog - Only for Ramon */}
         <Dialog open={emailChangeDialogOpen} onOpenChange={setEmailChangeDialogOpen}>
