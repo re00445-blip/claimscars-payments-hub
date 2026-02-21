@@ -915,38 +915,53 @@ export const AccountDetailView = ({ account, open, onOpenChange, onPaymentRecord
                         <TableHead>Interest</TableHead>
                         <TableHead>Late Fee</TableHead>
                         <TableHead>Total</TableHead>
+                        <TableHead>Prev Balance</TableHead>
                         <TableHead>Method</TableHead>
                         <TableHead>Notes</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {payments.map((payment) => (
-                        <TableRow key={payment.id}>
-                          <TableCell className="font-medium">
-                            {formatDate(payment.payment_date)}
-                          </TableCell>
-                          <TableCell>{formatCurrency(payment.principal_paid)}</TableCell>
-                          <TableCell>{formatCurrency(payment.interest_paid)}</TableCell>
-                          <TableCell>{formatCurrency(payment.late_fee_paid || 0)}</TableCell>
-                          <TableCell className="font-bold">{formatCurrency(payment.amount)}</TableCell>
-                          <TableCell>
-                            <Badge variant="outline">{payment.payment_method || "Cash"}</Badge>
-                          </TableCell>
-                          <TableCell className="max-w-[150px] truncate">
-                            {payment.notes || "-"}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => printReceipt(payment)}
-                            >
-                              <Printer className="h-4 w-4" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                      {(() => {
+                        // Calculate previous balance for each payment
+                        // Payments are sorted newest first; reconstruct balance backwards
+                        let runningBalance = account.current_balance;
+                        const balanceMap = new Map<string, number>();
+                        for (const p of payments) {
+                          const prevBalance = runningBalance + p.amount;
+                          balanceMap.set(p.id, prevBalance);
+                          runningBalance = prevBalance;
+                        }
+                        return payments.map((payment) => (
+                          <TableRow key={payment.id}>
+                            <TableCell className="font-medium">
+                              {formatDate(payment.payment_date)}
+                            </TableCell>
+                            <TableCell>{formatCurrency(payment.principal_paid)}</TableCell>
+                            <TableCell>{formatCurrency(payment.interest_paid)}</TableCell>
+                            <TableCell>{formatCurrency(payment.late_fee_paid || 0)}</TableCell>
+                            <TableCell className="font-bold">{formatCurrency(payment.amount)}</TableCell>
+                            <TableCell className="text-muted-foreground">
+                              {formatCurrency(balanceMap.get(payment.id) ?? 0)}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline">{payment.payment_method || "Cash"}</Badge>
+                            </TableCell>
+                            <TableCell className="max-w-[150px] truncate">
+                              {payment.notes || "-"}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => printReceipt(payment)}
+                              >
+                                <Printer className="h-4 w-4" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ));
+                      })()}
                     </TableBody>
                   </Table>
                 </div>
