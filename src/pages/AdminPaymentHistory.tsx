@@ -22,7 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, ArrowLeft, Search, Calendar, DollarSign, User } from "lucide-react";
+import { Loader2, ArrowLeft, Search, Calendar, DollarSign, User, ChevronDown, ChevronRight, Gift } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface CustomerAccount {
@@ -71,7 +71,7 @@ const AdminPaymentHistory = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
-
+  const [expandedWaivers, setExpandedWaivers] = useState<Set<string>>(new Set());
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
@@ -427,10 +427,27 @@ const AdminPaymentHistory = () => {
                 <TableBody>
                 {filteredPayments.flatMap((payment) => {
                     const { customerName, vehicleInfo } = getAccountDisplay(payment.account_id);
+                    const hasWaivers = (payment.waived_interest || 0) > 0 || (payment.waived_late_fees || 0) > 0;
+                    const isExpanded = expandedWaivers.has(payment.id);
+                    const toggleExpanded = () => {
+                      setExpandedWaivers(prev => {
+                        const next = new Set(prev);
+                        if (next.has(payment.id)) next.delete(payment.id);
+                        else next.add(payment.id);
+                        return next;
+                      });
+                    };
                     const rows = [
                       <TableRow key={payment.id}>
                         <TableCell>
-                          {new Date(payment.payment_date).toLocaleDateString()}
+                          <div className="flex items-center gap-1">
+                            {hasWaivers && (
+                              <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={toggleExpanded}>
+                                {isExpanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                              </Button>
+                            )}
+                            {new Date(payment.payment_date).toLocaleDateString()}
+                          </div>
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
@@ -467,39 +484,50 @@ const AdminPaymentHistory = () => {
                           </Badge>
                         </TableCell>
                         <TableCell className="max-w-[200px] truncate">
-                          {payment.notes || "-"}
+                          <div className="flex items-center gap-1">
+                            {hasWaivers && !isExpanded && (
+                              <Badge variant="outline" className="text-orange-600 border-orange-300 text-xs shrink-0">
+                                <Gift className="h-3 w-3 mr-1" />Waiver
+                              </Badge>
+                            )}
+                            <span className="truncate">{payment.notes || "-"}</span>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ];
-                    if ((payment.waived_interest || 0) > 0) {
-                      rows.push(
-                        <TableRow key={`${payment.id}-waived-int`} className="bg-orange-50 dark:bg-orange-950/20 border-0">
-                          <TableCell className="pl-8 text-orange-600 text-xs font-medium" colSpan={3}>
-                            ↳ Interest Waived
-                          </TableCell>
-                          <TableCell className="text-right text-orange-600 font-medium">
-                            -${(payment.waived_interest || 0).toLocaleString()}
-                          </TableCell>
-                          <TableCell colSpan={7} className="text-orange-600 text-xs">
-                            Applied on {new Date(payment.payment_date).toLocaleDateString()}
-                          </TableCell>
-                        </TableRow>
-                      );
-                    }
-                    if ((payment.waived_late_fees || 0) > 0) {
-                      rows.push(
-                        <TableRow key={`${payment.id}-waived-fees`} className="bg-orange-50 dark:bg-orange-950/20 border-0">
-                          <TableCell className="pl-8 text-orange-600 text-xs font-medium" colSpan={3}>
-                            ↳ Late Fees Waived
-                          </TableCell>
-                          <TableCell className="text-right text-orange-600 font-medium">
-                            -${(payment.waived_late_fees || 0).toLocaleString()}
-                          </TableCell>
-                          <TableCell colSpan={7} className="text-orange-600 text-xs">
-                            Applied on {new Date(payment.payment_date).toLocaleDateString()}
-                          </TableCell>
-                        </TableRow>
-                      );
+                    if (hasWaivers && isExpanded) {
+                      if ((payment.waived_interest || 0) > 0) {
+                        rows.push(
+                          <TableRow key={`${payment.id}-waived-int`} className="bg-orange-50 dark:bg-orange-950/20 border-0">
+                            <TableCell className="pl-8 text-orange-600 text-xs font-medium" colSpan={3}>
+                              <Gift className="h-3 w-3 inline mr-1" />
+                              Interest Waived
+                            </TableCell>
+                            <TableCell className="text-right text-orange-600 font-medium">
+                              -${(payment.waived_interest || 0).toLocaleString()}
+                            </TableCell>
+                            <TableCell colSpan={7} className="text-orange-600 text-xs">
+                              Applied on {new Date(payment.payment_date).toLocaleDateString()}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      }
+                      if ((payment.waived_late_fees || 0) > 0) {
+                        rows.push(
+                          <TableRow key={`${payment.id}-waived-fees`} className="bg-orange-50 dark:bg-orange-950/20 border-0">
+                            <TableCell className="pl-8 text-orange-600 text-xs font-medium" colSpan={3}>
+                              <Gift className="h-3 w-3 inline mr-1" />
+                              Late Fees Waived
+                            </TableCell>
+                            <TableCell className="text-right text-orange-600 font-medium">
+                              -${(payment.waived_late_fees || 0).toLocaleString()}
+                            </TableCell>
+                            <TableCell colSpan={7} className="text-orange-600 text-xs">
+                              Applied on {new Date(payment.payment_date).toLocaleDateString()}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      }
                     }
                     return rows;
                   })}

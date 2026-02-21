@@ -30,7 +30,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Plus, ArrowLeft, DollarSign, Printer, CreditCard, Calendar, TrendingDown, Gift, Percent, AlertCircle, RefreshCw, CalendarIcon } from "lucide-react";
+import { Loader2, Plus, ArrowLeft, DollarSign, Printer, CreditCard, Calendar, TrendingDown, Gift, Percent, AlertCircle, RefreshCw, CalendarIcon, ChevronDown, ChevronRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { RaceTrackProgress } from "@/components/RaceTrackProgress";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -105,6 +105,7 @@ export const AccountDetailView = ({ account, open, onOpenChange, onPaymentRecord
     waive_interest: 0,
     notes: "",
   });
+  const [expandedWaivers, setExpandedWaivers] = useState<Set<string>>(new Set());
 
   const [paymentForm, setPaymentForm] = useState({
     amount: 0,
@@ -955,10 +956,27 @@ export const AccountDetailView = ({ account, open, onOpenChange, onPaymentRecord
                           runningBalance = prevBalance;
                         }
                         return payments.flatMap((payment) => {
+                          const hasWaivers = (payment.waived_interest || 0) > 0 || (payment.waived_late_fees || 0) > 0;
+                          const isExpanded = expandedWaivers.has(payment.id);
+                          const toggleExpanded = () => {
+                            setExpandedWaivers(prev => {
+                              const next = new Set(prev);
+                              if (next.has(payment.id)) next.delete(payment.id);
+                              else next.add(payment.id);
+                              return next;
+                            });
+                          };
                           const rows = [
                             <TableRow key={payment.id}>
                               <TableCell className="font-medium">
-                                {formatDate(payment.payment_date)}
+                                <div className="flex items-center gap-1">
+                                  {hasWaivers && (
+                                    <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={toggleExpanded}>
+                                      {isExpanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                                    </Button>
+                                  )}
+                                  {formatDate(payment.payment_date)}
+                                </div>
                               </TableCell>
                               <TableCell>{formatCurrency(payment.principal_paid)}</TableCell>
                               <TableCell>{formatCurrency(payment.interest_paid)}</TableCell>
@@ -979,6 +997,11 @@ export const AccountDetailView = ({ account, open, onOpenChange, onPaymentRecord
                                 {payment.notes || "-"}
                               </TableCell>
                               <TableCell className="text-right">
+                                {hasWaivers && !isExpanded && (
+                                  <Badge variant="outline" className="text-orange-600 border-orange-300 mr-2 text-xs">
+                                    <Gift className="h-3 w-3 mr-1" />Waiver
+                                  </Badge>
+                                )}
                                 <Button
                                   variant="ghost"
                                   size="sm"
@@ -989,37 +1012,39 @@ export const AccountDetailView = ({ account, open, onOpenChange, onPaymentRecord
                               </TableCell>
                             </TableRow>
                           ];
-                          if ((payment.waived_interest || 0) > 0) {
-                            rows.push(
-                              <TableRow key={`${payment.id}-waived-int`} className="bg-orange-50 dark:bg-orange-950/20 border-0">
-                                <TableCell className="pl-8 text-orange-600 text-xs font-medium" colSpan={4}>
-                                  <Gift className="h-3 w-3 inline mr-1" />
-                                  Interest Waived
-                                </TableCell>
-                                <TableCell className="text-orange-600 font-medium">
-                                  -{formatCurrency(payment.waived_interest || 0)}
-                                </TableCell>
-                                <TableCell colSpan={5} className="text-orange-600 text-xs">
-                                  Applied on {formatDate(payment.payment_date)}
-                                </TableCell>
-                              </TableRow>
-                            );
-                          }
-                          if ((payment.waived_late_fees || 0) > 0) {
-                            rows.push(
-                              <TableRow key={`${payment.id}-waived-fees`} className="bg-orange-50 dark:bg-orange-950/20 border-0">
-                                <TableCell className="pl-8 text-orange-600 text-xs font-medium" colSpan={4}>
-                                  <Gift className="h-3 w-3 inline mr-1" />
-                                  Late Fees Waived
-                                </TableCell>
-                                <TableCell className="text-orange-600 font-medium">
-                                  -{formatCurrency(payment.waived_late_fees || 0)}
-                                </TableCell>
-                                <TableCell colSpan={5} className="text-orange-600 text-xs">
-                                  Applied on {formatDate(payment.payment_date)}
-                                </TableCell>
-                              </TableRow>
-                            );
+                          if (hasWaivers && isExpanded) {
+                            if ((payment.waived_interest || 0) > 0) {
+                              rows.push(
+                                <TableRow key={`${payment.id}-waived-int`} className="bg-orange-50 dark:bg-orange-950/20 border-0">
+                                  <TableCell className="pl-8 text-orange-600 text-xs font-medium" colSpan={4}>
+                                    <Gift className="h-3 w-3 inline mr-1" />
+                                    Interest Waived
+                                  </TableCell>
+                                  <TableCell className="text-orange-600 font-medium">
+                                    -{formatCurrency(payment.waived_interest || 0)}
+                                  </TableCell>
+                                  <TableCell colSpan={5} className="text-orange-600 text-xs">
+                                    Applied on {formatDate(payment.payment_date)}
+                                  </TableCell>
+                                </TableRow>
+                              );
+                            }
+                            if ((payment.waived_late_fees || 0) > 0) {
+                              rows.push(
+                                <TableRow key={`${payment.id}-waived-fees`} className="bg-orange-50 dark:bg-orange-950/20 border-0">
+                                  <TableCell className="pl-8 text-orange-600 text-xs font-medium" colSpan={4}>
+                                    <Gift className="h-3 w-3 inline mr-1" />
+                                    Late Fees Waived
+                                  </TableCell>
+                                  <TableCell className="text-orange-600 font-medium">
+                                    -{formatCurrency(payment.waived_late_fees || 0)}
+                                  </TableCell>
+                                  <TableCell colSpan={5} className="text-orange-600 text-xs">
+                                    Applied on {formatDate(payment.payment_date)}
+                                  </TableCell>
+                                </TableRow>
+                              );
+                            }
                           }
                           return rows;
                         });
