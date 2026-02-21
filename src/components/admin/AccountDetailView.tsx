@@ -986,7 +986,7 @@ export const AccountDetailView = ({ account, open, onOpenChange, onPaymentRecord
                               <TableCell>
                                 <Badge variant="outline">{payment.payment_method || "Cash"}</Badge>
                               </TableCell>
-                              <TableCell className="max-w-[150px] truncate">
+                              <TableCell className="max-w-[150px] truncate" title={payment.notes || ""}>
                                 {payment.notes || "-"}
                               </TableCell>
                               <TableCell className="text-right">

@@ -487,7 +487,7 @@ const AdminPaymentHistory = () => {
                                 <Gift className="h-3 w-3 mr-1" />Waiver
                               </Badge>
                             )}
-                            <span className="truncate">{payment.notes || "-"}</span>
+                            <span className="truncate" title={payment.notes || ""}>{payment.notes || "-"}</span>
                           </div>
                         </TableCell>
                       </TableRow>
