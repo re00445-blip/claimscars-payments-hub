@@ -539,7 +539,7 @@ export const AccountDetailView = ({ account, open, onOpenChange, onPaymentRecord
                 </div>
                 <div className="bg-background rounded-lg p-4 border">
                   <p className="text-sm text-muted-foreground mb-1">
-                    {account.interest_rate_type === "flat_fee" ? "Flat Fee" : "Interest Rate"}
+                    {account.interest_rate_type === "flat_fee" ? "Flat Fee Interest" : "Interest Rate"}
                   </p>
                   <p className="text-xl font-bold">
                     {account.interest_rate_type === "flat_fee" 
