@@ -30,7 +30,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Plus, ArrowLeft, DollarSign, Printer, CreditCard, Calendar, TrendingDown, Gift, Percent, AlertCircle, RefreshCw, CalendarIcon, ChevronDown, ChevronRight } from "lucide-react";
+import { Loader2, Plus, ArrowLeft, DollarSign, Printer, CreditCard, Calendar, TrendingDown, Gift, Percent, AlertCircle, RefreshCw, CalendarIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { RaceTrackProgress } from "@/components/RaceTrackProgress";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -969,14 +969,7 @@ export const AccountDetailView = ({ account, open, onOpenChange, onPaymentRecord
                           const rows = [
                             <TableRow key={payment.id}>
                               <TableCell className="font-medium">
-                                <div className="flex items-center gap-1">
-                                  {hasWaivers && (
-                                    <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={toggleExpanded}>
-                                      {isExpanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-                                    </Button>
-                                  )}
-                                  {formatDate(payment.payment_date)}
-                                </div>
+                                {formatDate(payment.payment_date)}
                               </TableCell>
                               <TableCell>{formatCurrency(payment.principal_paid)}</TableCell>
                               <TableCell>{formatCurrency(payment.interest_paid)}</TableCell>
@@ -997,9 +990,13 @@ export const AccountDetailView = ({ account, open, onOpenChange, onPaymentRecord
                                 {payment.notes || "-"}
                               </TableCell>
                               <TableCell className="text-right">
-                                {hasWaivers && !isExpanded && (
-                                  <Badge variant="outline" className="text-orange-600 border-orange-300 mr-2 text-xs">
-                                    <Gift className="h-3 w-3 mr-1" />Waiver
+                                {hasWaivers && (
+                                  <Badge 
+                                    variant="outline" 
+                                    className="text-orange-600 border-orange-300 mr-2 text-xs cursor-pointer hover:bg-orange-100 dark:hover:bg-orange-950/40"
+                                    onClick={toggleExpanded}
+                                  >
+                                    <Gift className="h-3 w-3 mr-1" />Waiver History
                                   </Badge>
                                 )}
                                 <Button
