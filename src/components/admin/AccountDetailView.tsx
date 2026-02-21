@@ -996,7 +996,7 @@ export const AccountDetailView = ({ account, open, onOpenChange, onPaymentRecord
                                     className="text-orange-600 border-orange-300 mr-2 text-xs cursor-pointer hover:bg-orange-100 dark:hover:bg-orange-950/40"
                                     onClick={toggleExpanded}
                                   >
-                                    <Gift className="h-3 w-3 mr-1" />Waiver History
+                                    <Gift className="h-3 w-3 mr-1" />Waiver
                                   </Badge>
                                 )}
                                 <Button

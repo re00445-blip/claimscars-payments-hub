@@ -484,7 +484,7 @@ const AdminPaymentHistory = () => {
                                 className="text-orange-600 border-orange-300 text-xs shrink-0 cursor-pointer hover:bg-orange-100 dark:hover:bg-orange-950/40"
                                 onClick={toggleExpanded}
                               >
-                                <Gift className="h-3 w-3 mr-1" />Waiver History
+                                <Gift className="h-3 w-3 mr-1" />Waiver
                               </Badge>
                             )}
                             <span className="truncate">{payment.notes || "-"}</span>
