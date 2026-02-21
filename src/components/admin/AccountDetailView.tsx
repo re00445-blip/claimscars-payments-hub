@@ -523,7 +523,7 @@ export const AccountDetailView = ({ account, open, onOpenChange, onPaymentRecord
                   <p className="text-2xl font-bold text-primary">{formatCurrency(account.current_balance)}</p>
                 </div>
                 <div className="bg-background rounded-lg p-4 border">
-                  <p className="text-sm text-muted-foreground mb-1">Monthly Payment</p>
+                  <p className="text-sm text-muted-foreground mb-1">{account.payment_frequency === 'weekly' ? 'Weekly' : 'Monthly'} Payment</p>
                   <p className="text-2xl font-bold">{formatCurrency(account.payment_amount)}</p>
                 </div>
                 <div className="bg-background rounded-lg p-4 border">
