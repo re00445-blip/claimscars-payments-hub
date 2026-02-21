@@ -20,7 +20,14 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, FileText, Printer, Edit2, DollarSign } from "lucide-react";
+import { Loader2, FileText, Printer, Edit2, DollarSign, ChevronDown } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 
 interface Payment {
@@ -46,13 +53,26 @@ interface Payment {
   account_user_id?: string;
 }
 
-type TimeFilter = "day" | "week" | "month";
+type TimeFilter = "day" | "week" | "month" | "prior_month";
+
+const getPriorMonthOptions = () => {
+  const options: { value: string; label: string }[] = [];
+  const now = new Date();
+  for (let i = 1; i <= 12; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    const label = d.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+    options.push({ value, label });
+  }
+  return options;
+};
 
 export const TransactionsReport = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [timeFilter, setTimeFilter] = useState<TimeFilter>("week");
+  const [selectedPriorMonth, setSelectedPriorMonth] = useState<string>("");
   const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
   const [editForm, setEditForm] = useState({
     amount: 0,
@@ -64,13 +84,14 @@ export const TransactionsReport = () => {
 
   useEffect(() => {
     fetchPayments();
-  }, [timeFilter]);
+  }, [timeFilter, selectedPriorMonth]);
 
   const fetchPayments = async () => {
     setLoading(true);
     
     const now = new Date();
     let startDate: Date;
+    let endDate: Date | null = null;
     
     switch (timeFilter) {
       case "day":
@@ -82,13 +103,25 @@ export const TransactionsReport = () => {
       case "month":
         startDate = new Date(now.getFullYear(), now.getMonth(), 1);
         break;
+      case "prior_month":
+        if (!selectedPriorMonth) { setLoading(false); return; }
+        const [year, month] = selectedPriorMonth.split("-").map(Number);
+        startDate = new Date(year, month - 1, 1);
+        endDate = new Date(year, month, 0, 23, 59, 59, 999);
+        break;
     }
 
-    const { data: paymentsData } = await supabase
+    let query = supabase
       .from("payments")
       .select("*")
       .gte("payment_date", startDate.toISOString())
       .order("payment_date", { ascending: false });
+
+    if (endDate) {
+      query = query.lte("payment_date", endDate.toISOString());
+    }
+
+    const { data: paymentsData } = await query;
 
     if (paymentsData) {
       // Fetch related data
@@ -276,7 +309,7 @@ export const TransactionsReport = () => {
               </CardTitle>
               <CardDescription>View and manage payment transactions</CardDescription>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2 items-center">
               <Button
                 variant={timeFilter === "day" ? "default" : "outline"}
                 size="sm"
@@ -298,6 +331,24 @@ export const TransactionsReport = () => {
               >
                 This Month
               </Button>
+              <Select
+                value={timeFilter === "prior_month" ? selectedPriorMonth : ""}
+                onValueChange={(val) => {
+                  setSelectedPriorMonth(val);
+                  setTimeFilter("prior_month");
+                }}
+              >
+                <SelectTrigger className={`w-[180px] h-9 text-sm ${timeFilter === "prior_month" ? "border-primary bg-primary text-primary-foreground" : ""}`}>
+                  <SelectValue placeholder="Prior Month..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {getPriorMonthOptions().map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </CardHeader>
@@ -305,7 +356,7 @@ export const TransactionsReport = () => {
           <div className="mb-4 flex items-center justify-between p-4 bg-primary/10 rounded-lg">
             <div className="flex items-center gap-2">
               <DollarSign className="h-5 w-5 text-primary" />
-              <span className="font-medium">Total ({timeFilter === "day" ? "Today" : timeFilter === "week" ? "This Week" : "This Month"}):</span>
+              <span className="font-medium">Total ({timeFilter === "day" ? "Today" : timeFilter === "week" ? "This Week" : timeFilter === "month" ? "This Month" : getPriorMonthOptions().find(o => o.value === selectedPriorMonth)?.label || "Prior Month"}):</span>
             </div>
             <span className="text-2xl font-bold text-primary">${getTotalAmount().toFixed(2)}</span>
           </div>
