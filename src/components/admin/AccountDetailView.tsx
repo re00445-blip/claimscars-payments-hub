@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,9 +30,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Plus, ArrowLeft, DollarSign, Printer, CreditCard, Calendar, TrendingDown, Gift, Percent, AlertCircle, RefreshCw } from "lucide-react";
+import { Loader2, Plus, ArrowLeft, DollarSign, Printer, CreditCard, Calendar, TrendingDown, Gift, Percent, AlertCircle, RefreshCw, CalendarIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { RaceTrackProgress } from "@/components/RaceTrackProgress";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
 
 interface CustomerAccount {
   id: string;
@@ -106,6 +110,7 @@ export const AccountDetailView = ({ account, open, onOpenChange, onPaymentRecord
     late_fee_paid: 0,
     payment_method: "cash",
     notes: "",
+    payment_date: new Date(),
   });
 
   useEffect(() => {
@@ -185,6 +190,7 @@ export const AccountDetailView = ({ account, open, onOpenChange, onPaymentRecord
       notes: lateFees > 0 || waivedInterest > 0 
         ? `${lateFees > 0 ? `Late fees: $${lateFees.toFixed(2)}` : ''}${lateFees > 0 && waivedInterest > 0 ? ' | ' : ''}${waivedInterest > 0 ? `Waived interest applied: $${waivedInterest.toFixed(2)}` : ''}`
         : "",
+      payment_date: new Date(),
     });
   };
 
@@ -245,7 +251,7 @@ export const AccountDetailView = ({ account, open, onOpenChange, onPaymentRecord
     setSaving(true);
 
     const { data: { user } } = await supabase.auth.getUser();
-    const paymentDate = new Date().toISOString();
+    const paymentDate = paymentForm.payment_date.toISOString();
 
     const paymentData = {
       account_id: account.id,
@@ -293,7 +299,9 @@ export const AccountDetailView = ({ account, open, onOpenChange, onPaymentRecord
         return date.toISOString().split('T')[0];
       };
 
-      const nextPaymentDate = calculateNextPaymentDate(account.next_payment_date, account.payment_frequency);
+      // Use the selected payment date (not today) as the basis for next due date
+      const paymentDateStr = format(paymentForm.payment_date, 'yyyy-MM-dd');
+      const nextPaymentDate = calculateNextPaymentDate(paymentDateStr, account.payment_frequency);
 
       await supabase
         .from("customer_accounts")
@@ -794,7 +802,7 @@ export const AccountDetailView = ({ account, open, onOpenChange, onPaymentRecord
                     </div>
                   </div>
 
-                  <div className="grid md:grid-cols-2 gap-4">
+                  <div className="grid md:grid-cols-3 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="method">Payment Method</Label>
                       <Select
@@ -814,6 +822,32 @@ export const AccountDetailView = ({ account, open, onOpenChange, onPaymentRecord
                           <SelectItem value="venmo">Venmo</SelectItem>
                         </SelectContent>
                       </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Payment Date</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "w-full justify-start text-left font-normal",
+                              !paymentForm.payment_date && "text-muted-foreground"
+                            )}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {format(paymentForm.payment_date, "PPP")}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <CalendarComponent
+                            mode="single"
+                            selected={paymentForm.payment_date}
+                            onSelect={(date) => date && setPaymentForm(prev => ({ ...prev, payment_date: date }))}
+                            initialFocus
+                            className={cn("p-3 pointer-events-auto")}
+                          />
+                        </PopoverContent>
+                      </Popover>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="notes">Notes (Optional)</Label>
