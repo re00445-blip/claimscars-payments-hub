@@ -214,6 +214,28 @@ const AdminPaymentHistory = () => {
     return { total, principal, interest, lateFees, count: filteredPayments.length };
   };
 
+  // Calculate previous balance for each payment
+  // For each account, work backwards from current_balance through payments sorted by date
+  const paymentBalanceMap = new Map<string, number>();
+  (() => {
+    // Group all payments by account_id, sorted newest first
+    const paymentsByAccount = new Map<string, Payment[]>();
+    for (const p of [...payments].sort((a, b) => new Date(b.payment_date).getTime() - new Date(a.payment_date).getTime())) {
+      if (!paymentsByAccount.has(p.account_id)) paymentsByAccount.set(p.account_id, []);
+      paymentsByAccount.get(p.account_id)!.push(p);
+    }
+    // For each account, reconstruct balances
+    for (const [accountId, acctPayments] of paymentsByAccount) {
+      const account = accounts.find(a => a.id === accountId);
+      let runningBalance = account?.current_balance ?? 0;
+      for (const p of acctPayments) {
+        const prevBalance = runningBalance + p.amount;
+        paymentBalanceMap.set(p.id, prevBalance);
+        runningBalance = prevBalance;
+      }
+    }
+  })();
+
   const stats = getTotalStats();
 
   if (loading) {
@@ -393,6 +415,7 @@ const AdminPaymentHistory = () => {
                     <TableHead className="text-right">Principal</TableHead>
                     <TableHead className="text-right">Interest</TableHead>
                     <TableHead className="text-right">Late Fees</TableHead>
+                    <TableHead className="text-right">Prev Balance</TableHead>
                     <TableHead>Method</TableHead>
                     <TableHead>Notes</TableHead>
                   </TableRow>
@@ -425,6 +448,9 @@ const AdminPaymentHistory = () => {
                         </TableCell>
                         <TableCell className="text-right text-destructive">
                           ${(payment.late_fee_paid || 0).toLocaleString()}
+                        </TableCell>
+                        <TableCell className="text-right font-medium">
+                          ${(paymentBalanceMap.get(payment.id) ?? 0).toLocaleString()}
                         </TableCell>
                         <TableCell>
                           <Badge variant="outline">
