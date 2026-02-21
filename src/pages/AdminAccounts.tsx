@@ -1005,7 +1005,13 @@ const AdminAccounts = () => {
                                       value={account.status || "active"}
                                       onValueChange={(value) => handleStatusChange(account.id, value)}
                                     >
-                                      <SelectTrigger className="w-[130px] h-8 text-xs">
+                                      <SelectTrigger className={`w-[140px] h-8 text-xs font-medium rounded-full border-0 ${
+                                        (account.status || "active") === "active" 
+                                          ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" 
+                                          : (account.status || "active") === "completed"
+                                            ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
+                                            : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
+                                      }`}>
                                         <SelectValue />
                                       </SelectTrigger>
                                       <SelectContent>
@@ -1015,7 +1021,11 @@ const AdminAccounts = () => {
                                       </SelectContent>
                                     </Select>
                                   ) : (
-                                    <Badge variant="secondary" className="capitalize">
+                                    <Badge className={`capitalize ${
+                                      account.status === "completed"
+                                        ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400 border-0"
+                                        : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 border-0"
+                                    }`}>
                                       {account.status}
                                     </Badge>
                                   )}
