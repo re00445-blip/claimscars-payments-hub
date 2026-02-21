@@ -22,7 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, ArrowLeft, Search, Calendar, DollarSign, User, ChevronDown, ChevronRight, Gift } from "lucide-react";
+import { Loader2, ArrowLeft, Search, Calendar, DollarSign, User, Gift } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface CustomerAccount {
@@ -440,14 +440,7 @@ const AdminPaymentHistory = () => {
                     const rows = [
                       <TableRow key={payment.id}>
                         <TableCell>
-                          <div className="flex items-center gap-1">
-                            {hasWaivers && (
-                              <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={toggleExpanded}>
-                                {isExpanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-                              </Button>
-                            )}
-                            {new Date(payment.payment_date).toLocaleDateString()}
-                          </div>
+                          {new Date(payment.payment_date).toLocaleDateString()}
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
@@ -483,11 +476,15 @@ const AdminPaymentHistory = () => {
                             {payment.payment_method || "Cash"}
                           </Badge>
                         </TableCell>
-                        <TableCell className="max-w-[200px] truncate">
+                        <TableCell className="max-w-[200px]">
                           <div className="flex items-center gap-1">
-                            {hasWaivers && !isExpanded && (
-                              <Badge variant="outline" className="text-orange-600 border-orange-300 text-xs shrink-0">
-                                <Gift className="h-3 w-3 mr-1" />Waiver
+                            {hasWaivers && (
+                              <Badge 
+                                variant="outline" 
+                                className="text-orange-600 border-orange-300 text-xs shrink-0 cursor-pointer hover:bg-orange-100 dark:hover:bg-orange-950/40"
+                                onClick={toggleExpanded}
+                              >
+                                <Gift className="h-3 w-3 mr-1" />Waiver History
                               </Badge>
                             )}
                             <span className="truncate">{payment.notes || "-"}</span>
