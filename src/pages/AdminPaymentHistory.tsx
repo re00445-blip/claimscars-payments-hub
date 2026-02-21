@@ -54,6 +54,9 @@ interface Payment {
   created_by: string | null;
   notes: string | null;
   payment_method: string | null;
+  entry_type: string;
+  waived_interest: number | null;
+  waived_late_fees: number | null;
 }
 
 const AdminPaymentHistory = () => {
@@ -416,6 +419,9 @@ const AdminPaymentHistory = () => {
                     <TableHead className="text-right">Interest</TableHead>
                     <TableHead className="text-right">Late Fees</TableHead>
                     <TableHead className="text-right">Prev Balance</TableHead>
+                    <TableHead className="text-right">Waived Int.</TableHead>
+                    <TableHead className="text-right">Waived Fees</TableHead>
+                    <TableHead>Entry</TableHead>
                     <TableHead>Method</TableHead>
                     <TableHead>Notes</TableHead>
                   </TableRow>
@@ -451,6 +457,17 @@ const AdminPaymentHistory = () => {
                         </TableCell>
                         <TableCell className="text-right font-medium">
                           ${(paymentBalanceMap.get(payment.id) ?? 0).toLocaleString()}
+                        </TableCell>
+                        <TableCell className="text-right text-orange-600">
+                          ${(payment.waived_interest || 0).toLocaleString()}
+                        </TableCell>
+                        <TableCell className="text-right text-orange-600">
+                          ${(payment.waived_late_fees || 0).toLocaleString()}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={payment.entry_type === 'automatic' ? 'default' : 'secondary'}>
+                            {payment.entry_type === 'automatic' ? 'Auto' : 'Manual'}
+                          </Badge>
                         </TableCell>
                         <TableCell>
                           <Badge variant="outline">

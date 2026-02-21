@@ -78,6 +78,9 @@ interface Payment {
   notes: string | null;
   receipt_url: string | null;
   payment_method: string | null;
+  entry_type: string;
+  waived_interest: number | null;
+  waived_late_fees: number | null;
 }
 
 interface AccountDetailViewProps {
@@ -916,6 +919,9 @@ export const AccountDetailView = ({ account, open, onOpenChange, onPaymentRecord
                         <TableHead>Late Fee</TableHead>
                         <TableHead>Total</TableHead>
                         <TableHead>Prev Balance</TableHead>
+                        <TableHead>Waived Int.</TableHead>
+                        <TableHead>Waived Fees</TableHead>
+                        <TableHead>Entry</TableHead>
                         <TableHead>Method</TableHead>
                         <TableHead>Notes</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
@@ -943,6 +949,17 @@ export const AccountDetailView = ({ account, open, onOpenChange, onPaymentRecord
                             <TableCell className="font-bold">{formatCurrency(payment.amount)}</TableCell>
                             <TableCell className="text-muted-foreground">
                               {formatCurrency(balanceMap.get(payment.id) ?? 0)}
+                            </TableCell>
+                            <TableCell className="text-orange-600">
+                              {formatCurrency(payment.waived_interest || 0)}
+                            </TableCell>
+                            <TableCell className="text-orange-600">
+                              {formatCurrency(payment.waived_late_fees || 0)}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant={payment.entry_type === 'automatic' ? 'default' : 'secondary'}>
+                                {payment.entry_type === 'automatic' ? 'Auto' : 'Manual'}
+                              </Badge>
                             </TableCell>
                             <TableCell>
                               <Badge variant="outline">{payment.payment_method || "Cash"}</Badge>
