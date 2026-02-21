@@ -236,6 +236,24 @@ export const AccountDetailView = ({ account, open, onOpenChange, onPaymentRecord
         variant: "destructive",
       });
     } else {
+      // Record a $0 payment entry to track the waiver in payment history
+      if (waiverForm.waive_late_fees > 0 || waiverForm.waive_interest > 0) {
+        const { data: { session } } = await supabase.auth.getSession();
+        await supabase.from("payments").insert({
+          account_id: account.id,
+          amount: 0,
+          principal_paid: 0,
+          interest_paid: 0,
+          late_fee_paid: 0,
+          waived_interest: waiverForm.waive_interest,
+          waived_late_fees: waiverForm.waive_late_fees,
+          entry_type: "manual",
+          payment_method: null,
+          notes: waiverForm.notes || `Waiver applied: ${waiverForm.waive_late_fees > 0 ? `Late fees $${waiverForm.waive_late_fees.toFixed(2)}` : ''}${waiverForm.waive_late_fees > 0 && waiverForm.waive_interest > 0 ? ', ' : ''}${waiverForm.waive_interest > 0 ? `Interest $${waiverForm.waive_interest.toFixed(2)}` : ''}`,
+          created_by: session?.user?.id || null,
+        });
+      }
+
       toast({
         title: "Success",
         description: `Waived ${formatCurrency(waiverForm.waive_late_fees)} in late fees and ${formatCurrency(waiverForm.waive_interest)} in interest`,
