@@ -543,7 +543,9 @@ export const AccountDetailView = ({ account, open, onOpenChange, onPaymentRecord
                   </p>
                   <p className="text-xl font-bold">
                     {account.interest_rate_type === "flat_fee" 
-                      ? `${formatCurrency(account.interest_rate)}/mo`
+                      ? account.payment_frequency === 'weekly'
+                        ? `${formatCurrency(account.interest_rate / (52 / 12))}/wk`
+                        : `${formatCurrency(account.interest_rate)}/mo`
                       : `${account.interest_rate}% APR`
                     }
                   </p>
