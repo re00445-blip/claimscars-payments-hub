@@ -810,6 +810,7 @@ export const AccountDetailView = ({ account, open, onOpenChange, onPaymentRecord
                           <SelectItem value="check">Check</SelectItem>
                           <SelectItem value="zelle">Zelle</SelectItem>
                           <SelectItem value="cashapp">Cash App</SelectItem>
+                          <SelectItem value="apple_pay">Apple Pay</SelectItem>
                           <SelectItem value="venmo">Venmo</SelectItem>
                         </SelectContent>
                       </Select>
