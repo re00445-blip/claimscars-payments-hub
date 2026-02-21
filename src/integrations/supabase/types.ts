@@ -704,6 +704,7 @@ export type Database = {
           amount: number
           created_at: string | null
           created_by: string | null
+          entry_type: string
           id: string
           interest_paid: number
           late_fee_paid: number | null
@@ -712,12 +713,15 @@ export type Database = {
           payment_method: string | null
           principal_paid: number
           receipt_url: string | null
+          waived_interest: number | null
+          waived_late_fees: number | null
         }
         Insert: {
           account_id: string
           amount: number
           created_at?: string | null
           created_by?: string | null
+          entry_type?: string
           id?: string
           interest_paid: number
           late_fee_paid?: number | null
@@ -726,12 +730,15 @@ export type Database = {
           payment_method?: string | null
           principal_paid: number
           receipt_url?: string | null
+          waived_interest?: number | null
+          waived_late_fees?: number | null
         }
         Update: {
           account_id?: string
           amount?: number
           created_at?: string | null
           created_by?: string | null
+          entry_type?: string
           id?: string
           interest_paid?: number
           late_fee_paid?: number | null
@@ -740,6 +747,8 @@ export type Database = {
           payment_method?: string | null
           principal_paid?: number
           receipt_url?: string | null
+          waived_interest?: number | null
+          waived_late_fees?: number | null
         }
         Relationships: [
           {

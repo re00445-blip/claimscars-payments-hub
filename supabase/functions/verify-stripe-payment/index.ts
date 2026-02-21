@@ -246,6 +246,7 @@ serve(async (req) => {
         interest_paid: interestPaid,
         late_fee_paid: lateFeePaid,
         payment_method: "Card (Online)",
+        entry_type: "automatic",
         receipt_url: sessionId, // Store session ID to prevent duplicates
         notes: lateFeePaid > 0 ? `Online payment via Stripe (includes $${lateFeePaid.toFixed(2)} late fees)` : "Online payment via Stripe",
         payment_date: now.toISOString(),
