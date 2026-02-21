@@ -419,17 +419,15 @@ const AdminPaymentHistory = () => {
                     <TableHead className="text-right">Interest</TableHead>
                     <TableHead className="text-right">Late Fees</TableHead>
                     <TableHead className="text-right">Prev Balance</TableHead>
-                    <TableHead className="text-right">Waived Int.</TableHead>
-                    <TableHead className="text-right">Waived Fees</TableHead>
                     <TableHead>Entry</TableHead>
                     <TableHead>Method</TableHead>
                     <TableHead>Notes</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredPayments.map((payment) => {
+                {filteredPayments.flatMap((payment) => {
                     const { customerName, vehicleInfo } = getAccountDisplay(payment.account_id);
-                    return (
+                    const rows = [
                       <TableRow key={payment.id}>
                         <TableCell>
                           {new Date(payment.payment_date).toLocaleDateString()}
@@ -458,12 +456,6 @@ const AdminPaymentHistory = () => {
                         <TableCell className="text-right font-medium">
                           ${(paymentBalanceMap.get(payment.id) ?? 0).toLocaleString()}
                         </TableCell>
-                        <TableCell className="text-right text-orange-600">
-                          ${(payment.waived_interest || 0).toLocaleString()}
-                        </TableCell>
-                        <TableCell className="text-right text-orange-600">
-                          ${(payment.waived_late_fees || 0).toLocaleString()}
-                        </TableCell>
                         <TableCell>
                           <Badge variant={payment.entry_type === 'automatic' ? 'default' : 'secondary'}>
                             {payment.entry_type === 'automatic' ? 'Auto' : 'Manual'}
@@ -478,7 +470,38 @@ const AdminPaymentHistory = () => {
                           {payment.notes || "-"}
                         </TableCell>
                       </TableRow>
-                    );
+                    ];
+                    if ((payment.waived_interest || 0) > 0) {
+                      rows.push(
+                        <TableRow key={`${payment.id}-waived-int`} className="bg-orange-50 dark:bg-orange-950/20 border-0">
+                          <TableCell className="pl-8 text-orange-600 text-xs font-medium" colSpan={3}>
+                            ↳ Interest Waived
+                          </TableCell>
+                          <TableCell className="text-right text-orange-600 font-medium">
+                            -${(payment.waived_interest || 0).toLocaleString()}
+                          </TableCell>
+                          <TableCell colSpan={7} className="text-orange-600 text-xs">
+                            Applied on {new Date(payment.payment_date).toLocaleDateString()}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    }
+                    if ((payment.waived_late_fees || 0) > 0) {
+                      rows.push(
+                        <TableRow key={`${payment.id}-waived-fees`} className="bg-orange-50 dark:bg-orange-950/20 border-0">
+                          <TableCell className="pl-8 text-orange-600 text-xs font-medium" colSpan={3}>
+                            ↳ Late Fees Waived
+                          </TableCell>
+                          <TableCell className="text-right text-orange-600 font-medium">
+                            -${(payment.waived_late_fees || 0).toLocaleString()}
+                          </TableCell>
+                          <TableCell colSpan={7} className="text-orange-600 text-xs">
+                            Applied on {new Date(payment.payment_date).toLocaleDateString()}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    }
+                    return rows;
                   })}
                 </TableBody>
               </Table>

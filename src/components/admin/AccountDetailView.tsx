@@ -919,8 +919,6 @@ export const AccountDetailView = ({ account, open, onOpenChange, onPaymentRecord
                         <TableHead>Late Fee</TableHead>
                         <TableHead>Total</TableHead>
                         <TableHead>Prev Balance</TableHead>
-                        <TableHead>Waived Int.</TableHead>
-                        <TableHead>Waived Fees</TableHead>
                         <TableHead>Entry</TableHead>
                         <TableHead>Method</TableHead>
                         <TableHead>Notes</TableHead>
@@ -938,46 +936,75 @@ export const AccountDetailView = ({ account, open, onOpenChange, onPaymentRecord
                           balanceMap.set(p.id, prevBalance);
                           runningBalance = prevBalance;
                         }
-                        return payments.map((payment) => (
-                          <TableRow key={payment.id}>
-                            <TableCell className="font-medium">
-                              {formatDate(payment.payment_date)}
-                            </TableCell>
-                            <TableCell>{formatCurrency(payment.principal_paid)}</TableCell>
-                            <TableCell>{formatCurrency(payment.interest_paid)}</TableCell>
-                            <TableCell>{formatCurrency(payment.late_fee_paid || 0)}</TableCell>
-                            <TableCell className="font-bold">{formatCurrency(payment.amount)}</TableCell>
-                            <TableCell className="text-muted-foreground">
-                              {formatCurrency(balanceMap.get(payment.id) ?? 0)}
-                            </TableCell>
-                            <TableCell className="text-orange-600">
-                              {formatCurrency(payment.waived_interest || 0)}
-                            </TableCell>
-                            <TableCell className="text-orange-600">
-                              {formatCurrency(payment.waived_late_fees || 0)}
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant={payment.entry_type === 'automatic' ? 'default' : 'secondary'}>
-                                {payment.entry_type === 'automatic' ? 'Auto' : 'Manual'}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant="outline">{payment.payment_method || "Cash"}</Badge>
-                            </TableCell>
-                            <TableCell className="max-w-[150px] truncate">
-                              {payment.notes || "-"}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => printReceipt(payment)}
-                              >
-                                <Printer className="h-4 w-4" />
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ));
+                        return payments.flatMap((payment) => {
+                          const rows = [
+                            <TableRow key={payment.id}>
+                              <TableCell className="font-medium">
+                                {formatDate(payment.payment_date)}
+                              </TableCell>
+                              <TableCell>{formatCurrency(payment.principal_paid)}</TableCell>
+                              <TableCell>{formatCurrency(payment.interest_paid)}</TableCell>
+                              <TableCell>{formatCurrency(payment.late_fee_paid || 0)}</TableCell>
+                              <TableCell className="font-bold">{formatCurrency(payment.amount)}</TableCell>
+                              <TableCell className="text-muted-foreground">
+                                {formatCurrency(balanceMap.get(payment.id) ?? 0)}
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant={payment.entry_type === 'automatic' ? 'default' : 'secondary'}>
+                                  {payment.entry_type === 'automatic' ? 'Auto' : 'Manual'}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant="outline">{payment.payment_method || "Cash"}</Badge>
+                              </TableCell>
+                              <TableCell className="max-w-[150px] truncate">
+                                {payment.notes || "-"}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => printReceipt(payment)}
+                                >
+                                  <Printer className="h-4 w-4" />
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ];
+                          if ((payment.waived_interest || 0) > 0) {
+                            rows.push(
+                              <TableRow key={`${payment.id}-waived-int`} className="bg-orange-50 dark:bg-orange-950/20 border-0">
+                                <TableCell className="pl-8 text-orange-600 text-xs font-medium" colSpan={4}>
+                                  <Gift className="h-3 w-3 inline mr-1" />
+                                  Interest Waived
+                                </TableCell>
+                                <TableCell className="text-orange-600 font-medium">
+                                  -{formatCurrency(payment.waived_interest || 0)}
+                                </TableCell>
+                                <TableCell colSpan={5} className="text-orange-600 text-xs">
+                                  Applied on {formatDate(payment.payment_date)}
+                                </TableCell>
+                              </TableRow>
+                            );
+                          }
+                          if ((payment.waived_late_fees || 0) > 0) {
+                            rows.push(
+                              <TableRow key={`${payment.id}-waived-fees`} className="bg-orange-50 dark:bg-orange-950/20 border-0">
+                                <TableCell className="pl-8 text-orange-600 text-xs font-medium" colSpan={4}>
+                                  <Gift className="h-3 w-3 inline mr-1" />
+                                  Late Fees Waived
+                                </TableCell>
+                                <TableCell className="text-orange-600 font-medium">
+                                  -{formatCurrency(payment.waived_late_fees || 0)}
+                                </TableCell>
+                                <TableCell colSpan={5} className="text-orange-600 text-xs">
+                                  Applied on {formatDate(payment.payment_date)}
+                                </TableCell>
+                              </TableRow>
+                            );
+                          }
+                          return rows;
+                        });
                       })()}
                     </TableBody>
                   </Table>
