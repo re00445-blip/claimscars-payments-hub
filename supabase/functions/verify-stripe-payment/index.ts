@@ -114,8 +114,8 @@ serve(async (req) => {
   try {
     logStep("Function started");
 
-    const stripeKey = Deno.env.get("stripeAPi");
-    if (!stripeKey) throw new Error("stripeAPi is not set");
+    const stripeKey = Deno.env.get("STRIPE_API_KEY") || Deno.env.get("stripeAPi");
+    if (!stripeKey) throw new Error("Stripe API key is not set (checked STRIPE_API_KEY and stripeAPi)");
     logStep("Stripe key verified");
 
     const resendKey = Deno.env.get("RESEND_API_KEY");
@@ -141,6 +141,25 @@ serve(async (req) => {
     if (session.payment_status !== "paid") {
       throw new Error("Payment not completed");
     }
+
+    // Verify session is fully complete (not just paid)
+    if (session.status !== "complete") {
+      throw new Error(`Checkout session is not complete (status: ${session.status})`);
+    }
+
+    // Verify session was created recently (within the last hour) to prevent replay attacks
+    const sessionCreatedAt = (session.created || 0) * 1000; // Stripe timestamps are in seconds
+    const oneHourAgo = Date.now() - 60 * 60 * 1000;
+    if (sessionCreatedAt < oneHourAgo) {
+      throw new Error("Checkout session has expired (older than 1 hour)");
+    }
+    logStep("Session age verified", { createdAt: new Date(sessionCreatedAt).toISOString() });
+
+    // Log Stripe payment intent ID for audit trail
+    const paymentIntentId = typeof session.payment_intent === "string"
+      ? session.payment_intent
+      : session.payment_intent?.id;
+    logStep("Audit trail", { paymentIntentId, sessionId, paymentStatus: session.payment_status });
 
     // Check if this payment was already recorded
     const { data: existingPayment } = await supabaseClient
@@ -331,10 +350,11 @@ serve(async (req) => {
     }
 
     // Send to admin
+    const adminEmail = Deno.env.get("ADMIN_EMAIL") || "ramon@carsandclaims.com";
     try {
       const adminResponse = await resend.emails.send({
         from: "Quality Foreign Domestic Autos <noreply@carsandclaims.com>",
-        to: ["ramon@carsandclaims.com"],
+        to: [adminEmail],
         subject: `Payment Received - ${customerName} - Invoice #${invoiceNumber} - $${amount.toFixed(2)}`,
         html: receiptHTML,
       });

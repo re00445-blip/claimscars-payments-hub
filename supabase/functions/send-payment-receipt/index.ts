@@ -137,9 +137,10 @@ const handler = async (req: Request): Promise<Response> => {
     }
     
     // Send copy to admin
+    const adminEmail = Deno.env.get("ADMIN_EMAIL") || "ramon@carsandclaims.com";
     const adminResponse = await resend.emails.send({
       from: "Quality Foreign Domestic Autos <noreply@carsandclaims.com>",
-      to: ["ramon@carsandclaims.com"],
+      to: [adminEmail],
       subject: `Payment Received - ${data.customerName} - Invoice #${data.invoiceNumber}`,
       html: receiptHTML,
     });

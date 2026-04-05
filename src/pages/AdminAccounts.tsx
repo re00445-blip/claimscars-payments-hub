@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { formatPhoneE164 } from "@/lib/utils";
+import { logAudit } from "@/lib/audit";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -449,6 +450,8 @@ const AdminAccounts = () => {
           title: "Success",
           description: "Account updated successfully",
         });
+
+        await logAudit("update_account", "customer_account", editingAccount.id, { changes: accountData });
       }
 
       await fetchData();
@@ -484,6 +487,7 @@ const AdminAccounts = () => {
         title: "Success",
         description: "Account deleted successfully",
       });
+      await logAudit("delete_account", "customer_account", id);
       fetchData();
     }
   };

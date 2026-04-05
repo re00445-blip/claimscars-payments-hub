@@ -44,16 +44,14 @@ const Auth = () => {
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
 
   useEffect(() => {
-    // Load saved credentials if "Remember Me" was checked
+    // Load saved email/phone if "Remember Me" was checked
     const savedEmailOrPhone = localStorage.getItem("rememberedEmailOrPhone");
-    const savedPassword = localStorage.getItem("rememberedPassword");
     if (savedEmailOrPhone) {
       setEmailOrPhone(savedEmailOrPhone);
       setRememberMe(true);
     }
-    if (savedPassword) {
-      setPassword(savedPassword);
-    }
+    // Clean up any previously stored passwords (security fix)
+    localStorage.removeItem("rememberedPassword");
 
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -104,13 +102,11 @@ const Auth = () => {
     e.preventDefault();
     setLoading(true);
 
-    // Handle "Remember Me" - save or remove credentials
+    // Handle "Remember Me" - only save email/phone, never password
     if (rememberMe) {
       localStorage.setItem("rememberedEmailOrPhone", emailOrPhone);
-      localStorage.setItem("rememberedPassword", password);
     } else {
       localStorage.removeItem("rememberedEmailOrPhone");
-      localStorage.removeItem("rememberedPassword");
     }
 
     const loginEmail = getLoginEmail(emailOrPhone);

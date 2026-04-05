@@ -110,7 +110,7 @@ const handler = async (req: Request): Promise<Response> => {
         headers: { "Content-Type": "application/json", ...corsHeaders },
       });
     } else if (type === "sms") {
-      const twilioAccountSid = Deno.env.get("TWILIO_ACCOUNT_SID28a");
+      const twilioAccountSid = Deno.env.get("TWILIO_ACCOUNT_SID");
       const twilioAuthToken = Deno.env.get("TWILIO_AUTH_TOKEN");
       const twilioPhoneNumber = Deno.env.get("TWILIO_PHONE_NUMBER");
 

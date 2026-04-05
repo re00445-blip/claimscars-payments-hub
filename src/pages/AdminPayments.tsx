@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User, Session } from "@supabase/supabase-js";
+import { logAudit } from "@/lib/audit";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -386,6 +387,12 @@ const AdminPayments = () => {
         });
       }
       
+      await logAudit("record_payment", "payment", newPayment.id, {
+        account_id: formData.account_id,
+        amount: formData.amount,
+        method: formData.payment_method,
+      });
+
       // Show receipt
       const paymentWithAccount = {
         ...newPayment,
@@ -393,7 +400,7 @@ const AdminPayments = () => {
       };
       setSelectedReceipt(paymentWithAccount);
       setShowReceipt(true);
-      
+
       fetchData();
       setIsDialogOpen(false);
       resetForm();
@@ -487,6 +494,10 @@ const AdminPayments = () => {
       toast({
         title: "Success",
         description: "Payment deleted and balance restored",
+      });
+      await logAudit("delete_payment", "payment", deletePaymentId, {
+        account_id: payment?.account_id,
+        amount: payment?.amount,
       });
       fetchData();
     }

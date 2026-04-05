@@ -20,8 +20,8 @@ serve(async (req) => {
   try {
     logStep("Function started");
 
-    const stripeKey = Deno.env.get("stripeAPi");
-    if (!stripeKey) throw new Error("stripeAPi is not set");
+    const stripeKey = Deno.env.get("STRIPE_API_KEY") || Deno.env.get("stripeAPi");
+    if (!stripeKey) throw new Error("Stripe API key is not set (checked STRIPE_API_KEY and stripeAPi)");
     logStep("Stripe key verified");
 
     const supabaseClient = createClient(
@@ -51,6 +51,9 @@ serve(async (req) => {
     }
     if (amount < 0.50) {
       throw new Error("Minimum payment amount is $0.50");
+    }
+    if (amount > 50000) {
+      throw new Error("Maximum single payment is $50,000. Contact us for larger payments.");
     }
     if (!accountId) {
       throw new Error("Account ID is required");

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { logAudit } from "@/lib/audit";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
@@ -418,6 +419,11 @@ const AdminUsers = () => {
       if (!data?.success) throw new Error(data?.error || "Failed to delete user");
 
       setUsers((prev) => prev.filter((u) => u.id !== user.id));
+
+      await logAudit("delete_user", "user", user.id, {
+        email: user.email,
+        full_name: user.full_name,
+      });
 
       toast({
         title: "User Deleted",

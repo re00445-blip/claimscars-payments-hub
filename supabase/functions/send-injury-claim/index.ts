@@ -198,7 +198,7 @@ const handler = async (req: Request): Promise<Response> => {
     try {
       const emailResponse = await resend.emails.send({
         from: "Cars & Claims <noreply@carsandclaims.com>",
-        to: ["ramon@carsandclaims.com", "re00445@gmail.com"],
+        to: (Deno.env.get("ADMIN_EMAILS") || "ramon@carsandclaims.com,re00445@gmail.com").split(",").map(e => e.trim()),
         subject: "New Injury Claim Inquiry",
         html: `
           <h2>New Injury Claim Inquiry</h2>

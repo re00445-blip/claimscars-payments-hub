@@ -96,7 +96,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     const emailResponse = await resend.emails.send({
       from: "Cars & Claims <noreply@carsandclaims.com>",
-      to: ["re00445@gmail.com"],
+      to: [Deno.env.get("ADMIN_EMAIL") || "ramon@carsandclaims.com"],
       subject: `New Purchase Application - ${escapeHtml(data.vehicleInfo)}`,
       html: `
         <h2>New Vehicle Purchase Application</h2>

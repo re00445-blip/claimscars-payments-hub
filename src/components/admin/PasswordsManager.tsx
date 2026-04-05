@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Plus, Trash2, Save, Eye, EyeOff, Key, ArrowUpAZ, ArrowDownAZ } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { encrypt, decrypt } from "@/lib/crypto";
 
 interface Password {
   id: string;
@@ -66,8 +67,22 @@ export const PasswordsManager = () => {
         description: "Failed to load passwords.",
         variant: "destructive",
       });
-    } else {
-      setPasswords(data || []);
+    } else if (data) {
+      // Decrypt passwords client-side
+      const decrypted = await Promise.all(
+        data.map(async (entry) => {
+          try {
+            return {
+              ...entry,
+              password: await decrypt(entry.password),
+            };
+          } catch {
+            // If decryption fails, the value may still be plaintext (pre-migration)
+            return entry;
+          }
+        })
+      );
+      setPasswords(decrypted);
     }
     setLoading(false);
   };
@@ -80,13 +95,15 @@ export const PasswordsManager = () => {
 
   const savePassword = async (password: Password) => {
     setSaving(password.id);
-    
+
+    const encryptedPassword = await encrypt(password.password);
+
     const { error } = await supabase
       .from("passwords")
       .update({
         account: password.account,
         login: password.login,
-        password: password.password,
+        password: encryptedPassword,
       })
       .eq("id", password.id);
 
@@ -116,13 +133,15 @@ export const PasswordsManager = () => {
     }
 
     setAdding(true);
-    
+
+    const encryptedPassword = await encrypt(newEntry.password);
+
     const { data, error } = await supabase
       .from("passwords")
       .insert({
         account: newEntry.account,
         login: newEntry.login,
-        password: newEntry.password,
+        password: encryptedPassword,
       })
       .select()
       .single();
@@ -134,7 +153,8 @@ export const PasswordsManager = () => {
         variant: "destructive",
       });
     } else {
-      setPasswords(prev => [...prev, data]);
+      // Store the decrypted password in local state for display
+      setPasswords(prev => [...prev, { ...data, password: newEntry.password }]);
       setNewEntry({ account: "", login: "", password: "" });
       toast({
         title: "Added",
