@@ -1,21 +1,17 @@
--- Fix: user_roles has RLS enabled (since migration 20251007150455) but ZERO policies.
--- This causes admin toggle switches to silently fail and role queries to return empty.
--- The has_role() function works because it's SECURITY DEFINER, but direct queries don't.
+-- Audit flagged user_roles as missing RLS policies; policies actually exist in 20251207204659.
+-- This migration is idempotent: drops any prior names, then re-creates the canonical set.
 
--- Users can view their own roles
+DROP POLICY IF EXISTS "Users can view own roles" ON public.user_roles;
+DROP POLICY IF EXISTS "Admins can view all roles" ON public.user_roles;
+DROP POLICY IF EXISTS "Admins can manage roles" ON public.user_roles;
+DROP POLICY IF EXISTS "Admins can manage all roles" ON public.user_roles;
+
 CREATE POLICY "Users can view own roles"
 ON public.user_roles
 FOR SELECT
 USING (auth.uid() = user_id);
 
--- Admins can view all roles
-CREATE POLICY "Admins can view all roles"
-ON public.user_roles
-FOR SELECT
-USING (public.has_role(auth.uid(), 'admin'::app_role));
-
--- Admins can manage (insert/update/delete) all roles
-CREATE POLICY "Admins can manage roles"
+CREATE POLICY "Admins can manage all roles"
 ON public.user_roles
 FOR ALL
 USING (public.has_role(auth.uid(), 'admin'::app_role))
