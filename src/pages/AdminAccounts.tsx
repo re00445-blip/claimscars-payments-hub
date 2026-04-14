@@ -833,7 +833,7 @@ const AdminAccounts = () => {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="weekly">Weekly</SelectItem>
-                          <SelectItem value="bi-weekly">Bi-Weekly</SelectItem>
+                          <SelectItem value="biweekly">Bi-Weekly</SelectItem>
                           <SelectItem value="monthly">Monthly</SelectItem>
                         </SelectContent>
                       </Select>

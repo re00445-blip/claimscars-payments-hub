@@ -251,13 +251,15 @@ const AdminPayments = () => {
       let suggestedInterest = 0;
       
       if ((account as any).interest_rate_type === "flat_fee") {
-        // For flat fee: interest is the flat fee amount
-        suggestedInterest = account.interest_rate;
+        // For flat fee: split evenly based on payment frequency
+        const periodsPerMonth = account.payment_frequency === 'weekly' ? (52 / 12) : account.payment_frequency === 'biweekly' ? (26 / 12) : 1;
+        suggestedInterest = Math.round((account.interest_rate / periodsPerMonth) * 100) / 100;
         suggestedPrincipal = account.payment_amount - suggestedInterest;
       } else {
-        // For percentage: calculate monthly interest
-        const monthlyInterest = (account.current_balance * (account.interest_rate / 100)) / 12;
-        suggestedInterest = Math.round(monthlyInterest * 100) / 100;
+        // For percentage: calculate interest per payment period
+        const periodsPerYear = account.payment_frequency === 'weekly' ? 52 : account.payment_frequency === 'biweekly' ? 26 : 12;
+        const periodInterest = (account.current_balance * (account.interest_rate / 100)) / periodsPerYear;
+        suggestedInterest = Math.round(periodInterest * 100) / 100;
         suggestedPrincipal = account.payment_amount - suggestedInterest;
       }
 
@@ -284,6 +286,16 @@ const AdminPayments = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!formData.amount || formData.amount <= 0) {
+      toast({ title: "Error", description: "Payment amount must be greater than $0", variant: "destructive" });
+      return;
+    }
+    if (formData.principal_paid < 0 || formData.interest_paid < 0 || (formData.late_fee_paid || 0) < 0) {
+      toast({ title: "Error", description: "Payment breakdown values cannot be negative", variant: "destructive" });
+      return;
+    }
+
     setSaving(true);
 
     const { data: { user } } = await supabase.auth.getUser();
@@ -314,19 +326,23 @@ const AdminPayments = () => {
         variant: "destructive",
       });
     } else {
-      // Update account balance
+      // Update account balance atomically
       const account = accounts.find(a => a.id === formData.account_id);
       if (account) {
-        const newBalance = account.current_balance - formData.principal_paid;
-        
-        // Calculate next payment date based on payment frequency
+        // Atomic balance adjustment — avoids stale-read race condition
+        await supabase.rpc("adjust_account_balance", {
+          _account_id: account.id,
+          _principal_delta: formData.principal_paid,
+        });
+
+        // Calculate and advance next payment date
         const calculateNextPaymentDate = (currentDate: string, frequency: string | null): string => {
           const date = new Date(currentDate + 'T00:00:00');
           switch (frequency) {
             case 'weekly':
               date.setDate(date.getDate() + 7);
               break;
-            case 'bi-weekly':
+            case 'biweekly':
               date.setDate(date.getDate() + 14);
               break;
             case 'monthly':
@@ -338,13 +354,9 @@ const AdminPayments = () => {
         };
 
         const nextPaymentDate = calculateNextPaymentDate(account.next_payment_date, account.payment_frequency);
-
         await supabase
           .from("customer_accounts")
-          .update({
-            current_balance: Math.max(0, newBalance),
-            next_payment_date: nextPaymentDate,
-          })
+          .update({ next_payment_date: nextPaymentDate })
           .eq("id", account.id);
 
         // Send receipt email
@@ -447,6 +459,15 @@ const AdminPayments = () => {
         variant: "destructive",
       });
     } else {
+      // Adjust account balance atomically if principal changed
+      const principalDelta = formData.principal_paid - editingPayment.principal_paid;
+      if (principalDelta !== 0) {
+        await supabase.rpc("adjust_account_balance", {
+          _account_id: editingPayment.account_id,
+          _principal_delta: principalDelta,
+        });
+      }
+
       toast({
         title: "Success",
         description: "Payment updated successfully",
@@ -478,17 +499,12 @@ const AdminPayments = () => {
         variant: "destructive",
       });
     } else {
-      // Optionally restore the balance to the account
+      // Restore balance atomically (negative delta = add back)
       if (payment) {
-        const account = accounts.find(a => a.id === payment.account_id);
-        if (account) {
-          await supabase
-            .from("customer_accounts")
-            .update({
-              current_balance: account.current_balance + payment.principal_paid,
-            })
-            .eq("id", account.id);
-        }
+        await supabase.rpc("adjust_account_balance", {
+          _account_id: payment.account_id,
+          _principal_delta: -payment.principal_paid,
+        });
       }
       
       toast({
@@ -506,28 +522,41 @@ const AdminPayments = () => {
     setDeletePaymentId(null);
   };
 
+  const escapeHtml = (str: string): string => {
+    return str
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  };
+
   const generateReceiptHTML = (payment: Payment) => {
     const account = accounts.find(a => a.id === payment.account_id);
     const date = new Date(payment.payment_date).toLocaleDateString();
     const invoiceNumber = generateInvoiceNumber(payment.id, payment.payment_date);
-    
+    const customerName = escapeHtml(account?.profile?.full_name || 'N/A');
+    const vehicleInfo = account?.vehicle
+      ? escapeHtml(`${account.vehicle.year} ${account.vehicle.make} ${account.vehicle.model}`)
+      : '';
+
     return `
       <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px;">
         <div style="text-align: center; border-bottom: 2px solid #22c55e; padding-bottom: 15px; margin-bottom: 20px;">
           <h1 style="color: #1a1a1a; margin: 0; font-size: 24px;">Quality Foreign Domestic Autos</h1>
-          <p style="color: #666; margin: 5px 0 0 0;">Professional Auto Sales & Service</p>
+          <p style="color: #666; margin: 5px 0 0 0;">Professional Auto Sales &amp; Service</p>
         </div>
-        
+
         <div style="text-align: center; margin-bottom: 20px;">
           <h2 style="color: #22c55e; margin: 0;">PAYMENT RECEIPT</h2>
-          <p style="color: #666; margin: 5px 0;">Invoice #${invoiceNumber}</p>
+          <p style="color: #666; margin: 5px 0;">Invoice #${escapeHtml(invoiceNumber)}</p>
           <p style="color: #666; margin: 5px 0;">Date: ${date}</p>
         </div>
-        
+
         <div style="margin-bottom: 20px;">
           <h3 style="border-bottom: 1px solid #eee; padding-bottom: 5px; color: #333;">Customer Information</h3>
-          <p style="margin: 5px 0;"><strong>Name:</strong> ${account?.profile?.full_name || 'N/A'}</p>
-          ${account?.vehicle ? `<p style="margin: 5px 0;"><strong>Vehicle:</strong> ${account.vehicle.year} ${account.vehicle.make} ${account.vehicle.model}</p>` : ''}
+          <p style="margin: 5px 0;"><strong>Name:</strong> ${customerName}</p>
+          ${vehicleInfo ? `<p style="margin: 5px 0;"><strong>Vehicle:</strong> ${vehicleInfo}</p>` : ''}
         </div>
         
         <div style="margin-bottom: 20px;">
@@ -548,7 +577,7 @@ const AdminPayments = () => {
           ` : ''}
           <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f0f0f0;">
             <span>Payment Method:</span>
-            <span>${payment.payment_method || 'Cash'}</span>
+            <span>${escapeHtml(payment.payment_method || 'Cash')}</span>
           </div>
         </div>
         
@@ -565,7 +594,7 @@ const AdminPayments = () => {
         
         ${payment.notes ? `
         <div style="margin-top: 15px; padding: 10px; background: #f5f5f5; border-radius: 5px;">
-          <p style="margin: 0; font-size: 14px;"><strong>Notes:</strong> ${payment.notes}</p>
+          <p style="margin: 0; font-size: 14px;"><strong>Notes:</strong> ${escapeHtml(payment.notes)}</p>
         </div>
         ` : ''}
         

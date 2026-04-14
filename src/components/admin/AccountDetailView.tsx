@@ -99,6 +99,8 @@ export const AccountDetailView = ({ account, open, onOpenChange, onPaymentRecord
   const [saving, setSaving] = useState(false);
   const [syncingToStripe, setSyncingToStripe] = useState(false);
   const [totalPaid, setTotalPaid] = useState(0);
+  const [editingLateFeeRate, setEditingLateFeeRate] = useState(false);
+  const [lateFeeRate, setLateFeeRate] = useState(account.late_fee_amount || 20);
   
   const [waiverForm, setWaiverForm] = useState({
     waive_late_fees: 0,
@@ -167,13 +169,13 @@ export const AccountDetailView = ({ account, open, onOpenChange, onPaymentRecord
 
     if (account.interest_rate_type === "flat_fee") {
       // For flat fee: split evenly based on payment frequency
-      const periodsPerMonth = account.payment_frequency === 'weekly' ? (52 / 12) : 1;
+      const periodsPerMonth = account.payment_frequency === 'weekly' ? (52 / 12) : account.payment_frequency === 'biweekly' ? (26 / 12) : 1;
       const periodInterest = account.interest_rate / periodsPerMonth;
       suggestedInterest = Math.max(0, Math.round((periodInterest - waivedInterest) * 100) / 100);
       suggestedPrincipal = account.payment_amount - periodInterest;
     } else {
       // For percentage: calculate interest per payment period
-      const periodsPerYear = account.payment_frequency === 'weekly' ? 52 : 12;
+      const periodsPerYear = account.payment_frequency === 'weekly' ? 52 : account.payment_frequency === 'biweekly' ? 26 : 12;
       const periodInterest = (account.current_balance * (account.interest_rate / 100)) / periodsPerYear;
       const calculatedInterest = Math.round(periodInterest * 100) / 100;
       suggestedInterest = Math.max(0, calculatedInterest - waivedInterest);
@@ -208,8 +210,8 @@ export const AccountDetailView = ({ account, open, onOpenChange, onPaymentRecord
 
   const handleOpenWaiverForm = () => {
     setWaiverForm({
-      waive_late_fees: calculateLateFees(),
-      waive_interest: 0,
+      waive_late_fees: account.waived_late_fees || 0,
+      waive_interest: account.waived_interest || 0,
       notes: "",
     });
     setShowWaiverForm(true);
@@ -219,14 +221,11 @@ export const AccountDetailView = ({ account, open, onOpenChange, onPaymentRecord
     e.preventDefault();
     setSaving(true);
 
-    const currentWaivedLateFees = (account as any).waived_late_fees || 0;
-    const currentWaivedInterest = (account as any).waived_interest || 0;
-
     const { error } = await supabase
       .from("customer_accounts")
       .update({
-        waived_late_fees: currentWaivedLateFees + waiverForm.waive_late_fees,
-        waived_interest: currentWaivedInterest + waiverForm.waive_interest,
+        waived_late_fees: waiverForm.waive_late_fees,
+        waived_interest: waiverForm.waive_interest,
       })
       .eq("id", account.id);
 
@@ -250,7 +249,7 @@ export const AccountDetailView = ({ account, open, onOpenChange, onPaymentRecord
           waived_late_fees: waiverForm.waive_late_fees,
           entry_type: "manual",
           payment_method: null,
-          notes: waiverForm.notes || `Waiver applied: ${waiverForm.waive_late_fees > 0 ? `Late fees $${waiverForm.waive_late_fees.toFixed(2)}` : ''}${waiverForm.waive_late_fees > 0 && waiverForm.waive_interest > 0 ? ', ' : ''}${waiverForm.waive_interest > 0 ? `Interest $${waiverForm.waive_interest.toFixed(2)}` : ''}`,
+          notes: waiverForm.notes || `Waiver updated: ${waiverForm.waive_late_fees > 0 ? `Late fees total $${waiverForm.waive_late_fees.toFixed(2)}` : ''}${waiverForm.waive_late_fees > 0 && waiverForm.waive_interest > 0 ? ', ' : ''}${waiverForm.waive_interest > 0 ? `Interest total $${waiverForm.waive_interest.toFixed(2)}` : ''}`,
           created_by: session?.user?.id || null,
         });
       }
@@ -303,17 +302,20 @@ export const AccountDetailView = ({ account, open, onOpenChange, onPaymentRecord
         variant: "destructive",
       });
     } else {
-      // Update account balance
-      const newBalance = account.current_balance - paymentForm.principal_paid;
-      
-      // Calculate next payment date based on payment frequency
+      // Atomic balance adjustment — avoids stale-read race condition
+      await supabase.rpc("adjust_account_balance", {
+        _account_id: account.id,
+        _principal_delta: paymentForm.principal_paid,
+      });
+
+      // Calculate and advance next payment date
       const calculateNextPaymentDate = (currentDate: string, frequency: string | null): string => {
         const date = new Date(currentDate + 'T00:00:00');
         switch (frequency) {
           case 'weekly':
             date.setDate(date.getDate() + 7);
             break;
-          case 'bi-weekly':
+          case 'biweekly':
             date.setDate(date.getDate() + 14);
             break;
           case 'monthly':
@@ -324,16 +326,11 @@ export const AccountDetailView = ({ account, open, onOpenChange, onPaymentRecord
         return date.toISOString().split('T')[0];
       };
 
-      // Use the selected payment date (not today) as the basis for next due date
       const paymentDateStr = format(paymentForm.payment_date, 'yyyy-MM-dd');
       const nextPaymentDate = calculateNextPaymentDate(paymentDateStr, account.payment_frequency);
-
       await supabase
         .from("customer_accounts")
-        .update({
-          current_balance: Math.max(0, newBalance),
-          next_payment_date: nextPaymentDate,
-        })
+        .update({ next_payment_date: nextPaymentDate })
         .eq("id", account.id);
 
       // Send receipt email
@@ -378,27 +375,35 @@ export const AccountDetailView = ({ account, open, onOpenChange, onPaymentRecord
     setSaving(false);
   };
 
+  const escapeHtml = (str: string): string => {
+    return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+  };
+
   const printReceipt = (payment: Payment) => {
     const date = new Date(payment.payment_date).toLocaleDateString();
     const invoiceNumber = generateInvoiceNumber(payment.id, payment.payment_date);
-    
+    const customerName = escapeHtml(account.profile?.full_name || 'N/A');
+    const vehicleInfo = account.vehicle
+      ? escapeHtml(`${account.vehicle.year} ${account.vehicle.make} ${account.vehicle.model}`)
+      : '';
+
     const receiptHTML = `
       <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px;">
         <div style="text-align: center; border-bottom: 2px solid #22c55e; padding-bottom: 15px; margin-bottom: 20px;">
           <h1 style="color: #1a1a1a; margin: 0; font-size: 24px;">Quality Foreign Domestic Autos</h1>
-          <p style="color: #666; margin: 5px 0 0 0;">Professional Auto Sales & Service</p>
+          <p style="color: #666; margin: 5px 0 0 0;">Professional Auto Sales &amp; Service</p>
         </div>
-        
+
         <div style="text-align: center; margin-bottom: 20px;">
           <h2 style="color: #22c55e; margin: 0;">PAYMENT RECEIPT</h2>
-          <p style="color: #666; margin: 5px 0;">Invoice #${invoiceNumber}</p>
+          <p style="color: #666; margin: 5px 0;">Invoice #${escapeHtml(invoiceNumber)}</p>
           <p style="color: #666; margin: 5px 0;">Date: ${date}</p>
         </div>
-        
+
         <div style="margin-bottom: 20px;">
           <h3 style="border-bottom: 1px solid #eee; padding-bottom: 5px; color: #333;">Customer Information</h3>
-          <p style="margin: 5px 0;"><strong>Name:</strong> ${account.profile?.full_name || 'N/A'}</p>
-          ${account.vehicle ? `<p style="margin: 5px 0;"><strong>Vehicle:</strong> ${account.vehicle.year} ${account.vehicle.make} ${account.vehicle.model}</p>` : ''}
+          <p style="margin: 5px 0;"><strong>Name:</strong> ${customerName}</p>
+          ${vehicleInfo ? `<p style="margin: 5px 0;"><strong>Vehicle:</strong> ${vehicleInfo}</p>` : ''}
         </div>
         
         <div style="margin-bottom: 20px;">
@@ -419,20 +424,20 @@ export const AccountDetailView = ({ account, open, onOpenChange, onPaymentRecord
           ` : ''}
           <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f0f0f0;">
             <span>Payment Method:</span>
-            <span>${payment.payment_method || 'Cash'}</span>
+            <span>${escapeHtml(payment.payment_method || 'Cash')}</span>
           </div>
         </div>
-        
+
         <div style="background: #22c55e; color: white; padding: 15px; border-radius: 8px; margin: 20px 0;">
           <div style="display: flex; justify-content: space-between; font-size: 18px; font-weight: bold;">
             <span>TOTAL PAID:</span>
             <span>$${payment.amount.toFixed(2)}</span>
           </div>
         </div>
-        
+
         ${payment.notes ? `
         <div style="margin-top: 15px; padding: 10px; background: #f5f5f5; border-radius: 5px;">
-          <p style="margin: 0; font-size: 14px;"><strong>Notes:</strong> ${payment.notes}</p>
+          <p style="margin: 0; font-size: 14px;"><strong>Notes:</strong> ${escapeHtml(payment.notes)}</p>
         </div>
         ` : ''}
         
@@ -548,7 +553,7 @@ export const AccountDetailView = ({ account, open, onOpenChange, onPaymentRecord
                   <p className="text-2xl font-bold text-primary">{formatCurrency(account.current_balance)}</p>
                 </div>
                 <div className="bg-background rounded-lg p-4 border">
-                  <p className="text-sm text-muted-foreground mb-1">{account.payment_frequency === 'weekly' ? 'Weekly' : 'Monthly'} Payment</p>
+                  <p className="text-sm text-muted-foreground mb-1">{account.payment_frequency === 'weekly' ? 'Weekly' : account.payment_frequency === 'biweekly' ? 'Bi-Weekly' : 'Monthly'} Payment</p>
                   <p className="text-2xl font-bold">{formatCurrency(account.payment_amount)}</p>
                 </div>
                 <div className="bg-background rounded-lg p-4 border">
@@ -585,7 +590,51 @@ export const AccountDetailView = ({ account, open, onOpenChange, onPaymentRecord
                 </div>
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <DollarSign className="h-4 w-4" />
-                  <span>Late Fee: {formatCurrency(account.late_fee_amount || 25)}/day</span>
+                  {editingLateFeeRate ? (
+                    <span className="flex items-center gap-1">
+                      Late Fee: $
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={lateFeeRate}
+                        onChange={(e) => setLateFeeRate(parseFloat(e.target.value) || 0)}
+                        className="w-20 h-6 text-xs px-1"
+                      />
+                      /day
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 px-2 text-xs"
+                        onClick={async () => {
+                          const { error } = await supabase
+                            .from("customer_accounts")
+                            .update({ late_fee_amount: lateFeeRate })
+                            .eq("id", account.id);
+                          if (error) {
+                            toast({ title: "Error", description: "Failed to update late fee rate", variant: "destructive" });
+                          } else {
+                            toast({ title: "Updated", description: `Late fee rate set to ${formatCurrency(lateFeeRate)}/day` });
+                            setEditingLateFeeRate(false);
+                            onPaymentRecorded();
+                          }
+                        }}
+                      >
+                        Save
+                      </Button>
+                      <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={() => { setLateFeeRate(account.late_fee_amount || 20); setEditingLateFeeRate(false); }}>
+                        Cancel
+                      </Button>
+                    </span>
+                  ) : (
+                    <span
+                      className="cursor-pointer hover:underline"
+                      onClick={() => setEditingLateFeeRate(true)}
+                      title="Click to edit"
+                    >
+                      Late Fee: {formatCurrency(account.late_fee_amount || 20)}/day
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -689,13 +738,13 @@ export const AccountDetailView = ({ account, open, onOpenChange, onPaymentRecord
                   <Gift className="h-5 w-5 text-green-600" />
                   Waive Fees
                 </CardTitle>
-                <CardDescription>Waive late fees and/or interest for this account</CardDescription>
+                <CardDescription>Set the total waived amount for late fees and/or interest</CardDescription>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleSubmitWaiver} className="space-y-4">
                   <div className="grid md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="waive_late_fees">Waive Late Fees ($)</Label>
+                      <Label htmlFor="waive_late_fees">Total Late Fees Waived ($)</Label>
                       <Input
                         id="waive_late_fees"
                         type="number"
@@ -705,11 +754,11 @@ export const AccountDetailView = ({ account, open, onOpenChange, onPaymentRecord
                         onChange={(e) => setWaiverForm(prev => ({ ...prev, waive_late_fees: parseFloat(e.target.value) || 0 }))}
                       />
                       <p className="text-xs text-muted-foreground">
-                        Current late fees: {formatCurrency(calculateLateFees())}
+                        Outstanding late fees: {formatCurrency(calculateLateFees())} | Set to 0 to remove waivers
                       </p>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="waive_interest">Waive Interest ($)</Label>
+                      <Label htmlFor="waive_interest">Total Interest Waived ($)</Label>
                       <Input
                         id="waive_interest"
                         type="number"

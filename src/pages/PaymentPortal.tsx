@@ -95,8 +95,8 @@ const PaymentPortal = () => {
       
       verifyPayment();
     } else if (success === "true") {
-      setShowSuccessMessage(true);
-      toast.success("Payment initiated successfully!");
+      // No session_id means payment wasn't verified — don't show success
+      toast.info("Payment could not be verified. Please check your payment history or contact support.");
       window.history.replaceState({}, "", "/payments");
     } else if (canceled === "true") {
       toast.info("Payment was canceled");

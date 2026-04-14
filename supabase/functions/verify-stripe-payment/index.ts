@@ -2,11 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { Resend } from "https://esm.sh/resend@2.0.0";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { getCorsHeaders } from "../_shared/cors.ts";
 
 const logStep = (step: string, details?: any) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
@@ -107,6 +103,7 @@ const generateReceiptHTML = (data: {
 };
 
 serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req);
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -122,21 +119,38 @@ serve(async (req) => {
     if (!resendKey) throw new Error("RESEND_API_KEY is not set");
     logStep("Resend key verified");
 
-    // Use service role client - don't require auth header since user returns from Stripe
+    // Service role client for DB operations
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
+    // Verify caller identity when auth header is present
+    const authHeader = req.headers.get("Authorization");
+    let authenticatedUserId: string | null = null;
+    if (authHeader) {
+      const token = authHeader.replace("Bearer ", "");
+      const { data: userData } = await supabaseClient.auth.getUser(token);
+      authenticatedUserId = userData?.user?.id || null;
+      logStep("Caller authenticated", { userId: authenticatedUserId });
+    }
+
     const { sessionId } = await req.json();
     if (!sessionId) throw new Error("Session ID is required");
     logStep("Session ID received", { sessionId });
 
-    const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
+    const stripe = new Stripe(stripeKey, { apiVersion: "2024-12-18.acacia" });
 
     // Retrieve the checkout session
     const session = await stripe.checkout.sessions.retrieve(sessionId);
     logStep("Session retrieved", { status: session.payment_status, amount: session.amount_total });
+
+    // Verify the caller matches the session owner (when auth is available)
+    const sessionUserId = session.metadata?.userId;
+    if (authenticatedUserId && sessionUserId && authenticatedUserId !== sessionUserId) {
+      logStep("User mismatch", { caller: authenticatedUserId, sessionOwner: sessionUserId });
+      throw new Error("You can only verify your own payments");
+    }
 
     if (session.payment_status !== "paid") {
       throw new Error("Payment not completed");
@@ -218,8 +232,10 @@ serve(async (req) => {
     
     if (today > nextPaymentDue) {
       const daysLate = Math.floor((today.getTime() - nextPaymentDue.getTime()) / (1000 * 60 * 60 * 24));
-      lateFeeAmount = daysLate * dailyLateFee;
-      logStep("Late fee calculated", { daysLate, dailyLateFee, totalLateFee: lateFeeAmount });
+      const rawLateFees = daysLate * dailyLateFee;
+      const waivedLateFees = account.waived_late_fees || 0;
+      lateFeeAmount = Math.max(0, rawLateFees - waivedLateFees);
+      logStep("Late fee calculated", { daysLate, dailyLateFee, rawLateFees, waivedLateFees, netLateFee: lateFeeAmount });
     }
 
     // Calculate payment breakdown based on account interest type
@@ -248,36 +264,11 @@ serve(async (req) => {
       principalPaid = remainingPayment;
     }
     
-    const newBalance = Math.max(0, account.current_balance - principalPaid);
-    logStep("Payment breakdown", { principalPaid, interestPaid, lateFeePaid, newBalance });
+    logStep("Payment breakdown", { principalPaid, interestPaid, lateFeePaid });
 
     // Generate invoice number
     const now = new Date();
     const invoiceNumber = `INV-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}-${sessionId.slice(-5).toUpperCase()}`;
-
-    // Record the payment
-    const { data: newPayment, error: paymentError } = await supabaseClient
-      .from("payments")
-      .insert({
-        account_id: accountId,
-        amount: amount,
-        principal_paid: principalPaid,
-        interest_paid: interestPaid,
-        late_fee_paid: lateFeePaid,
-        payment_method: "Card (Online)",
-        entry_type: "automatic",
-        receipt_url: sessionId, // Store session ID to prevent duplicates
-        notes: lateFeePaid > 0 ? `Online payment via Stripe (includes $${lateFeePaid.toFixed(2)} late fees)` : "Online payment via Stripe",
-        payment_date: now.toISOString(),
-      })
-      .select()
-      .single();
-
-    if (paymentError) {
-      logStep("Payment insert error", { error: paymentError.message });
-      throw new Error(`Failed to record payment: ${paymentError.message}`);
-    }
-    logStep("Payment recorded", { paymentId: newPayment.id });
 
     // Calculate next payment date based on payment frequency
     const calculateNextPaymentDate = (currentDate: string, frequency: string | null): string => {
@@ -286,7 +277,7 @@ serve(async (req) => {
         case 'weekly':
           date.setDate(date.getDate() + 7);
           break;
-        case 'bi-weekly':
+        case 'biweekly':
           date.setDate(date.getDate() + 14);
           break;
         case 'monthly':
@@ -297,21 +288,39 @@ serve(async (req) => {
       return date.toISOString().split('T')[0];
     };
 
-    // Update account balance and next payment date
     const nextPaymentDate = calculateNextPaymentDate(account.next_payment_date, account.payment_frequency);
-    const { error: updateError } = await supabaseClient
-      .from("customer_accounts")
-      .update({ 
-        current_balance: newBalance,
-        next_payment_date: nextPaymentDate
-      })
-      .eq("id", accountId);
 
-    if (updateError) {
-      logStep("Balance update error", { error: updateError.message });
-    } else {
-      logStep("Balance and next payment date updated", { newBalance, nextPaymentDate });
+    // Record payment + update balance atomically in a single transaction
+    const { data: rpcResult, error: rpcError } = await supabaseClient.rpc("record_payment_atomic", {
+      _account_id: accountId,
+      _amount: amount,
+      _principal_paid: principalPaid,
+      _interest_paid: interestPaid,
+      _late_fee_paid: lateFeePaid,
+      _payment_method: "Card (Online)",
+      _entry_type: "automatic",
+      _receipt_url: sessionId,
+      _notes: lateFeePaid > 0 ? `Online payment via Stripe (includes $${lateFeePaid.toFixed(2)} late fees)` : "Online payment via Stripe",
+      _payment_date: now.toISOString(),
+      _next_payment_date: nextPaymentDate,
+    });
+
+    if (rpcError) {
+      // Handle unique constraint violation (duplicate payment from race condition)
+      if (rpcError.code === "23505" || rpcError.message?.includes("unique") || rpcError.message?.includes("duplicate")) {
+        logStep("Duplicate payment caught by constraint", { sessionId });
+        return new Response(JSON.stringify({ success: true, alreadyRecorded: true }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        });
+      }
+      logStep("Payment RPC error", { error: rpcError.message });
+      throw new Error(`Failed to record payment: ${rpcError.message}`);
     }
+
+    const newPaymentId = rpcResult?.payment_id;
+    const newBalance = rpcResult?.new_balance ?? 0;
+    logStep("Payment recorded atomically", { paymentId: newPaymentId, newBalance, nextPaymentDate });
 
     // Prepare vehicle info
     const vehicleInfo = account.vehicles 
@@ -365,7 +374,7 @@ serve(async (req) => {
 
     return new Response(JSON.stringify({ 
       success: true, 
-      paymentId: newPayment.id,
+      paymentId: newPaymentId,
       newBalance,
       invoiceNumber
     }), {

@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Car, Scale, User, Wrench } from "lucide-react";
+import { Car, Scale, User, Wrench, Menu, X } from "lucide-react";
 import logo from "@/assets/cars-claims-logo-new.jpg";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,6 +12,7 @@ export const Navbar = () => {
   const [userName, setUserName] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { t } = useLanguage();
 
   const fetchProfile = async (id: string) => {
@@ -62,8 +63,16 @@ export const Navbar = () => {
     <nav className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="w-full px-4">
         <div className="flex h-16 items-center justify-between">
-          {/* Left side - Language toggle on mobile, nav links on desktop */}
+          {/* Left side - Language toggle, hamburger on mobile, nav links on desktop */}
           <div className="flex items-center gap-4 z-10">
+            <button
+              className="md:hidden p-1"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label="Toggle menu"
+              aria-expanded={mobileMenuOpen}
+            >
+              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </button>
             <div className="sm:hidden">
               <LanguageToggle />
             </div>
@@ -85,7 +94,7 @@ export const Navbar = () => {
           </div>
 
           {/* Center - Logo */}
-          <Link to="/" className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center justify-center">
+          <Link to="/" className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center justify-center" onClick={() => setMobileMenuOpen(false)}>
             <img src={logo} alt="Cars and Claims" className="h-10 md:h-12 w-auto object-contain scale-x-125" />
             <div className="hidden md:block text-xs text-muted-foreground mt-0.5">
               {t("nav.tagline")}
@@ -133,6 +142,36 @@ export const Navbar = () => {
           </div>
         </div>
       </div>
+
+      {/* Mobile menu */}
+      {mobileMenuOpen && (
+        <div className="md:hidden border-t bg-background px-4 py-3 space-y-2">
+          <Link
+            to="/inventory"
+            className="flex items-center gap-2 text-sm font-medium text-foreground/80 hover:text-foreground py-2"
+            onClick={() => setMobileMenuOpen(false)}
+          >
+            <Car className="h-4 w-4" />
+            {t("nav.inventory")}
+          </Link>
+          <Link
+            to="/repairs"
+            className="flex items-center gap-2 text-sm font-medium text-foreground/80 hover:text-foreground py-2"
+            onClick={() => setMobileMenuOpen(false)}
+          >
+            <Wrench className="h-4 w-4" />
+            {t("nav.carRepairs")}
+          </Link>
+          <Link
+            to="/claims"
+            className="flex items-center gap-2 text-sm font-medium text-foreground/80 hover:text-foreground py-2"
+            onClick={() => setMobileMenuOpen(false)}
+          >
+            <Scale className="h-4 w-4" />
+            {t("nav.injuryClaims")}
+          </Link>
+        </div>
+      )}
     </nav>
   );
 };

@@ -271,9 +271,13 @@ const AdminUsers = () => {
         return { ...u, isAffiliate: !currentlyHasRole };
       }));
     } catch (error: any) {
+      const msg = error.message || "";
+      const description = msg.includes("policy") || msg.includes("permission") || msg === "undefined" || msg === ""
+        ? "Failed to update role. You may not have sufficient permissions."
+        : `Failed to update role: ${msg}`;
       toast({
         title: "Error",
-        description: error.message || "Failed to update role.",
+        description,
         variant: "destructive",
       });
     } finally {

@@ -1,11 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { getCorsHeaders } from "../_shared/cors.ts";
 
 const logStep = (step: string, details?: any) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
@@ -13,6 +9,7 @@ const logStep = (step: string, details?: any) => {
 };
 
 serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req);
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -58,14 +55,29 @@ serve(async (req) => {
     if (!accountId) {
       throw new Error("Account ID is required");
     }
-    
-    // Use totalCharge if provided (includes convenience fee), otherwise just the base amount
-    const chargeAmount = totalCharge || amount;
-    const fee = convenienceFee || 0;
+
+    // Verify the authenticated user owns this account
+    const { data: account, error: accountError } = await supabaseClient
+      .from("customer_accounts")
+      .select("user_id")
+      .eq("id", accountId)
+      .single();
+    if (accountError || !account) {
+      throw new Error("Account not found");
+    }
+    if (account.user_id !== user.id) {
+      logStep("Ownership check failed", { accountUserId: account.user_id, authUserId: user.id });
+      throw new Error("You can only make payments on your own account");
+    }
+    logStep("Account ownership verified");
+
+    // Recalculate convenience fee server-side to prevent tampering
+    const fee = Math.round(amount * 0.03 * 100) / 100;
+    const chargeAmount = amount + fee;
     
     logStep("Request parsed", { amount, convenienceFee: fee, totalCharge: chargeAmount, accountId });
 
-    const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
+    const stripe = new Stripe(stripeKey, { apiVersion: "2024-12-18.acacia" });
 
     // Check if customer exists in Stripe
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
@@ -75,7 +87,7 @@ serve(async (req) => {
       logStep("Found existing Stripe customer", { customerId });
     }
 
-    const origin = req.headers.get("origin") || "https://carsnandclaims.lovable.app";
+    const origin = req.headers.get("origin") || "https://carsandclaims.com";
 
     // Build line items - include convenience fee as separate line item for transparency
     const lineItems = [

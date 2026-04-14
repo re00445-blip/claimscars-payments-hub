@@ -98,8 +98,8 @@ export const PaymentMethodsSection = ({
       // Force refresh the session to ensure it's valid on the server
       const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
       if (refreshError || !refreshData.session) {
-        toast.error("Your session has expired. Please sign in again.");
-        window.location.href = "/auth";
+        toast.error("Your session has expired. Please sign in again to make your payment.");
+        setTimeout(() => { window.location.href = "/auth"; }, 2000);
         return;
       }
 
@@ -135,8 +135,7 @@ export const PaymentMethodsSection = ({
       }
 
       if (data?.url) {
-        window.open(data.url, "_blank");
-        toast.success("Redirecting to payment page...");
+        window.location.href = data.url;
       } else {
         throw new Error("No checkout URL received");
       }
